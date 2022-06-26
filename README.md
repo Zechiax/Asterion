@@ -1,3 +1,5 @@
+[![Discord Bots](https://top.gg/api/widget/status/986993814671614094.svg)](https://top.gg/bot/986993814671614094)
+
 # RinthBot
 
 - Discord bot which main feature is to announce new updates of projects on [Modrinth](https://modrinth.com/)

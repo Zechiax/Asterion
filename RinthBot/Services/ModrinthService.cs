@@ -138,7 +138,7 @@ public class ModrinthService // : IModrinthService
     {
         //BUG: Catch exceptions
         //TODO: Think of rate limiting
-        var versions = await _api.GetProjectVersionList(projectId);
+        var versions = await GetVersionListAsync(projectId);
 
         var project = _dataService.UpdateProjectVersionAndReturnOldOne(projectId, versions[0].Id);
 
@@ -188,7 +188,7 @@ public class ModrinthService // : IModrinthService
         return p;
     }
 
-    public async Task<Version[]?> GetVersionList(string slugOrId)
+    public async Task<Version[]?> GetVersionListAsync(string slugOrId)
     {
         try
         {
@@ -235,7 +235,7 @@ public class ModrinthService // : IModrinthService
 
     public async Task<Version?> GetProjectsLatestVersion(string projectId)
     {
-        var versions = await GetVersionList(projectId);
+        var versions = await GetVersionListAsync(projectId);
 
         if (versions == null)
             return null;

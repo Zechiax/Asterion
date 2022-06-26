@@ -115,7 +115,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                         return;
                 }
                 
-                var versions = await ModrinthService.GetVersionList(project.Id);
+                var versions = await ModrinthService.GetVersionListAsync(project.Id);
                 if (versions == null)
                 {
                         await ModifyOriginalResponseAsync(x =>

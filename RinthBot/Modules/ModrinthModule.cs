@@ -7,7 +7,6 @@ using RinthBot.EmbedBuilders;
 using RinthBot.Services;
 using Fergun.Interactive;
 using Microsoft.Extensions.Logging;
-using Modrinth.RestClient.Models;
 
 // ReSharper disable MemberCanBePrivate.Global
 
@@ -30,7 +29,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                 
                 // First let's try searching by slug or ID
                 // If the query contains space, it can't be slug or ID
-                Project? project = query.Contains(' ') ? null : await ModrinthService.GetProject(query);
+                var project = query.Contains(' ') ? null : await ModrinthService.GetProject(query);
 
                 // No results? Let's try normal search
                 if (project == null)

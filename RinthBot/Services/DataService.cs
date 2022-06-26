@@ -17,7 +17,7 @@ public class DataService
     private readonly ILogger _logger;
     private const string DbName = "data.sqlite";
     private readonly Compiler _sqLiteCompiler;
-    private DiscordSocketClient _client;
+    private readonly DiscordSocketClient _client;
 
     public DataService(IServiceProvider serviceProvider)
     {
@@ -40,7 +40,7 @@ public class DataService
     }
 
     /// <summary>
-    /// Check every guild the bot is on if it is registered (as the bot might have joined the guild while being offline)
+    /// Check every guild the bot is in if it is registered (as the bot might have joined the guild while being offline)
     /// </summary>
     public Task CheckAllGuilds()
     {
@@ -116,7 +116,7 @@ public class DataService
 	PRIMARY KEY(""ID"")
 )";
         
-        SQLiteCommand command = new SQLiteCommand(createArray, dbConnection);
+        var command = new SQLiteCommand(createArray, dbConnection);
         command.ExecuteNonQuery();
         command = new SQLiteCommand(createModrinthProject, dbConnection);
         command.ExecuteNonQuery();
@@ -265,8 +265,6 @@ public class DataService
 	    {
 		    db.Query("ModrinthProjects").Where("ID", modrinthProjectId).Delete();
 	    }
-
-	    return;
     }
 
     public IEnumerable<ArrayProject> ListProjects(SocketGuild guild)

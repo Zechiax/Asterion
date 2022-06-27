@@ -101,7 +101,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
 
         [DoAdminCheck]
         [SlashCommand("subscribe", "Add a Modrinth project to your watched list")]
-        public async Task Subscribe(string projectId)
+        public async Task Subscribe(string projectId, SocketChannel? customChannel = null)
         {
                 await DeferAsync();
                 var project = await ModrinthService.GetProject(projectId);
@@ -128,7 +128,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                 // Get last version ID
                 var lastVersion = versions.OrderByDescending(x => x.DatePublished).First().Id;
 
-                await DataService.AddWatchedProject(Context.Guild, project, lastVersion);
+                await DataService.AddWatchedProject(Context.Guild, project, lastVersion, customChannel);
 
                 await ModifyOriginalResponseAsync(x =>
                 {
@@ -281,7 +281,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         {
                 await DeferAsync();
                        
-                var guildInfoDb = DataService.GetGuildInfo(Context.Guild);
+                var guildInfoDb = DataService.GetGuild(Context.Guild);
 
                 if (guildInfoDb.UpdateChannel == null)
                 {

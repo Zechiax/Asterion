@@ -185,9 +185,9 @@ public class DataService
 		return Task.CompletedTask;
     }
 
-    public Task AddWatchedProject(SocketGuild guildId, Project modrinthProject, string latestVersionId)
+    public Task AddWatchedProject(SocketGuild guildId, Project modrinthProject, string latestVersionId, SocketChannel? customUpdateChannel = null)
     {
-	    AddWatchedProject(guildId.Id, modrinthProject, latestVersionId);
+	    AddWatchedProject(guildId.Id, modrinthProject, latestVersionId, customUpdateChannel?.Id);
 
 	    return Task.CompletedTask;
     }
@@ -286,6 +286,30 @@ public class DataService
 	    var projects = db.Query("ArrayProjects").Where("ArrayId", guildDb.SubscribedProjectsArrayId).Get<ArrayProject>();
 
 	    return projects;
+    }
+
+    public ArrayProject? GetProjectInfo(SocketGuild guild, Project project)
+    {
+	    return GetProjectInfo(guild.Id, project.Id);
+    }
+    
+    public ArrayProject? GetProjectInfo(Guild guild, Project project)
+    {
+	    return GetProjectInfo(guild.Id, project.Id);
+    }
+    
+    public ArrayProject? GetProjectInfo(ulong guildId, string projectId)
+    {
+	    using var db = new QueryFactory(NewSqlConnection(), _sqLiteCompiler);
+
+	    var guild = GetGuild(guildId);
+	    var project = db.Query("ArrayProjects").Where(new
+	    {
+		    ArrayId = guild.SubscribedProjectsArrayId,
+		    ProjectId = projectId
+	    }).First<ArrayProject>();
+
+	    return project;
     }
 
     public IEnumerable<Guild> GetAllGuilds()
@@ -402,12 +426,12 @@ public class DataService
 	    return arrayProjects.Any();
     }
 
-    public Guild GetGuildInfo(SocketGuild guild)
+    public Guild GetGuild(SocketGuild guild)
     {
-	    return GetGuildInfo(guild.Id);
+	    return GetGuild(guild.Id);
     }
 
-    public Guild GetGuildInfo(ulong guildId)
+    public Guild GetGuild(ulong guildId)
     {
 	    using var db = new QueryFactory(NewSqlConnection(), _sqLiteCompiler);
 	    

@@ -192,7 +192,7 @@ public class DataService
 	    return Task.CompletedTask;
     }
 
-    public Task AddWatchedProject(ulong guildId, Project modrinthProject, string latestVersionId)
+    public Task AddWatchedProject(ulong guildId, Project modrinthProject, string latestVersionId, ulong? customUpdateChannelId = null)
     {
 	    using var db = new QueryFactory(NewSqlConnection(), _sqLiteCompiler);
 	    var guildDb = db.Query("guilds").Where("ID", guildId).First<Guild>();
@@ -223,15 +223,26 @@ public class DataService
 		    _logger.LogDebug("The project {ModrinthProjectId} is already being watched", modrinthProject.Id);
 		    return Task.CompletedTask;
 	    }
-
-
-	    // Add watched projects
-	    db.Query("ArrayProjects").Insert(new
-	    {
-		    ArrayId = guildDb.SubscribedProjectsArrayId,
-		    ProjectId = modrinthProject.Id
-	    });
 	    
+		// Add project to subscribes 
+	    if (customUpdateChannelId != null)
+	    {
+		    db.Query("ArrayProjects").Insert(new
+		    {
+			    ArrayId = guildDb.SubscribedProjectsArrayId,
+			    ProjectId = modrinthProject.Id,
+			    CustomUpdateChannel = customUpdateChannelId
+		    });
+	    }
+	    else
+	    {
+		    db.Query("ArrayProjects").Insert(new
+		    {
+			    ArrayId = guildDb.SubscribedProjectsArrayId,
+			    ProjectId = modrinthProject.Id
+		    });
+	    }
+
 	    return Task.CompletedTask;
     }
 

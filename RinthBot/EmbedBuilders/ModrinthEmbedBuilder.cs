@@ -56,7 +56,8 @@ public static class ModrinthEmbedBuilder
             {
                 Name = $"Modrinth | {project.ProjectType.ToString()}",
                 // TODO: Get icon from elsewhere
-                IconUrl = "https://avatars.githubusercontent.com/u/67560307"
+                IconUrl = "https://avatars.githubusercontent.com/u/67560307",
+                Url = "https://modrinth.com/"
             },
             Footer = new EmbedFooterBuilder()
             {

@@ -83,8 +83,21 @@ public class ModrinthService // : IModrinthService
                     _logger.LogInformation("Guild has not yet set an update channel");
                     continue;
                 }
-                
-                var channel = _client.GetGuild(guild.Id).GetTextChannel((ulong)guild.UpdateChannel);
+
+                // We can have custom channel for this project
+                var projectInfo = _dataService.GetProjectInfo(guild, currentProject);
+
+                SocketTextChannel channel;
+                // Is not custom
+                if (projectInfo.CustomUpdateChannel == null)
+                {
+                    channel = _client.GetGuild(guild.Id).GetTextChannel((ulong)guild.UpdateChannel);
+                }
+                // Custom
+                else
+                {
+                    channel = _client.GetGuild(guild.Id).GetTextChannel(projectInfo.CustomUpdateChannel);
+                }
 
                 for (var i = newVersions.Length - 1; i >= 0; i--)
                 {

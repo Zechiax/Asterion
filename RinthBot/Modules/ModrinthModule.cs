@@ -130,6 +130,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
 
                 await DataService.AddWatchedProject(Context.Guild, project, lastVersion, customChannel);
 
+                //TODO: Add information about to which channel will the updates be send
                 await ModifyOriginalResponseAsync(x =>
                 {
                         x.Content = $"Subscribed to updates for project **{project.Title}** with ID **{project.Id}** :white_check_mark:";

@@ -369,6 +369,7 @@ public class DataService
     /// <returns>Null if the version is already latest</returns>
     public ModrinthProject? UpdateProjectVersionAndReturnOldOne(string projectId, string versionId)
     {
+	    // TODO: This return bool, returning null when the version is already latest is confusing
 	    using var db = new QueryFactory(NewSqlConnection(), _sqLiteCompiler);
 
 	    var version = db.Query("ModrinthProjects").Where("ID", projectId)

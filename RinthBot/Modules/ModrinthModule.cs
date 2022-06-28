@@ -215,10 +215,14 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                         return;
                 }
                 var sb = new StringBuilder();
-                
+                sb.AppendLine("Title | Id | Custom Channel");
                 foreach (var project in projects)
                 {
-                        sb.Append($"> **{project.Title}** | {project.Id}\n");
+                        var customChannel = list.Find(x => x.ProjectId == project.Id)?.CustomUpdateChannel;
+                        
+                        sb.AppendLine($@"> **{project.Title}** | {project.Id} {
+                                (customChannel != null ? 
+                                $"| {Client.GetGuild(Context.Guild.Id).GetTextChannel((ulong)customChannel).Mention}" : null)}");
                 }
 
                 await ModifyOriginalResponseAsync(x =>

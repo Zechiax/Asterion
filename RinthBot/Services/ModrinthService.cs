@@ -77,28 +77,31 @@ public class ModrinthService // : IModrinthService
             var guilds = _dataService.GetAllGuildsSubscribedTo(project);
             foreach (var guild in guilds)
             {
-                _logger.LogInformation("Sending update to guild {Id} and channel {Channel}", guild.Id, guild.UpdateChannel == null ? "NOT SET" : guild.UpdateChannel);
-                if (guild.UpdateChannel == null)
-                {
-                    _logger.LogInformation("Guild has not yet set an update channel");
-                    continue;
-                }
-
                 // We can have custom channel for this project
                 var projectInfo = _dataService.GetProjectInfo(guild, currentProject);
-
+                
                 SocketTextChannel channel;
+                
                 // Is not custom
                 if (projectInfo.CustomUpdateChannel == null)
                 {
                     channel = _client.GetGuild(guild.Id).GetTextChannel((ulong)guild.UpdateChannel);
+                    _logger.LogInformation("Sending update to guild {Id} and channel {Channel}", guild.Id, guild.UpdateChannel == null ? "NOT SET" : guild.UpdateChannel);
                 }
                 // Custom
                 else
                 {
                     channel = _client.GetGuild(guild.Id).GetTextChannel(projectInfo.CustomUpdateChannel);
+                    _logger.LogInformation("Sending update to guild {Id} and channel {Channel}", guild.Id, channel == null ? "NOT SET" : channel.Id);
                 }
 
+                
+                if (channel == null)
+                {
+                    _logger.LogInformation("Guild {Id} has not yet set a default update channel or custom channel for this project", guild.Id);
+                    continue;
+                }
+                
                 for (var i = newVersions.Length - 1; i >= 0; i--)
                 {
                     var version = newVersions[i];
@@ -154,6 +157,7 @@ public class ModrinthService // : IModrinthService
         var versions = await GetVersionListAsync(projectId);
 
         var project = _dataService.UpdateProjectVersionAndReturnOldOne(projectId, versions[0].Id);
+        _logger.LogInformation("Last check version is {LastVersion}", project.LastCheckVersion);
 
         List<Version> newVersions = new();
         if (project == null)

@@ -80,12 +80,16 @@ public class ModrinthService // : IModrinthService
                 // We can have custom channel for this project
                 var projectInfo = _dataService.GetProjectInfo(guild, currentProject);
                 
-                SocketTextChannel channel;
+                SocketTextChannel? channel = null;
                 
                 // Is not custom
-                if (projectInfo.CustomUpdateChannel == null)
+                if (projectInfo?.CustomUpdateChannel == null)
                 {
-                    channel = _client.GetGuild(guild.Id).GetTextChannel((ulong)guild.UpdateChannel);
+                    if (guild.UpdateChannel != null)
+                    {
+                        channel = _client.GetGuild(guild.Id).GetTextChannel((ulong)guild.UpdateChannel);
+                    }
+
                     _logger.LogInformation("Sending update to guild {Id} and default channel {Channel}", guild.Id, guild.UpdateChannel == null ? "NOT SET" : guild.UpdateChannel);
                 }
                 // Custom

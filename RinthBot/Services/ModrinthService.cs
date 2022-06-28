@@ -86,26 +86,24 @@ public class ModrinthService // : IModrinthService
                 if (projectInfo.CustomUpdateChannel == null)
                 {
                     channel = _client.GetGuild(guild.Id).GetTextChannel((ulong)guild.UpdateChannel);
-                    _logger.LogInformation("Sending update to guild {Id} and channel {Channel}", guild.Id, guild.UpdateChannel == null ? "NOT SET" : guild.UpdateChannel);
+                    _logger.LogInformation("Sending update to guild {Id} and default channel {Channel}", guild.Id, guild.UpdateChannel == null ? "NOT SET" : guild.UpdateChannel);
                 }
                 // Custom
                 else
                 {
-                    channel = _client.GetGuild(guild.Id).GetTextChannel(projectInfo.CustomUpdateChannel);
-                    _logger.LogInformation("Sending update to guild {Id} and channel {Channel}", guild.Id, channel == null ? "NOT SET" : channel.Id);
+                    channel = _client.GetGuild(guild.Id).GetTextChannel((ulong)projectInfo.CustomUpdateChannel);
+                    _logger.LogInformation("Sending update to guild {Id} and custom channel {Channel}", guild.Id, channel == null ? "NOT SET" : channel.Id);
                 }
 
-                
                 if (channel == null)
                 {
                     _logger.LogInformation("Guild {Id} has not yet set a default update channel or custom channel for this project", guild.Id);
                     continue;
                 }
                 
-                for (var i = newVersions.Length - 1; i >= 0; i--)
+                // Iterate versions - they are ordered from latest to oldest, we want to sent them chronologically
+                foreach (var version in newVersions.Reverse())
                 {
-                    var version = newVersions[i];
-                    
                     var embed = ModrinthEmbedBuilder.VersionUpdateEmbed(currentProject, version);
                     try
                     {
@@ -115,8 +113,6 @@ public class ModrinthService // : IModrinthService
                     {
                         _logger.LogWarning("Error while sending message to guild {Guild}: {Exception}", guild.Id, ex.Message);
                     }
-
-
                 }
             }
         }
@@ -157,7 +153,6 @@ public class ModrinthService // : IModrinthService
         var versions = await GetVersionListAsync(projectId);
 
         var project = _dataService.UpdateProjectVersionAndReturnOldOne(projectId, versions[0].Id);
-        _logger.LogInformation("Last check version is {LastVersion}", project.LastCheckVersion);
 
         List<Version> newVersions = new();
         if (project == null)

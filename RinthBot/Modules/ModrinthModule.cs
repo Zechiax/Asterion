@@ -101,7 +101,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
 
         [DoAdminCheck]
         [SlashCommand("subscribe", "Add a Modrinth project to your watched list")]
-        public async Task Subscribe(string projectId, SocketChannel? customChannel = null)
+        public async Task Subscribe(string projectId, SocketTextChannel? customChannel = null)
         {
                 await DeferAsync();
                 var project = await ModrinthService.GetProject(projectId);
@@ -129,11 +129,11 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                 var lastVersion = versions.OrderByDescending(x => x.DatePublished).First().Id;
 
                 await DataService.AddWatchedProject(Context.Guild, project, lastVersion, customChannel);
-
-                //TODO: Add information about to which channel will the updates be send
+                
                 await ModifyOriginalResponseAsync(x =>
                 {
-                        x.Content = $"Subscribed to updates for project **{project.Title}** with ID **{project.Id}** :white_check_mark:";
+                        x.Content = $@"Subscribed to updates for project **{project.Title}** with ID **{project.Id}** {
+                                (customChannel != null ? $", updates will be send to channel {customChannel.Mention}" : null)} :white_check_mark:";
                 });
         }
         
@@ -174,7 +174,6 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
 
                         foreach (var versions in DataService.GetGuildsSubscribedProjects(Context.Guild))
                         {
-                                // TODO: Implement mass removal method in DataService
                                 DataService.RemoveWatchedProject(Context.Guild, versions.ProjectId);
                         }
                 }

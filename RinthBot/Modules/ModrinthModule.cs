@@ -101,7 +101,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
 
         [DoAdminCheck]
         [SlashCommand("subscribe", "Add a Modrinth project to your watched list")]
-        public async Task Subscribe(string projectId)
+        public async Task Subscribe(string projectId, SocketChannel? customChannel = null)
         {
                 await DeferAsync();
                 var project = await ModrinthService.GetProject(projectId);
@@ -128,8 +128,9 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                 // Get last version ID
                 var lastVersion = versions.OrderByDescending(x => x.DatePublished).First().Id;
 
-                await DataService.AddWatchedProject(Context.Guild, project, lastVersion);
+                await DataService.AddWatchedProject(Context.Guild, project, lastVersion, customChannel);
 
+                //TODO: Add information about to which channel will the updates be send
                 await ModifyOriginalResponseAsync(x =>
                 {
                         x.Content = $"Subscribed to updates for project **{project.Title}** with ID **{project.Id}** :white_check_mark:";
@@ -214,10 +215,14 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                         return;
                 }
                 var sb = new StringBuilder();
-                
+                sb.AppendLine("Title | Id | Custom Channel");
                 foreach (var project in projects)
                 {
-                        sb.Append($"> **{project.Title}** | {project.Id}\n");
+                        var customChannel = list.Find(x => x.ProjectId == project.Id)?.CustomUpdateChannel;
+                        
+                        sb.AppendLine($@"> **{project.Title}** | {project.Id} {
+                                (customChannel != null ? 
+                                $"| {Client.GetGuild(Context.Guild.Id).GetTextChannel((ulong)customChannel).Mention}" : null)}");
                 }
 
                 await ModifyOriginalResponseAsync(x =>
@@ -281,7 +286,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         {
                 await DeferAsync();
                        
-                var guildInfoDb = DataService.GetGuildInfo(Context.Guild);
+                var guildInfoDb = DataService.GetGuild(Context.Guild);
 
                 if (guildInfoDb.UpdateChannel == null)
                 {

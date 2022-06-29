@@ -13,10 +13,11 @@
 ## Get Started
 - For most commands you need to have an Administrator role
 - After you invite the bot to your server, it's time to get setup
-- To set the update channel, use `/modrinth set-update-channel` command, where as a parameter you provide the channel
+- To set the update channel, use `/modrinth set-update-channel` command, where as a parameter you provide the default channel for updates
     - **Make sure the bot has the permission to sent messages in the channel or to view the channel**
 - Next up you can add projects you want to **subscribe** for updates
-    - This can be done with the `/modrinth subscribe [projectID]`
+    - This can be done with the `/modrinth subscribe [projectID] [optional CustomChannel]`
+      - You can add second parameter as custom channel, then every update of this project will be sent to this channel instead of the default one
     - Or you can use `/modrinth search [query]` to find the project you want to subscribe to and click the subscribe button
 - Same way you can unsubscribe with `/modrinth unsubscribe [projectID]`
 - To view the list of subscribed projects you can do `/modrinth list`
@@ -34,6 +35,8 @@
 - [ ] Add ping role for updates
 - [ ] Add option to have a custom role for managing subscribed projects
 - [ ] Multiple channels support (so you can set per project channel)
+  - [x] Option to have custom channel for each project
+  - [ ] Easier channel settings (with buttons and not command)
 - [ ] Support for other services? (e.g. CurseForge)
 
 ## Bug reports / Feature suggestions

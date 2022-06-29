@@ -185,14 +185,14 @@ public class DataService
 		return Task.CompletedTask;
     }
 
-    public Task AddWatchedProject(SocketGuild guildId, Project modrinthProject, string latestVersionId)
+    public Task AddWatchedProject(SocketGuild guildId, Project modrinthProject, string latestVersionId, SocketChannel? customUpdateChannel = null)
     {
-	    AddWatchedProject(guildId.Id, modrinthProject, latestVersionId);
+	    AddWatchedProject(guildId.Id, modrinthProject, latestVersionId, customUpdateChannel?.Id);
 
 	    return Task.CompletedTask;
     }
 
-    public Task AddWatchedProject(ulong guildId, Project modrinthProject, string latestVersionId)
+    public Task AddWatchedProject(ulong guildId, Project modrinthProject, string latestVersionId, ulong? customUpdateChannelId = null)
     {
 	    using var db = new QueryFactory(NewSqlConnection(), _sqLiteCompiler);
 	    var guildDb = db.Query("guilds").Where("ID", guildId).First<Guild>();
@@ -223,15 +223,26 @@ public class DataService
 		    _logger.LogDebug("The project {ModrinthProjectId} is already being watched", modrinthProject.Id);
 		    return Task.CompletedTask;
 	    }
-
-
-	    // Add watched projects
-	    db.Query("ArrayProjects").Insert(new
-	    {
-		    ArrayId = guildDb.SubscribedProjectsArrayId,
-		    ProjectId = modrinthProject.Id
-	    });
 	    
+		// Add project to subscribes 
+	    if (customUpdateChannelId != null)
+	    {
+		    db.Query("ArrayProjects").Insert(new
+		    {
+			    ArrayId = guildDb.SubscribedProjectsArrayId,
+			    ProjectId = modrinthProject.Id,
+			    CustomUpdateChannel = customUpdateChannelId
+		    });
+	    }
+	    else
+	    {
+		    db.Query("ArrayProjects").Insert(new
+		    {
+			    ArrayId = guildDb.SubscribedProjectsArrayId,
+			    ProjectId = modrinthProject.Id
+		    });
+	    }
+
 	    return Task.CompletedTask;
     }
 
@@ -275,6 +286,30 @@ public class DataService
 	    var projects = db.Query("ArrayProjects").Where("ArrayId", guildDb.SubscribedProjectsArrayId).Get<ArrayProject>();
 
 	    return projects;
+    }
+
+    public ArrayProject? GetProjectInfo(SocketGuild guild, Project project)
+    {
+	    return GetProjectInfo(guild.Id, project.Id);
+    }
+    
+    public ArrayProject? GetProjectInfo(Guild guild, Project project)
+    {
+	    return GetProjectInfo(guild.Id, project.Id);
+    }
+    
+    public ArrayProject? GetProjectInfo(ulong guildId, string projectId)
+    {
+	    using var db = new QueryFactory(NewSqlConnection(), _sqLiteCompiler);
+
+	    var guild = GetGuild(guildId);
+	    var project = db.Query("ArrayProjects").Where(new
+	    {
+		    ArrayId = guild.SubscribedProjectsArrayId,
+		    ProjectId = projectId
+	    }).First<ArrayProject>();
+
+	    return project;
     }
 
     public IEnumerable<Guild> GetAllGuilds()
@@ -334,6 +369,7 @@ public class DataService
     /// <returns>Null if the version is already latest</returns>
     public ModrinthProject? UpdateProjectVersionAndReturnOldOne(string projectId, string versionId)
     {
+	    // TODO: This return bool, returning null when the version is already latest is confusing
 	    using var db = new QueryFactory(NewSqlConnection(), _sqLiteCompiler);
 
 	    var version = db.Query("ModrinthProjects").Where("ID", projectId)
@@ -391,12 +427,12 @@ public class DataService
 	    return arrayProjects.Any();
     }
 
-    public Guild GetGuildInfo(SocketGuild guild)
+    public Guild GetGuild(SocketGuild guild)
     {
-	    return GetGuildInfo(guild.Id);
+	    return GetGuild(guild.Id);
     }
 
-    public Guild GetGuildInfo(ulong guildId)
+    public Guild GetGuild(ulong guildId)
     {
 	    using var db = new QueryFactory(NewSqlConnection(), _sqLiteCompiler);
 	    

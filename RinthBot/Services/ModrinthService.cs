@@ -64,8 +64,20 @@ public class ModrinthService // : IModrinthService
             // This could be null
             var currentProject = await GetProject(project.Id);
 
+            if (currentProject == null)
+            {
+                _logger.LogWarning("Update checker failed to get information about project {Name} ({ID})", project.Title, project.Id);
+                continue;
+            }
+
             // This also could be null if rate limiting
             var newVersions = await CheckProjectForUpdates(project.Id);
+            if (newVersions == null)
+            {
+                _logger.LogWarning("Update checker failed to get about new updates for project {Name} ({ID})", project.Title, project.Id);
+                continue;
+            }
+
             if (newVersions.Length == 0)
             {
                 _logger.LogInformation("No new versions");
@@ -150,29 +162,36 @@ public class ModrinthService // : IModrinthService
     /// </summary>
     /// <param name="projectId"></param>
     /// <returns>List of new versions</returns>
-    private async Task<Version[]> CheckProjectForUpdates(string projectId)
+    private async Task<Version[]?> CheckProjectForUpdates(string projectId)
     {
-        //BUG: Catch exceptions
         //TODO: Think of rate limiting
-        var versions = await GetVersionListAsync(projectId);
-
-        var project = _dataService.UpdateProjectVersionAndReturnOldOne(projectId, versions[0].Id);
-
-        List<Version> newVersions = new();
-        if (project == null)
-            return newVersions.ToArray();
-        
-        foreach (var version in versions)
+        try
         {
-            if (version.Id == project.LastCheckVersion)
-            {
-                return newVersions.ToArray();
-            }
-            
-            newVersions.Add(version);
-        }
+            var versions = await GetVersionListAsync(projectId);
 
-        return newVersions.ToArray();
+            var project = _dataService.UpdateProjectVersionAndReturnOldOne(projectId, versions[0].Id);
+
+            List<Version> newVersions = new();
+            if (project == null)
+                return newVersions.ToArray();
+
+            foreach (var version in versions)
+            {
+                if (version.Id == project.LastCheckVersion)
+                {
+                    return newVersions.ToArray();
+                }
+
+                newVersions.Add(version);
+            }
+
+            return newVersions.ToArray();
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError("Exception while checking for update for project ID {ID}; Exception: {Exception}", projectId, exception.Message);
+            return null;
+        }
     }
 
     /// <summary>

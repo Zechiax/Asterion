@@ -7,6 +7,7 @@ using RinthBot.EmbedBuilders;
 using RinthBot.Services;
 using Fergun.Interactive;
 using Microsoft.Extensions.Logging;
+using Modrinth.RestClient.Models;
 
 // ReSharper disable MemberCanBePrivate.Global
 
@@ -76,7 +77,9 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                 await ModifyOriginalResponseAsync(x =>
                 {
                         x.Embed = ModrinthEmbedBuilder.GetProjectEmbed(project).Build();
-                        x.Components = GetSubscribeButtons(project.Id, !subscribedToProject).Build();
+                        x.Components = GetSubscribeButtons(project.Id, !subscribedToProject)
+                                .WithButton(GetProjectLinkButton(project))
+                                .Build();
                 });
         }
 
@@ -97,6 +100,18 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                                 emote: subEnabled ? Emoji.Parse(":bell:") : Emoji.Parse(":no_bell:"));
 
                 return buttons;
+        }
+
+        public static ButtonBuilder GetProjectLinkButton(Project project)
+        {
+                var linkBtn = new ButtonBuilder()
+                {
+                        Style = ButtonStyle.Link,
+                        Url = ModrinthEmbedBuilder.GetProjectUrl(project),
+                        Label = "Project's site"
+                };
+
+                return linkBtn;
         }
 
         [DoAdminCheck]
@@ -363,6 +378,16 @@ public class ModrinthInteractionModule : InteractionModuleBase
         public DataService DataService { get; set; } = null!;
         public ModrinthService ModrinthService { get; set; } = null!;
 
+        private const string RequestError = "Sorry, there was an error processing your request, try again later";
+
+        private MessageComponent GetButtons(Project project, bool subEnabled = true)
+        {
+                var components = ModrinthModule.GetSubscribeButtons(Context.User.Id, Context.Guild.Id, project.Id, subEnabled)
+                        .WithButton(ModrinthModule.GetProjectLinkButton(project));
+
+                return components.Build();
+        }
+
         [DoAdminCheck]
         [ComponentInteraction("sub-project:*;*;*", runMode: RunMode.Async)]
         public async Task SubProject(string userId, string projectId, ulong guildId)
@@ -370,38 +395,37 @@ public class ModrinthInteractionModule : InteractionModuleBase
                 await DeferAsync();
 
                 var subscribed = DataService.IsGuildSubscribedToProject(projectId, guildId);
-
-                if (subscribed)
-                {
-                        await ModifyOriginalResponseAsync(x =>
-                        {
-                                x.Components = ModrinthModule
-                                        .GetSubscribeButtons(Context.User.Id, Context.Guild.Id, projectId, false).Build();
-                        });
-                        await FollowupAsync("You're already subscribed to updates for this project", ephemeral: true);
-                        return;
-                }
-
+                
                 var project = await ModrinthService.GetProject(projectId);
 
                 if (project == null)
                 {
-                        await FollowupAsync($"There was an error processing your request", ephemeral: true);
+                        await FollowupAsync(RequestError, ephemeral: true);
                         return;
                 }
 
+                // Already subscribed
+                if (subscribed)
+                {
+                        await ModifyOriginalResponseAsync(x =>
+                        {
+                                x.Components = GetButtons(project, false);
+                        });
+                        await FollowupAsync("You're already subscribed to updates for this project", ephemeral: true);
+                        return;
+                }
+                
                 var latestVersion = await ModrinthService.GetProjectsLatestVersion(project);
                 
                 if (latestVersion == null)
                 {
-                        await FollowupAsync($"There was an error processing your request", ephemeral: true);
+                        await FollowupAsync(RequestError, ephemeral: true);
                         return;
                 }
                 
                 await ModifyOriginalResponseAsync(x =>
                 {
-                        x.Components = ModrinthModule
-                                .GetSubscribeButtons(Context.User.Id, Context.Guild.Id, projectId, false).Build();
+                        x.Components = GetButtons(project, false);
                 });
                 
                 await DataService.AddWatchedProject(guildId, project, latestVersion.Id);
@@ -416,13 +440,22 @@ public class ModrinthInteractionModule : InteractionModuleBase
                 await DeferAsync();
                 
                 var subscribed = DataService.IsGuildSubscribedToProject(projectId, guildId);
+                
+                var project = await ModrinthService.GetProject(projectId);
 
+                // Error
+                if (project == null)
+                {
+                        await FollowupAsync(RequestError, ephemeral: true);
+                        return;
+                }
+
+                // Already unsubscribed
                 if (subscribed == false)
                 {
                         await ModifyOriginalResponseAsync(x =>
                         {
-                                x.Components = ModrinthModule
-                                        .GetSubscribeButtons(Context.User.Id, Context.Guild.Id, projectId).Build();
+                                x.Components = GetButtons(project);
                         });
                         await FollowupAsync("You're already unsubscribed from updates to this project", ephemeral: true);
                         return;
@@ -432,8 +465,7 @@ public class ModrinthInteractionModule : InteractionModuleBase
 
                 await ModifyOriginalResponseAsync(x =>
                 {
-                        x.Components = ModrinthModule
-                                .GetSubscribeButtons(Context.User.Id, Context.Guild.Id, projectId).Build();
+                        x.Components = GetButtons(project);
                 });
                 
                 await FollowupAsync($"Unsubscribed from updates for project ID **{projectId}** :white_check_mark:", ephemeral: true);

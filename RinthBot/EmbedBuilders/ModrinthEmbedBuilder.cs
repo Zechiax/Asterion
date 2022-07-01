@@ -13,7 +13,7 @@ namespace RinthBot.EmbedBuilders;
 public static class ModrinthEmbedBuilder
 {
     private static readonly Color ModrinthColor = new Color(27, 217, 106);
-    private static string GetProjectUrl(Project project)
+    public static string GetProjectUrl(Project project)
     {
         return $"https://modrinth.com/{(project.ProjectType == ProjectType.Mod ? "mod" : "modpack")}/{project.Id}";
     }

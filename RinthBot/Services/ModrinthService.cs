@@ -39,7 +39,7 @@ public class ModrinthService // : IModrinthService
         _updateWorker = new BackgroundWorker();
         _updateWorker.DoWork += CheckUpdate;
         
-        var checkTimer = new Timer(MinutesToMilliseconds(120));
+        var checkTimer = new Timer(MinutesToMilliseconds(90));
         checkTimer.Elapsed += checkTimer_Elapsed;
         checkTimer.Start();
         
@@ -182,7 +182,7 @@ public class ModrinthService // : IModrinthService
     /// <returns></returns>
     public async Task<Project?> GetProject(string slugOrId)
     {
-        if (_cache.TryGetValue(slugOrId, out object? value) && value is Project project)
+        if (_cache.TryGetValue(slugOrId, out var value) && value is Project project)
         {
             _logger.LogDebug("{Id} retrieved from cache", slugOrId);
             return project;

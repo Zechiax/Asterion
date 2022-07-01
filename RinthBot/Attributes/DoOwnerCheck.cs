@@ -21,6 +21,6 @@ public class DoOwnerCheck : PreconditionAttribute
         if (owner == context.User.Id)
             return Task.FromResult(PreconditionResult.FromSuccess());
 
-        return Task.FromResult(PreconditionResult.FromError("Only the owners of this bot can use this command"));
+        return Task.FromResult(PreconditionResult.FromError("Only the owner of this bot can use this command"));
     }
 }

@@ -59,7 +59,7 @@ namespace RinthBot
                 }
                 else
                 {
-                    logger.LogInformation("Registering command globally");
+                    logger.LogInformation("Registering commands globally");
                     await commands.RegisterCommandsGloballyAsync();
                 }
             };

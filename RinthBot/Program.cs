@@ -47,6 +47,7 @@ namespace RinthBot
 
             // Setup interaction command handler
             await services.GetRequiredService<InteractionCommandHandler>().InitializeAsync();
+            await services.GetRequiredService<ClientService>().InitializeAsync();
             
             client.Ready += async () =>
             {
@@ -109,6 +110,7 @@ namespace RinthBot
                 .AddSingleton<ModrinthService>()
                 .AddSingleton<DataService>()
                 .AddSingleton<InteractiveService>()
+                .AddSingleton<ClientService>()
                 .AddMemoryCache()
                 .AddLogging(configure => configure.AddSerilog());
 

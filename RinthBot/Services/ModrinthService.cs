@@ -44,14 +44,13 @@ public class ModrinthService // : IModrinthService
         checkTimer.Start();
         
         _logger.LogInformation("Modrinth service initialized");
-
     }
-    private double MinutesToMilliseconds(int minutes)
+    private static double MinutesToMilliseconds(int minutes)
     {
         return TimeSpan.FromMinutes(minutes).TotalMilliseconds;
     }
 
-    async void CheckUpdate(object? sender, DoWorkEventArgs e)
+    private async void CheckUpdate(object? sender, DoWorkEventArgs e)
     {
         _logger.LogInformation("Running update check");
         var projects = _dataService.GetAllProjects();

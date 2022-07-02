@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using ConsoleTableExt;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
@@ -12,6 +13,12 @@ using Modrinth.RestClient.Models;
 // ReSharper disable MemberCanBePrivate.Global
 
 namespace RinthBot.Modules;
+
+public enum ListType
+{
+        Plain,
+        Table
+}
 
 [Group("modrinth", "Everything around Modrinth")]
 // ReSharper disable once ClassNeverInstantiated.Global
@@ -203,7 +210,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
 
         [DoAdminCheck]
         [SlashCommand("list", "Lists all your subscribed projects")]
-        public async Task ListSubscribed()
+        public async Task ListSubscribed(ListType type = ListType.Plain)
         {
                 await DeferAsync();
                 var list = DataService.ListProjects(Context.Guild).ToList();
@@ -216,7 +223,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                         });
                         return;
                 }
-
+                
                 var ids = list.Select(x => x.ProjectId).ToList();
 
                 var projects = await ModrinthService.GetMultipleProjects(ids);
@@ -228,20 +235,67 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                         });
                         return;
                 }
+
+                var tableData = new List<List<object?>>();
                 var sb = new StringBuilder();
                 sb.AppendLine("Title | Id | Custom Channel");
+                //TODO: Only use StringBuilder or TableData
                 foreach (var project in projects)
                 {
                         var customChannel = list.Find(x => x.ProjectId == project.Id)?.CustomUpdateChannel;
+
+                        tableData.Add(new List<object?>
+                        {
+                                project.Title, project.Id,
+                                customChannel != null
+                                        ? $@"#{Client.GetGuild(Context.Guild.Id).GetTextChannel((ulong) customChannel)
+                                                .Name}"
+                                        : null
+                        });
                         
                         sb.AppendLine($@"> **{project.Title}** | {project.Id} {
                                 (customChannel != null ? 
-                                $"| {Client.GetGuild(Context.Guild.Id).GetTextChannel((ulong)customChannel).Mention}" : null)}");
+                                        $"| {Client.GetGuild(Context.Guild.Id).GetTextChannel((ulong)customChannel).Mention}" : null)}");
                 }
 
+                var table = ConsoleTableBuilder
+                        .From(tableData)
+                        .WithColumn("Name", "Id", "Custom Channel")
+                        .WithTitle("Subscribed Projects")
+                        .WithCharMapDefinition(new Dictionary<CharMapPositions, char>
+                        {
+                                {CharMapPositions.BorderTop, '-' },
+                                {CharMapPositions.BorderLeft, '|' },
+                                {CharMapPositions.BorderRight, '|' },
+                                {CharMapPositions.DividerY, '|' }
+                        })
+                        .WithHeaderCharMapDefinition(new Dictionary<HeaderCharMapPositions, char> {
+                                {HeaderCharMapPositions.TopLeft, '=' },
+                                {HeaderCharMapPositions.TopCenter, '=' },
+                                {HeaderCharMapPositions.TopRight, '=' },
+                                {HeaderCharMapPositions.BottomLeft, '|' },
+                                {HeaderCharMapPositions.BottomCenter, '|' },
+                                {HeaderCharMapPositions.BottomRight, '|' },
+                                {HeaderCharMapPositions.Divider, '|' },
+                                {HeaderCharMapPositions.BorderTop, '=' },
+                                {HeaderCharMapPositions.BorderBottom, '-' },
+                                {HeaderCharMapPositions.BorderLeft, '|' },
+                                {HeaderCharMapPositions.BorderRight, '|' },
+                        })
+                        .Export()
+                        .ToString();
+                
                 await ModifyOriginalResponseAsync(x =>
                 {
-                        x.Content = sb.ToString();
+                        switch (type)
+                        {
+                                case ListType.Plain:
+                                        x.Content = sb.ToString();
+                                        break;
+                                case ListType.Table:
+                                        x.Content = Format.Code(table);
+                                        break;
+                        }
                 });
         }
 

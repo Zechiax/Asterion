@@ -25,7 +25,7 @@ public class ModrinthService // : IModrinthService
     
     public ModrinthService(IServiceProvider serviceProvider)
     {
-        _api = ModrinthApi.NewClient();
+        _api = ModrinthApi.NewClient(userAgent: "RinthBot");
         _logger = serviceProvider.GetRequiredService<ILogger<ModrinthService>>();
         _cache = serviceProvider.GetRequiredService<IMemoryCache>();
         _dataService = serviceProvider.GetRequiredService<DataService>();
@@ -38,6 +38,7 @@ public class ModrinthService // : IModrinthService
         
         _updateWorker = new BackgroundWorker();
         _updateWorker.DoWork += CheckUpdate;
+        
         
         var checkTimer = new Timer(MinutesToMilliseconds(90));
         checkTimer.Elapsed += checkTimer_Elapsed;
@@ -210,7 +211,7 @@ public class ModrinthService // : IModrinthService
         Project? p;
         try
         {
-            p = await _api.GetProject(slugOrId);
+            p = await _api.GetProjectAsync(slugOrId);
         }
         catch (Exception)
         {
@@ -226,7 +227,7 @@ public class ModrinthService // : IModrinthService
     {
         try
         {
-            var searchResponse = await _api.GetProjectVersionList(slugOrId);
+            var searchResponse = await _api.GetProjectVersionListAsync(slugOrId);
             return searchResponse;
         }
         catch (Exception e)
@@ -241,7 +242,7 @@ public class ModrinthService // : IModrinthService
     {
         try
         {
-            var searchResponse = await _api.SearchProjects(query);
+            var searchResponse = await _api.SearchProjectsAsync(query);
             return searchResponse;
         }
         catch (Exception e)
@@ -256,7 +257,7 @@ public class ModrinthService // : IModrinthService
     {
         try
         {
-            var searchResponse = await _api.GetMultipleProjects(projectIds);
+            var searchResponse = await _api.GetMultipleProjectsAsync(projectIds);
             return searchResponse;
         }
         catch (Exception e)

@@ -214,6 +214,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         {
                 await DeferAsync();
                 var list = DataService.ListProjects(Context.Guild).ToList();
+                var guild = DataService.GetGuild(Context.Guild);
 
                 if (list.Count == 0)
                 {
@@ -238,29 +239,34 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
 
                 var tableData = new List<List<object?>>();
                 var sb = new StringBuilder();
-                sb.AppendLine("Title | Id | Custom Channel");
+                sb.AppendLine("Title | Id | Channel");
                 //TODO: Only use StringBuilder or TableData
                 foreach (var project in projects)
                 {
+                        // Find custom channel for this project
                         var customChannel = list.Find(x => x.ProjectId == project.Id)?.CustomUpdateChannel;
 
+                        // Get update channel for this project
+                        var channel = customChannel != null
+                                ? Client.GetGuild(Context.Guild.Id).GetTextChannel((ulong) customChannel)
+                                : guild.UpdateChannel != null ? Client.GetGuild(Context.Guild.Id).GetTextChannel((ulong) guild.UpdateChannel) : null;
+                        
                         tableData.Add(new List<object?>
                         {
                                 project.Title, project.Id,
-                                customChannel != null
-                                        ? $@"#{Client.GetGuild(Context.Guild.Id).GetTextChannel((ulong) customChannel)
-                                                .Name}"
+                                channel != null
+                                        ? $@"#{channel.Name}"
                                         : null
                         });
-                        
+
                         sb.AppendLine($@"> **{project.Title}** | {project.Id} {
-                                (customChannel != null ? 
-                                        $"| {Client.GetGuild(Context.Guild.Id).GetTextChannel((ulong)customChannel).Mention}" : null)}");
+                                (channel != null ? 
+                                        $"| {channel.Mention}" : "| *not set*")}");
                 }
 
                 var table = ConsoleTableBuilder
                         .From(tableData)
-                        .WithColumn("Name", "Id", "Custom Channel")
+                        .WithColumn("Name", "Id", "Channel")
                         .WithTitle("Subscribed Projects")
                         .WithCharMapDefinition(new Dictionary<CharMapPositions, char>
                         {

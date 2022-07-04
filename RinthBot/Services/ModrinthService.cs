@@ -9,11 +9,10 @@ using Modrinth.RestClient.Models;
 using Timer = System.Timers.Timer;
 using Version = Modrinth.RestClient.Models.Version;
 using RinthBot.EmbedBuilders;
-using RinthBot.Interfaces;
 
 namespace RinthBot.Services;
 
-public class ModrinthService // : IModrinthService
+public class ModrinthService
 {
     private readonly BackgroundWorker _updateWorker;
     private readonly IModrinthApi _api;

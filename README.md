@@ -12,6 +12,7 @@
 
 ## Get Started
 - For most commands you need to have an Administrator role
+    - Now you can set "Subs Manager" to someone and they will also have access to all Administrator commands
 - After you invite the bot to your server, it's time to get setup
 - To set the update channel, use `/modrinth set-update-channel` command, where as a parameter you provide the default channel for updates
     - **Make sure the bot has the permission to sent messages in the channel or to view the channel**
@@ -34,6 +35,8 @@
 - [ ] Settings with different layouts of the update message
 - [ ] Add ping role for updates
 - [ ] Add option to have a custom role for managing subscribed projects
+    - [x] Added static "Subs Manager" role
+    - [ ] Add Custom role
 - [ ] Multiple channels support (so you can set per project channel)
   - [x] Option to have custom channel for each project
   - [ ] Easier channel settings (with buttons and not command)

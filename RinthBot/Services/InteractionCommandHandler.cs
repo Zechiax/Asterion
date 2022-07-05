@@ -43,27 +43,32 @@ public class InteractionCommandHandler
 
     private async Task<Task> ComponentCommandExecuted(ComponentCommandInfo arg1, IInteractionContext arg2, IResult arg3)
     {
-        if (!arg3.IsSuccess)
+        if (arg3.IsSuccess) return Task.CompletedTask;
+        
+        switch (arg3.Error)
         {
-            switch (arg3.Error)
-            {
-                case InteractionCommandError.UnmetPrecondition:
-                    // Respond with the error reason
-                    await arg2.Interaction.RespondAsync(arg3.ErrorReason, ephemeral: true);
-                    break;
-                case InteractionCommandError.UnknownCommand:
-                    // implement
-                    break;
-                case InteractionCommandError.BadArgs:
-                    // implement
-                    break;
-                case InteractionCommandError.Exception:
-                    _logger.LogError("Component Command {Arg1Name} for user {UserUsername} failed; Exception: \'{ErrorReason}\'", arg1.Name, arg2.User.Username, arg3.ErrorReason);
-                    break;
-                case InteractionCommandError.Unsuccessful:
-                    // implement
-                    break;
-            }
+            case InteractionCommandError.UnmetPrecondition:
+                // Respond with the error reason
+                await arg2.Interaction.RespondAsync(arg3.ErrorReason, ephemeral: true);
+                break;
+            case InteractionCommandError.UnknownCommand:
+                // implement
+                break;
+            case InteractionCommandError.BadArgs:
+                // implement
+                break;
+            case InteractionCommandError.Exception:
+                _logger.LogError("Component Command {Arg1Name} for user {UserUsername} failed; Exception: \'{ErrorReason}\'", arg1.Name, arg2.User.Username, arg3.ErrorReason);
+                break;
+            case InteractionCommandError.Unsuccessful:
+                // implement
+                break;
+            case InteractionCommandError.ConvertFailed:
+                break;
+            case InteractionCommandError.ParseFailed:
+                break;
+            case null:
+                break;
         }
 
         return Task.CompletedTask;
@@ -71,28 +76,33 @@ public class InteractionCommandHandler
 
     private async Task<Task> ContextCommandExecuted(ContextCommandInfo arg1,IInteractionContext arg2, IResult arg3)
     {
-        if (!arg3.IsSuccess)
+        if (arg3.IsSuccess) return Task.CompletedTask;
+        
+        switch (arg3.Error)
         {
-            switch (arg3.Error)
-            {
-                case InteractionCommandError.UnmetPrecondition:
-                    await arg2.Interaction.RespondAsync(arg3.ErrorReason, ephemeral: true);
-                    // implement
-                    break;
-                case InteractionCommandError.UnknownCommand:
-                    // implement
-                    break;
-                case InteractionCommandError.BadArgs:
-                    // implement
-                    break;
-                case InteractionCommandError.Exception:
-                    _logger.LogError("Context Command {Arg1Name} for user {UserUsername} failed; Exception: \'{ErrorReason}\'", arg1.Name, arg2.User.Username, arg3.ErrorReason);
-                    // implement
-                    break;
-                case InteractionCommandError.Unsuccessful:
-                    // implement
-                    break;
-            }
+            case InteractionCommandError.UnmetPrecondition:
+                await arg2.Interaction.RespondAsync(arg3.ErrorReason, ephemeral: true);
+                // implement
+                break;
+            case InteractionCommandError.UnknownCommand:
+                // implement
+                break;
+            case InteractionCommandError.BadArgs:
+                // implement
+                break;
+            case InteractionCommandError.Exception:
+                _logger.LogError("Context Command {Arg1Name} for user {UserUsername} failed; Exception: \'{ErrorReason}\'", arg1.Name, arg2.User.Username, arg3.ErrorReason);
+                // implement
+                break;
+            case InteractionCommandError.Unsuccessful:
+                // implement
+                break;
+            case InteractionCommandError.ConvertFailed:
+                break;
+            case InteractionCommandError.ParseFailed:
+                break;
+            case null:
+                break;
         }
 
         return Task.CompletedTask;
@@ -100,27 +110,32 @@ public class InteractionCommandHandler
 
     private async Task<Task> SlashCommandExecuted(SlashCommandInfo arg1, IInteractionContext arg2, IResult arg3)
     {
-        if (!arg3.IsSuccess)
+        if (arg3.IsSuccess) return Task.CompletedTask;
+        
+        switch (arg3.Error)
         {
-            switch (arg3.Error)
-            {
-                case InteractionCommandError.UnmetPrecondition:
-                    await arg2.Interaction.RespondAsync(arg3.ErrorReason, ephemeral: true);
-                    break;
-                case InteractionCommandError.UnknownCommand:
-                    // implement
-                    break;
-                case InteractionCommandError.BadArgs:
-                    // implement
-                    break;
-                case InteractionCommandError.Exception:
-                    _logger.LogError("Slash Command {Arg1Name} for user {UserUsername} failed; Exception: \'{ErrorReason}\'", arg1.Name, arg2.User.Username, arg3.ErrorReason);
-                    // implement
-                    break;
-                case InteractionCommandError.Unsuccessful:
-                    // implement
-                    break;
-            }
+            case InteractionCommandError.UnmetPrecondition:
+                await arg2.Interaction.RespondAsync(arg3.ErrorReason, ephemeral: true);
+                break;
+            case InteractionCommandError.UnknownCommand:
+                // implement
+                break;
+            case InteractionCommandError.BadArgs:
+                // implement
+                break;
+            case InteractionCommandError.Exception:
+                _logger.LogError("Slash Command {Arg1Name} for user {UserUsername} failed; Exception: \'{ErrorReason}\'", arg1.Name, arg2.User.Username, arg3.ErrorReason);
+                // implement
+                break;
+            case InteractionCommandError.Unsuccessful:
+                // implement
+                break;
+            case InteractionCommandError.ConvertFailed:
+                break;
+            case InteractionCommandError.ParseFailed:
+                break;
+            case null:
+                break;
         }
 
         return Task.CompletedTask;

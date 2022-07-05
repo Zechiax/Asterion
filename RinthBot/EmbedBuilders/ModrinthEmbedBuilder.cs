@@ -50,6 +50,8 @@ public static class ModrinthEmbedBuilder
             sbFiles.AppendLine($"[{file.FileName}]({file.Url}) | {ByteSize.FromBytes(file.Size).Humanize()}");
         }
 
+        var projectUrl = GetProjectUrl(project);
+
         var embed = new EmbedBuilder
         {
             Author = new EmbedAuthorBuilder()
@@ -68,7 +70,7 @@ public static class ModrinthEmbedBuilder
                           $"\n\n**Changelog**" +
                           $"\n---------------" +
                           StringExtensions.Truncate($"\n{version.Changelog}", 3000),
-            Url = GetProjectUrl(project),
+            Url = projectUrl,
             ThumbnailUrl = project.IconUrl,
             ImageUrl = null,
             Fields = new List<EmbedFieldBuilder>()
@@ -100,8 +102,8 @@ public static class ModrinthEmbedBuilder
                 {
                     Name = "Links",
                     Value = string.Join(" | ", 
-                        $"[Changelog]({GetProjectUrl(project)}/changelog)", 
-                        $"[Version Info]({GetProjectUrl(project)}/version/{version.Id})")
+                        $"[Changelog]({projectUrl}/changelog)", 
+                        $"[Version Info]({projectUrl}/version/{version.Id})")
                 }
             },
             Timestamp = version.DatePublished,

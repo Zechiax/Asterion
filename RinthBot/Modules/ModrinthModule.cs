@@ -29,6 +29,37 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         public InteractiveService Interactive { get; set; } = null!;
         public DiscordSocketClient Client { get; set; } = null!;
         public ILogger<ModrinthModule> Logger { get; set; } = null!;
+        
+        public ComponentBuilder GetSubscribeButtons(string projectId,
+                bool subEnabled = true)
+        {
+                return GetSubscribeButtons(Context.User.Id, Context.Guild.Id, projectId, subEnabled);
+        }
+
+        public static ComponentBuilder GetSubscribeButtons(ulong userId, ulong guildId, string projectId, bool subEnabled = true)
+        {
+                var buttons = new ComponentBuilder()
+                        .WithButton(
+                                subEnabled ? "Subscribe" : "Unsubscribe",
+                                // Write unsub when the subEnabled is false
+                                customId: $"{(subEnabled ? null : "un")}sub-project:{userId};{projectId};{guildId}",
+                                style: subEnabled ? ButtonStyle.Success : ButtonStyle.Danger,
+                                emote: subEnabled ? Emoji.Parse(":bell:") : Emoji.Parse(":no_bell:"));
+
+                return buttons;
+        }
+
+        public static ButtonBuilder GetProjectLinkButton(Project project)
+        {
+                var linkBtn = new ButtonBuilder()
+                {
+                        Style = ButtonStyle.Link,
+                        Url = ModrinthEmbedBuilder.GetProjectUrl(project),
+                        Label = "Project's site"
+                };
+
+                return linkBtn;
+        }
 
         [SlashCommand("search", "Search Projects (by slug, ID or search) and gives you info about the first response")]
         public async Task SearchProject(string query)
@@ -88,37 +119,6 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                                 .WithButton(GetProjectLinkButton(project))
                                 .Build();
                 });
-        }
-
-        public ComponentBuilder GetSubscribeButtons(string projectId,
-                bool subEnabled = true)
-        {
-                return GetSubscribeButtons(Context.User.Id, Context.Guild.Id, projectId, subEnabled);
-        }
-
-        public static ComponentBuilder GetSubscribeButtons(ulong userId, ulong guildId, string projectId, bool subEnabled = true)
-        {
-                var buttons = new ComponentBuilder()
-                        .WithButton(
-                                subEnabled ? "Subscribe" : "Unsubscribe",
-                                // Write unsub when the subEnabled is false
-                                customId: $"{(subEnabled ? null : "un")}sub-project:{userId};{projectId};{guildId}",
-                                style: subEnabled ? ButtonStyle.Success : ButtonStyle.Danger,
-                                emote: subEnabled ? Emoji.Parse(":bell:") : Emoji.Parse(":no_bell:"));
-
-                return buttons;
-        }
-
-        public static ButtonBuilder GetProjectLinkButton(Project project)
-        {
-                var linkBtn = new ButtonBuilder()
-                {
-                        Style = ButtonStyle.Link,
-                        Url = ModrinthEmbedBuilder.GetProjectUrl(project),
-                        Label = "Project's site"
-                };
-
-                return linkBtn;
         }
 
         [DoAdminCheck]

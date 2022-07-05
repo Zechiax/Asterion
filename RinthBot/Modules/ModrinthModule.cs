@@ -20,6 +20,7 @@ public enum ListType
         Table
 }
 
+[RequireContext(ContextType.Guild)]
 [Group("modrinth", "Everything around Modrinth")]
 // ReSharper disable once ClassNeverInstantiated.Global
 public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
@@ -29,7 +30,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         public InteractiveService Interactive { get; set; } = null!;
         public DiscordSocketClient Client { get; set; } = null!;
         public ILogger<ModrinthModule> Logger { get; set; } = null!;
-        
+
         public ComponentBuilder GetSubscribeButtons(string projectId,
                 bool subEnabled = true)
         {
@@ -121,13 +122,14 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                 });
         }
 
-        [DoAdminCheck]
+        [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
+        [RequireRole("Subs Manager", Group = "ManageSubs")]
         [SlashCommand("subscribe", "Add a Modrinth project to your watched list")]
         public async Task Subscribe(string projectId, SocketTextChannel? customChannel = null)
         {
                 await DeferAsync();
                 var project = await ModrinthService.GetProject(projectId);
-
+                
                 if (project == null)
                 {
                         await ModifyOriginalResponseAsync(x =>
@@ -159,7 +161,8 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                 });
         }
         
-        [DoAdminCheck]
+        [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
+        [RequireRole("Subs Manager", Group = "ManageSubs")]
         [SlashCommand("unsubscribe", "Remove Modrinth project from your watched list")]
         public async Task Unsubscribe(string projectId)
         {
@@ -172,7 +175,8 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                 });
         }
         
-        [DoAdminCheck]
+        [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
+        [RequireRole("Subs Manager", Group = "ManageSubs")]
         [SlashCommand("unsubscribe-all", "Removes all subscribed projects")]
         public async Task UnsubscribeAll()
         {
@@ -208,7 +212,8 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                 });
         }
 
-        [DoAdminCheck]
+        [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
+        [RequireRole("Subs Manager", Group = "ManageSubs")]
         [SlashCommand("list", "Lists all your subscribed projects")]
         public async Task ListSubscribed(ListType type = ListType.Plain)
         {
@@ -341,7 +346,8 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                 });
         }
 
-        [DoAdminCheck]
+        [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
+        [RequireRole("Subs Manager", Group = "ManageSubs")]
         [SlashCommand("set-update-channel", "Sets the update channel")]
         public async Task SetUpdateChannel(SocketTextChannel channel)
         {
@@ -354,7 +360,25 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                 });
         }
 
-        [DoAdminCheck]
+        /*
+        [RequireUserPermission(GuildPermission.Administrator)]
+        [SlashCommand("set-manage-role", "Sets role, which can also manage subscribed projects without being admin")]
+        public async Task SetManageRole(SocketRole role)
+        {
+                await DeferAsync();
+                
+                DataService.SetManageRole(Context.Guild.Id, role.Id);
+                
+                await ModifyOriginalResponseAsync(x =>
+                {
+                        x.Content = $"Manage role has been set to {role.Mention} :white_check_mark:";
+                        x.AllowedMentions = AllowedMentions.None;
+                });
+        }
+        */
+
+        [RequireUserPermission(GuildPermission.Administrator)]
+        [RequireRole("Subs Manager", Group = "ManageSubs")]
         [SlashCommand("test-setup", "Checks your setup (also tries to send a message to test channel and remove it)")]
         public async Task SendTextMessage()
         {
@@ -419,7 +443,8 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                 });
         }
 
-        [DoOwnerCheck]
+        [DoOwnerCheck(Group = "Permission")]
+        [RequireOwner(Group = "Permission")]
         [SlashCommand("force-update", "Forces check for updates")]
         public async Task ForceUpdate()
         {
@@ -448,7 +473,8 @@ public class ModrinthInteractionModule : InteractionModuleBase
                 return components.Build();
         }
 
-        [DoAdminCheck]
+        [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
+        [RequireRole("Subs Manager", Group = "ManageSubs")]
         [ComponentInteraction("sub-project:*;*;*", runMode: RunMode.Async)]
         public async Task SubProject(string userId, string projectId, ulong guildId)
         {
@@ -493,7 +519,8 @@ public class ModrinthInteractionModule : InteractionModuleBase
                 await FollowupAsync($"Subscribed to updates for project **{project.Title}** with ID **{project.Id}** :white_check_mark:", ephemeral: true);
         }
 
-        [DoAdminCheck]
+        [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
+        [RequireRole("Subs Manager", Group = "ManageSubs")]
         [ComponentInteraction("unsub-project:*;*;*", runMode: RunMode.Async)]
         public async Task UnsubProject(string userId, string projectId, ulong guildId)
         {

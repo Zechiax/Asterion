@@ -405,6 +405,25 @@ public class DataService
 	    });
     }
 
+    public void SetManageRole(ulong guildId, ulong roleId)
+    {
+	    using var db = new QueryFactory(NewSqlConnection(), _sqLiteCompiler);
+
+	    db.Query("Guilds").Where("ID", guildId).Update(new
+	    {
+		    ManageRole = roleId
+	    });
+    }
+
+    public ulong? GetManageRoleId(ulong guildId)
+    {
+	    using var db = new QueryFactory(NewSqlConnection(), _sqLiteCompiler);
+
+	    var guild = GetGuild(guildId);
+
+	    return guild.ManageRole;
+    }
+
     public bool IsGuildSubscribedToProject(Project project, SocketGuild guild)
     {
 	    return IsGuildSubscribedToProject(project.Id, guild.Id);

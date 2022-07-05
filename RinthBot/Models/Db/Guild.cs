@@ -8,6 +8,6 @@ public class Guild
     public bool RemoveOnLeave { get; set; }
     public int Active { get; set; }
     public ulong SubscribedProjectsArrayId { get; set; }
-    public ulong PingRole { get; set; }
-    public ulong ManageRole { get; set; }
+    public ulong? PingRole { get; set; }
+    public ulong? ManageRole { get; set; }
 }

@@ -30,7 +30,7 @@ public class ModrinthService
         _dataService = serviceProvider.GetRequiredService<DataService>();
         _client = serviceProvider.GetRequiredService<DiscordSocketClient>();
         
-        _cacheEntryOptions = new MemoryCacheEntryOptions()
+        _cacheEntryOptions = new MemoryCacheEntryOptions
         {
             AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(1)
         };
@@ -168,6 +168,12 @@ public class ModrinthService
         {
             var versions = await GetVersionListAsync(projectId);
 
+            if (versions == null)
+            {
+                _logger.LogWarning("Could not get version list for project ID {ID}", projectId);
+                return null;
+            }
+
             var project = _dataService.UpdateProjectVersionAndReturnOldOne(projectId, versions[0].Id);
 
             List<Version> newVersions = new();
@@ -271,11 +277,8 @@ public class ModrinthService
     {
         var versions = await GetVersionListAsync(projectId);
 
-        if (versions == null)
-            return null;
-        
         // Get last version ID
-        var lastVersion = versions.OrderByDescending(x => x.DatePublished).First();
+        var lastVersion = versions?.OrderByDescending(x => x.DatePublished).First();
 
         return lastVersion;
     }

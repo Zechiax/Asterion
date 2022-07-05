@@ -10,20 +10,33 @@
 ## Invite
 - You can invite the bot by clicking [here](https://discord.com/api/oauth2/authorize?client_id=986993814671614094&permissions=537316416&scope=bot%20applications.commands)
 
+## Features
+- Search for Modrinth projects
+- Sends message when one of your subscribed projects got an update
+- Easy subscribe with buttons from search
+- Custom channels! You can set per-project update channel
+
 ## Get Started
-- For most commands you need to have an Administrator role
-    - Now you can set "Subs Manager" to someone and they will also have access to all Administrator commands
-- After you invite the bot to your server, it's time to get setup
-- To set the update channel, use `/modrinth set-update-channel` command, where as a parameter you provide the default channel for updates
-    - **Make sure the bot has the permission to sent messages in the channel or to view the channel**
-- Next up you can add projects you want to **subscribe** for updates
-    - This can be done with the `/modrinth subscribe [projectID] [optional CustomChannel]`
-      - You can add second parameter as custom channel, then every update of this project will be sent to this channel instead of the default one
-    - Or you can use `/modrinth search [query]` to find the project you want to subscribe to and click the subscribe button
-- Same way you can unsubscribe with `/modrinth unsubscribe [projectID]`
-- To view the list of subscribed projects you can do `/modrinth list`
-- With `/modrinth search [query]` you can search for Modrinth projects
-- If you want to check that the bot can send messages to your update channel, do `/modrinth test-setup`
+After you invite the bot to your server, it's time to set it up
+*For most commands you need to have Administrator privilege or have 'Subs Moderator' role*
+1. **Set-up a default update channel**
+	- `/modrinth set-update-channel [channel]`
+	- This will set the default update channel, when you subscribe from search this will be the channel where the updates are sent
+2. **Subscribe to projects**
+	- You can use `/modrinth subscribe [projectID] [custom channel]` this way you can directly subscribe to project using it's ID
+		- You don't have to provide custom channel, then the default one will be used
+	- **Easier** `/modrinth search [query]`
+		- Where you can search for project with slug, ID or it's name
+		- The subscribe button doesn't let you pick a channel, but it will use the default one, if you want custom channel for this project, use the `subscribe` command and the ID from the search
+3. **Test your setup**
+	- Use `/modrinth test-setup` which will test if the bot can send message to your default channel and give you feedback 
+
+### Other commands
+- `/modrinth list [Plain/Table]`
+	- This will list all your subscribed projects, default is Plain which is simple text
+	- Table will generate Markdown like table
+- `/modrinth unsubscribe [projectID]`
+	- Unsubscribe project - you can actually do that even from search
 
 ## TODOs
 - [ ] Better UX overall

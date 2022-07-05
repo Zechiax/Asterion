@@ -21,6 +21,7 @@ public class BotManagement: InteractionModuleBase<SocketInteractionContext>
     {
         await RespondAsync("Registering this guild", ephemeral: true);
         await _dataService.RegisterNewGuild(Context.Guild);
+        await FollowupAsync("Registered", ephemeral: true);
     }
     
     [SlashCommand("unregister", "Un-registers this guild to the bot", runMode: RunMode.Async)]
@@ -28,6 +29,7 @@ public class BotManagement: InteractionModuleBase<SocketInteractionContext>
     {
         await RespondAsync("Unregistering this guild", ephemeral: true);
         await _dataService.UnregisterGuild(Context.Guild);
+        await FollowupAsync("Unregistered", ephemeral: true);
     }
 #endif
     

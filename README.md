@@ -6,10 +6,10 @@
 
 ## Images
 ### Search for projects:
-![Search embed](./assets/search_embed.png)
+[![Search embed](./assets/search_embed.png)](https://github.com/Zechiax/RinthBot)
 
 ### Latest release
-![Latest release](./assets/latest_release.png)
+[![Latest release](./assets/latest_release.png)](https://github.com/Zechiax/RinthBot)
 
 
 ## Invite

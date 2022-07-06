@@ -2,7 +2,7 @@
 
 # RinthBot
 
-- Discord bot which main feature is to announce new updates of projects on [Modrinth](https://modrinth.com/)
+- Discord bot whose main feature is to announce project updates from the [Modrinth](https://modrinth.com/) platform 
 
 ## Example image:
 *TBA*

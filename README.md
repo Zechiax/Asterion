@@ -8,10 +8,6 @@
 ### Search for projects:
 [![Search embed](./assets/search_embed.png)](https://github.com/Zechiax/RinthBot)
 
-### Latest release
-[![Latest release](./assets/latest_release.png)](https://github.com/Zechiax/RinthBot)
-
-
 ## Invite
 - You can invite the bot by clicking [here](https://discord.com/api/oauth2/authorize?client_id=986993814671614094&permissions=537316416&scope=bot%20applications.commands)
 

@@ -5,7 +5,6 @@ using Humanizer.Bytes;
 using Modrinth.RestClient.Models;
 using Modrinth.RestClient.Models.Enums;
 using RinthBot.Extensions;
-using StringExtensions = RinthBot.Utilities.StringExtensions;
 using Version = Modrinth.RestClient.Models.Version;
 
 namespace RinthBot.EmbedBuilders;
@@ -29,10 +28,13 @@ public static class ModrinthEmbedBuilder
             Color = ModrinthColor,
             Fields = new List<EmbedFieldBuilder>
             {
-                new() { Name = "Downloads", Value = project.Downloads.SeparateThousands(), IsInline = true },
+                // Format downloads from 319803 to 319,8K 
+                 new() { Name = "Downloads", Value = project.Downloads.ToMetric(decimals: 1).Transform(To.UpperCase), IsInline = true },
+                // Format downloads from 319803 to 319 803
+                //new() { Name = "Downloads", Value = project.Downloads.SeparateThousands(), IsInline = true },
                 new() { Name = "Followers", Value = project.Followers.SeparateThousands(), IsInline = true },
                 new() { Name = "Categories", Value = string.Join(", ", project.Categories), IsInline = true },
-                new() { Name = "Type", Value = project.ProjectType.ToString(), IsInline = true },
+                new() { Name = "Type", Value = project.ProjectType.Humanize(), IsInline = true },
                 new() { Name = "ID", Value = project.Id, IsInline = true },
                 new() { Name = "Created | Last updated", Value = $"{TimestampTag.FromDateTime(project.Published, TimestampTagStyles.Relative)} | {TimestampTag.FromDateTime(project.Updated, TimestampTagStyles.Relative)}"  }
             }
@@ -69,7 +71,7 @@ public static class ModrinthEmbedBuilder
             Description = $"Version **{version.VersionNumber}** has been uploaded to Modrinth" +
                           $"\n\n**Changelog**" +
                           $"\n---------------" +
-                          StringExtensions.Truncate($"\n{version.Changelog}", 3000),
+                          $"\n{version.Changelog}".Truncate(2000),
             Url = projectUrl,
             ThumbnailUrl = project.IconUrl,
             ImageUrl = null,
@@ -78,7 +80,7 @@ public static class ModrinthEmbedBuilder
                 new()
                 {
                     Name = "Type",
-                    Value = version.VersionType.ToString(),
+                    Value = version.VersionType.Humanize(),
                     IsInline = true
                 },
                 new()
@@ -90,7 +92,7 @@ public static class ModrinthEmbedBuilder
                 new()
                 {
                     Name = "Loaders",
-                    Value = string.Join(", ", version.Loaders),
+                    Value = string.Join(", ", version.Loaders).Humanize(),
                     IsInline = true
                 },
                 new()

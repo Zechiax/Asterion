@@ -33,7 +33,7 @@ public static class ModrinthEmbedBuilder
                 // Format downloads from 319803 to 319 803
                 //new() { Name = "Downloads", Value = project.Downloads.SeparateThousands(), IsInline = true },
                 new() { Name = "Followers", Value = project.Followers.SeparateThousands(), IsInline = true },
-                new() { Name = "Categories", Value = string.Join(", ", project.Categories), IsInline = true },
+                new() { Name = "Categories", Value = string.Join(", ", project.Categories).Transform(To.TitleCase), IsInline = true },
                 new() { Name = "Type", Value = project.ProjectType.Humanize(), IsInline = true },
                 new() { Name = "ID", Value = project.Id, IsInline = true },
                 new() { Name = "Created | Last updated", Value = $"{TimestampTag.FromDateTime(project.Published, TimestampTagStyles.Relative)} | {TimestampTag.FromDateTime(project.Updated, TimestampTagStyles.Relative)}"  }
@@ -92,7 +92,7 @@ public static class ModrinthEmbedBuilder
                 new()
                 {
                     Name = "Loaders",
-                    Value = string.Join(", ", version.Loaders).Humanize(),
+                    Value = string.Join(", ", version.Loaders).Transform(To.TitleCase),
                     IsInline = true
                 },
                 new()

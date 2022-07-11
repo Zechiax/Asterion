@@ -19,7 +19,7 @@
 
 ## Get Started
 After you invite the bot to your server, it's time to set it up
-*For most commands you need to have Administrator privilege or have 'Subs Moderator' role*
+*For most commands you need to have Administrator privilege or have 'Subs Manager' role*
 1. **Set-up a default update channel**
 	- `/modrinth set-update-channel [channel]`
 	- This will set the default update channel, when you subscribe from search this will be the channel where the updates are sent
@@ -38,6 +38,8 @@ After you invite the bot to your server, it's time to set it up
     - Table will generate Markdown like table
 - `/modrinth unsubscribe [projectID]`
     - Unsubscribe project - you can actually do that even from search
+- `/modrinth unsubscribe-all`
+  - Removes all subscribed projects (will require confirmation)
 - `/modrinth latest-release [projectID]`
   - Gives you information about the latest release with a changelog
 

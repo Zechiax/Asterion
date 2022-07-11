@@ -353,7 +353,6 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         {
                 await DeferAsync();
                 DataService.SetUpdateChannel(Context.Guild, channel);
-
                 await ModifyOriginalResponseAsync(x =>
                 {
                         x.Content = $"Channel for updates set to {channel.Mention} :white_check_mark:";
@@ -377,7 +376,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         }
         */
 
-        [RequireUserPermission(GuildPermission.Administrator)]
+        [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
         [RequireRole("Subs Manager", Group = "ManageSubs")]
         [SlashCommand("test-setup", "Checks your setup (also tries to send a message to test channel and remove it)")]
         public async Task SendTextMessage()

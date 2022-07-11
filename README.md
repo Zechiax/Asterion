@@ -2,7 +2,7 @@
 
 # RinthBot
 
-- Discord bot whose main feature is to announce project updates from the [Modrinth](https://modrinth.com/) platform 
+-  Discord bot with which you can track project updates from the [Modrinth](https://modrinth.com/) platform 
 
 ## Images
 ### Search for projects:

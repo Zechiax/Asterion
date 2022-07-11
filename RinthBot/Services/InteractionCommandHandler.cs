@@ -49,6 +49,12 @@ public class InteractionCommandHandler
         {
             case InteractionCommandError.UnmetPrecondition:
                 // Respond with the error reason
+                if (arg3.ErrorReason.Contains("ManageSubs"))
+                {
+                    await arg2.Interaction.RespondAsync("For this command, you either need to have Administrator permission or have 'Subs manager' role", ephemeral: true);
+                    break;
+                }
+
                 await arg2.Interaction.RespondAsync(arg3.ErrorReason, ephemeral: true);
                 break;
             case InteractionCommandError.UnknownCommand:
@@ -81,6 +87,12 @@ public class InteractionCommandHandler
         switch (arg3.Error)
         {
             case InteractionCommandError.UnmetPrecondition:
+                if (arg3.ErrorReason.Contains("ManageSubs"))
+                {
+                    await arg2.Interaction.RespondAsync("For this command, you either need to have Administrator permission or have 'Subs manager' role", ephemeral: true);
+                    break;
+                }
+                
                 await arg2.Interaction.RespondAsync(arg3.ErrorReason, ephemeral: true);
                 // implement
                 break;
@@ -115,6 +127,12 @@ public class InteractionCommandHandler
         switch (arg3.Error)
         {
             case InteractionCommandError.UnmetPrecondition:
+                if (arg3.ErrorReason.Contains("ManageSubs"))
+                {
+                    await arg2.Interaction.RespondAsync("For this command, you either need to have Administrator permission or have 'Subs manager' role", ephemeral: true);
+                    break;
+                }
+                
                 await arg2.Interaction.RespondAsync(arg3.ErrorReason, ephemeral: true);
                 break;
             case InteractionCommandError.UnknownCommand:

@@ -442,9 +442,8 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                         x.Content = $"Everything's in check :white_check_mark: {(subs.Any() ? null : "Now I recommend subscribing to some projects")}";
                 });
         }
-
-        [DoOwnerCheck(Group = "Permission")]
-        [RequireOwner(Group = "Permission")]
+        
+        [RequireOwner]
         [SlashCommand("force-update", "Forces check for updates")]
         public async Task ForceUpdate()
         {

@@ -9,7 +9,7 @@ using Modrinth.RestClient.Models;
 using Timer = System.Timers.Timer;
 using Version = Modrinth.RestClient.Models.Version;
 using RinthBot.EmbedBuilders;
-using Polly;
+using RinthBot.Interfaces;
 
 namespace RinthBot.Services;
 
@@ -20,7 +20,7 @@ public class ModrinthService
     private readonly ILogger _logger;
     private readonly IMemoryCache _cache;
     private readonly MemoryCacheEntryOptions _cacheEntryOptions;
-    private readonly DataService _dataService;
+    private readonly IDataService _dataService;
     private readonly DiscordSocketClient _client;
     
     public ModrinthService(IServiceProvider serviceProvider)
@@ -54,27 +54,27 @@ public class ModrinthService
     private async void CheckUpdate(object? sender, DoWorkEventArgs e)
     {
         _logger.LogInformation("Running update check");
-        var projects = _dataService.GetAllProjects();
+        var projects = await _dataService.GetAllModrinthProjectsAsync();
 
         foreach (var project in projects)
         {
-            _logger.LogInformation("Checking project ID {Id}", project.Id);
+            _logger.LogInformation("Checking project ID {Id}", project.ProjectId);
             // Check if this project has even any update, if not, no need to go through all the guilds
             // TODO: What if Modrinth is down? or is rate limiting
             // This could be null
-            var currentProject = await GetProject(project.Id);
+            var currentProject = await GetProject(project.ProjectId);
 
             if (currentProject == null)
             {
-                _logger.LogWarning("Update checker failed to get information about project {Name} ({ID})", project.Title, project.Id);
+                _logger.LogWarning("Update checker failed to get information about project {Name} ({ID})", project.Title, project.ProjectId);
                 continue;
             }
 
             // This also could be null if rate limiting
-            var newVersions = await CheckProjectForUpdates(project.Id);
+            var newVersions = await CheckProjectForUpdates(project.ProjectId);
             if (newVersions == null)
             {
-                _logger.LogWarning("Update checker failed to get about new updates for project {Name} ({ID})", project.Title, project.Id);
+                _logger.LogWarning("Update checker failed to get about new updates for project {Name} ({ID})", project.Title, project.ProjectId);
                 continue;
             }
 
@@ -86,11 +86,11 @@ public class ModrinthService
             
             _logger.LogInformation("{Count} new versions", newVersions.Length);
 
-            var guilds = _dataService.GetAllGuildsSubscribedTo(project);
+            var guilds = await _dataService.GetAllGuildsSubscribedToProject(project.ProjectId);
             foreach (var guild in guilds)
             {
                 // We can have custom channel for this project
-                var projectInfo = _dataService.GetProjectInfo(guild, currentProject);
+                var projectInfo = await _dataService.GetModrinthEntryAsync(guild.GuildId, currentProject.Id);
                 
                 SocketTextChannel? channel = null;
                 
@@ -99,21 +99,21 @@ public class ModrinthService
                 {
                     if (guild.UpdateChannel != null)
                     {
-                        channel = _client.GetGuild(guild.Id).GetTextChannel((ulong)guild.UpdateChannel);
+                        channel = _client.GetGuild(guild.GuildId).GetTextChannel((ulong)guild.UpdateChannel);
                     }
 
-                    _logger.LogInformation("Sending update to guild {Id} and default channel {Channel}", guild.Id, guild.UpdateChannel == null ? "NOT SET" : guild.UpdateChannel);
+                    _logger.LogInformation("Sending update to guild {Id} and default channel {Channel}", guild.GuildId, guild.UpdateChannel == null ? "NOT SET" : guild.UpdateChannel);
                 }
                 // Custom
                 else
                 {
-                    channel = _client.GetGuild(guild.Id).GetTextChannel((ulong)projectInfo.CustomUpdateChannel);
-                    _logger.LogInformation("Sending update to guild {Id} and custom channel {Channel}", guild.Id, channel == null ? "NOT SET" : channel.Id);
+                    channel = _client.GetGuild(guild.GuildId).GetTextChannel((ulong)projectInfo.CustomUpdateChannel);
+                    _logger.LogInformation("Sending update to guild {Id} and custom channel {Channel}", guild.GuildId, channel == null ? "NOT SET" : channel.Id);
                 }
 
                 if (channel == null)
                 {
-                    _logger.LogInformation("Guild {Id} has not yet set a default update channel or custom channel for this project", guild.Id);
+                    _logger.LogInformation("Guild {Id} has not yet set a default update channel or custom channel for this project", guild.GuildId);
                     continue;
                 }
                 
@@ -127,7 +127,7 @@ public class ModrinthService
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogWarning("Error while sending message to guild {Guild}: {Exception}", guild.Id, ex.Message);
+                        _logger.LogWarning("Error while sending message to guild {Guild}: {Exception}", guild.GuildId, ex.Message);
                     }
                 }
             }
@@ -175,15 +175,23 @@ public class ModrinthService
                 return null;
             }
 
-            var project = _dataService.UpdateProjectVersionAndReturnOldOne(projectId, versions[0].Id);
+            var oldProject = await _dataService.GetModrinthProjectByIdAsync(projectId);
+
+            if (oldProject is null)
+            {
+                _logger.LogWarning("No entry in database for Modrinth project ID {ID}", projectId);
+                return null;
+            }
+
+            await _dataService.UpdateModrinthProjectAsync(projectId, versions[0].Id);
 
             List<Version> newVersions = new();
-            if (project == null)
+            if (oldProject.LastCheckVersion == null)
                 return newVersions.ToArray();
 
             foreach (var version in versions)
             {
-                if (version.Id == project.LastCheckVersion)
+                if (version.Id == oldProject.LastCheckVersion)
                 {
                     return newVersions.ToArray();
                 }

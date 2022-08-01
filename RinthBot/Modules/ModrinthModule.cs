@@ -9,7 +9,7 @@ using RinthBot.Services;
 using Fergun.Interactive;
 using Microsoft.Extensions.Logging;
 using Modrinth.RestClient.Models;
-
+using RinthBot.Interfaces;
 // ReSharper disable MemberCanBePrivate.Global
 
 namespace RinthBot.Modules;
@@ -112,7 +112,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                         }
                 }
 
-                var subscribedToProject = DataService.IsGuildSubscribedToProject(project, Context.Guild);
+                var subscribedToProject = await DataService.IsGuildSubscribedToProjectAsync(Context.Guild.Id, project.Id);
                 await ModifyOriginalResponseAsync(x =>
                 {
                         x.Embed = ModrinthEmbedBuilder.GetProjectEmbed(project).Build();
@@ -152,7 +152,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                 // Get last version ID
                 var lastVersion = versions.OrderByDescending(x => x.DatePublished).First().Id;
 
-                await DataService.AddWatchedProject(Context.Guild, project, lastVersion, customChannel);
+                await DataService.AddModrinthProjectToGuildAsync(Context.Guild.Id, project.Id, lastVersion, customChannel?.Id);
                 
                 await ModifyOriginalResponseAsync(x =>
                 {
@@ -167,7 +167,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         public async Task Unsubscribe(string projectId)
         {
                 await DeferAsync();
-                DataService.RemoveWatchedProject(Context.Guild, projectId);
+                await DataService.RemoveModrinthProjectFromGuildAsync(Context.Guild.Id, projectId);
 
                 await ModifyOriginalResponseAsync(x =>
                 {
@@ -198,9 +198,9 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                         // Acknowledge the interaction
                         await result.Value!.DeferAsync();
 
-                        foreach (var versions in DataService.GetGuildsSubscribedProjects(Context.Guild))
+                        foreach (var versions in (await DataService.GetAllGuildsSubscribedProjectsAsync(Context.Guild.Id))!)
                         {
-                                DataService.RemoveWatchedProject(Context.Guild, versions.ProjectId);
+                                await DataService.RemoveModrinthProjectFromGuildAsync(Context.Guild.Id, versions.ProjectId);
                         }
                 }
 
@@ -218,8 +218,8 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         public async Task ListSubscribed(ListType type = ListType.Plain)
         {
                 await DeferAsync();
-                var list = DataService.ListProjects(Context.Guild).ToList();
-                var guild = DataService.GetGuild(Context.Guild);
+                var list = ((await DataService.GetAllGuildsSubscribedProjectsAsync(Context.Guild.Id))!).ToList();
+                var guild = await DataService.GetGuildByIdAsync(Context.Guild.Id);
 
                 if (list.Count == 0)
                 {
@@ -352,29 +352,12 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         public async Task SetUpdateChannel(SocketTextChannel channel)
         {
                 await DeferAsync();
-                DataService.SetUpdateChannel(Context.Guild, channel);
+                await DataService.SetDefaultUpdateChannelForGuild(Context.Guild.Id, channel.Id);
                 await ModifyOriginalResponseAsync(x =>
                 {
                         x.Content = $"Channel for updates set to {channel.Mention} :white_check_mark:";
                 });
         }
-
-        /*
-        [RequireUserPermission(GuildPermission.Administrator)]
-        [SlashCommand("set-manage-role", "Sets role, which can also manage subscribed projects without being admin")]
-        public async Task SetManageRole(SocketRole role)
-        {
-                await DeferAsync();
-                
-                DataService.SetManageRole(Context.Guild.Id, role.Id);
-                
-                await ModifyOriginalResponseAsync(x =>
-                {
-                        x.Content = $"Manage role has been set to {role.Mention} :white_check_mark:";
-                        x.AllowedMentions = AllowedMentions.None;
-                });
-        }
-        */
 
         [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
         [RequireRole("Subs Manager", Group = "ManageSubs")]
@@ -383,9 +366,9 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         {
                 await DeferAsync();
                        
-                var guildInfoDb = DataService.GetGuild(Context.Guild);
+                var guildInfoDb = await DataService.GetGuildByIdAsync(Context.Guild.Id);
 
-                if (guildInfoDb.UpdateChannel == null)
+                if (guildInfoDb?.UpdateChannel == null)
                 {
                         await ModifyOriginalResponseAsync(x =>
                         {
@@ -394,7 +377,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                         return;
                 }
                 
-                var channel = Client.GetGuild(guildInfoDb.Id).GetTextChannel((ulong)guildInfoDb.UpdateChannel!);
+                var channel = Client.GetGuild(guildInfoDb.GuildId).GetTextChannel((ulong)guildInfoDb.UpdateChannel!);
 
                 try
                 {
@@ -434,11 +417,11 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                         return;
                 }
 
-                var subs = DataService.GetGuildsSubscribedProjects(Context.Guild);
+                var subs = await DataService.GetAllGuildsSubscribedProjectsAsync(Context.Guild.Id);
                 
                 await ModifyOriginalResponseAsync(x =>
                 {
-                        x.Content = $"Everything's in check :white_check_mark: {(subs.Any() ? null : "Now I recommend subscribing to some projects")}";
+                        x.Content = $"Everything's in check :white_check_mark: {(subs != null && subs.Any() ? null : "Now I recommend subscribing to some projects")}";
                 });
         }
         
@@ -478,7 +461,7 @@ public class ModrinthInteractionModule : InteractionModuleBase
         {
                 await DeferAsync();
 
-                var subscribed = DataService.IsGuildSubscribedToProject(projectId, guildId);
+                var subscribed = await DataService.IsGuildSubscribedToProjectAsync(guildId, projectId);
                 
                 var project = await ModrinthService.GetProject(projectId);
 
@@ -512,7 +495,7 @@ public class ModrinthInteractionModule : InteractionModuleBase
                         x.Components = GetButtons(project, false);
                 });
                 
-                await DataService.AddWatchedProject(guildId, project, latestVersion.Id);
+                await DataService.AddModrinthProjectToGuildAsync(guildId, project.Id, latestVersion.Id);
 
                 await FollowupAsync($"Subscribed to updates for project **{project.Title}** with ID **{project.Id}** :white_check_mark:", ephemeral: true);
         }
@@ -524,7 +507,7 @@ public class ModrinthInteractionModule : InteractionModuleBase
         {
                 await DeferAsync();
                 
-                var subscribed = DataService.IsGuildSubscribedToProject(projectId, guildId);
+                var subscribed = await DataService.IsGuildSubscribedToProjectAsync(guildId, projectId);
                 
                 var project = await ModrinthService.GetProject(projectId);
 
@@ -546,7 +529,7 @@ public class ModrinthInteractionModule : InteractionModuleBase
                         return;
                 }
                 
-                DataService.RemoveWatchedProject(guildId, projectId);
+                await DataService.RemoveModrinthProjectFromGuildAsync(guildId, projectId);
 
                 await ModifyOriginalResponseAsync(x =>
                 {
@@ -556,4 +539,3 @@ public class ModrinthInteractionModule : InteractionModuleBase
                 await FollowupAsync($"Unsubscribed from updates for project ID **{projectId}** :white_check_mark:", ephemeral: true);
         }
 }
-

@@ -3,6 +3,7 @@ using System.Timers;
 using Discord;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
+using RinthBot.Interfaces;
 using Timer = System.Timers.Timer;
 
 namespace RinthBot.Services;
@@ -11,7 +12,7 @@ public class ClientService
 {
     private readonly BackgroundWorker _refreshWorker;
     private readonly DiscordSocketClient _client;
-    private readonly DataService _data;
+    private readonly IDataService _data;
 
     public ClientService(IServiceProvider serviceProvider)
     {
@@ -44,8 +45,8 @@ public class ClientService
 
     public async Task SetGameAsync()
     {
-        var count = _data.GetAllProjects().Count();
-        
+        var count = (await _data.GetAllModrinthProjectsAsync()).Count;
+
         await _client.SetGameAsync(
             name: $"{count} project{(count == 1 ? null : 's')} for updates",
             type: ActivityType.Watching);

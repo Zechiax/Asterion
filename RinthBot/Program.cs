@@ -7,6 +7,7 @@ using Fergun.Interactive;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using RinthBot.Database;
 using RinthBot.Services;
 using Serilog;
 using RunMode = Discord.Commands.RunMode;
@@ -38,15 +39,18 @@ namespace RinthBot
 
             // Setup logging
             services.GetRequiredService<LoggingService>();
-
-            services.GetRequiredService<DataService>().Initialize();
+            
             var client = services.GetRequiredService<DiscordSocketClient>();
             var logger = services.GetRequiredService<ILogger<Program>>();
             var commands = services.GetRequiredService<InteractionService>();
+            
             services.GetRequiredService<ModrinthService>();
 
             // Setup interaction command handler
             await services.GetRequiredService<InteractionCommandHandler>().InitializeAsync();
+            
+            // Initialize data service after client has been connected
+            client.Ready += services.GetRequiredService<DataService>().InitializeAsync;
             await services.GetRequiredService<ClientService>().InitializeAsync();
             
             client.Ready += async () =>
@@ -70,6 +74,8 @@ namespace RinthBot
             await client.StartAsync();
 
             await Task.Delay(Timeout.Infinite);
+            
+            Log.CloseAndFlush();
         }
         
 
@@ -107,8 +113,8 @@ namespace RinthBot
                 .AddSingleton<InteractionService>()
                 .AddSingleton<InteractionCommandHandler>()
                 .AddSingleton<LoggingService>()
-                .AddSingleton<ModrinthService>()
                 .AddSingleton<DataService>()
+                .AddSingleton<ModrinthService>()
                 .AddSingleton<InteractiveService>()
                 .AddSingleton<ClientService>()
                 .AddMemoryCache()

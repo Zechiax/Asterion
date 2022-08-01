@@ -1,464 +1,328 @@
-﻿using System.Data.SQLite;
-using SqlKata.Execution;
+﻿using System.Data.Entity.Core;
 using Discord.WebSocket;
-using Microsoft.Data.Sqlite;
-using Microsoft.Extensions.DependencyInjection;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Modrinth.RestClient.Models;
-using RinthBot.Models.Db;
-using SqlKata.Compilers;
-using File = System.IO.File;
-
+using RinthBot.Database;
+using RinthBot.Interfaces;
 
 namespace RinthBot.Services;
 
-public class DataService
+public class DataService : IDataService
 {
-    private readonly ILogger _logger;
-    private const string DbName = "data.sqlite";
-    private readonly Compiler _sqLiteCompiler;
+    private readonly ILogger<DataService> _logger;
     private readonly DiscordSocketClient _client;
-
-    public DataService(IServiceProvider serviceProvider)
+    public DataService(ILogger<DataService> logger, DiscordSocketClient client)
     {
-        _logger = serviceProvider.GetRequiredService<ILogger<DataService>>();
-        _client = serviceProvider.GetRequiredService<DiscordSocketClient>();
+        _logger = logger;
+        _client = client;
 
-        _sqLiteCompiler = new SqliteCompiler();
-
-        _client.Ready += CheckAllGuilds;
-        _client.JoinedGuild += RegisterNewGuild;
-        _client.LeftGuild += UnregisterGuild;
+        _client.JoinedGuild += JoinGuild;
+        _client.LeftGuild += LeaveGuild;
+    }
+    
+    public async Task InitializeAsync()
+    {
+        await RegisterNewGuilds();
     }
 
-    public void Initialize()
+    private async Task JoinGuild(SocketGuild guild)
     {
-	    _logger.LogInformation("Initializing Data Service");
-	    if (File.Exists(DbName)) return;
-	    _logger.LogInformation("No database file found, creating new one..");
-	    FirstTimeDbSetup();
+        await AddGuildAsync(guild.Id);
+    }
+
+    private async Task LeaveGuild(SocketGuild guild)
+    {
+        await RemoveGuildAsync(guild.Id);
     }
 
     /// <summary>
-    /// Check every guild the bot is in if it is registered (as the bot might have joined the guild while being offline)
+    /// Registers new guilds to which the bot has been invited while offline
     /// </summary>
-    public Task CheckAllGuilds()
+    private async Task RegisterNewGuilds()
     {
-	    _logger.LogInformation("Checking connected guilds");
-	    //TODO: Do the same for guilds that the bot is not in but have database record
-	    var connectedGuilds = _client.Guilds;
+        _logger.LogInformation("Registering new guilds");
 
-	    foreach (var guild in connectedGuilds)
-	    {
-		    using var db = new QueryFactory(NewSqlConnection(), _sqLiteCompiler);
-		    
-		    var guildDb = db.Query("Guilds").Where("ID", guild.Id).Get<Guild>();
-		    
-		    // The guild is registered
-		    if (guildDb.Any()) continue;
-		    
-		    _logger.LogInformation("Registering unregistered guild ID {GuildID}:{Name}", guild.Id, guild.Name);
-		    RegisterNewGuild(guild);
-	    }
+        var newGuildsCount = 0;
+        var guilds = _client.Guilds;
 
-	    _logger.LogInformation("Checking connected guilds done");
+        if (guilds is null)
+        {
+            _logger.LogError("Could not get list of connected guilds");
+            return;
+        }
 
-	    return Task.CompletedTask;
-    }
+        foreach (var guild in guilds)
+        {
+            var info = await GetGuildByIdAsync(guild.Id);
 
-    private static SqliteConnection NewSqlConnection()
-    {
-	    var builder = new SQLiteConnectionStringBuilder
-	    {
-		    DataSource = DbName
-	    };
-	    
-	    return new SqliteConnection(builder.ToString());
-    }
+            // Guild is already registered
+            if (info is not null)
+            {
+                continue;
+            }
+            
+            // Guild is not registered, we have to add guild
 
-    private void FirstTimeDbSetup()
-    {
-        SQLiteConnection.CreateFile(DbName);
-        _logger.LogInformation("Database file created");
+            newGuildsCount++;
+            _logger.LogInformation("New guild id {Id} found, registering", guild.Id);
+            await AddGuildAsync(guild.Id);
+        }
         
-        var dbConnection =
-            new SQLiteConnection($"Data Source={DbName};Version=3;");
-        dbConnection.Open();
+        _logger.LogInformation("Registered {Count} new guilds", newGuildsCount);
+    }
+
+    private static DataContext GetDbContext()
+    {
+        return new DataContext();
+    }
+
+    public async Task<bool> RemoveGuildAsync(ulong guildId)
+    {
+        await using var db = GetDbContext();
+
+        var guild = await db.Guilds.Include(o => o.ModrinthArray).FirstOrDefaultAsync(x => x.GuildId == guildId);
+
+        if (guild is null)
+        {
+            _logger.LogError("No guild with {ID} found in database, guild removal interrupted", guildId);
+            return false;
+        }
+
+        var array = guild.ModrinthArray;
+
+        //TODO: Check if it is removing all related entries
+        // Remove all subscribed items
+        db.ModrinthEntries.RemoveRange(db.ModrinthEntries.Where(x => x.ArrayId == array.ArrayId));
+        // Remove the array
+        db.Arrays.Remove(array);
+        // Remove the guild
+        db.Guilds.Remove(guild);
+
+        await db.SaveChangesAsync();
+
+        return true;
+    }
+
+    public async Task<Guild?> GetGuildByIdAsync(ulong guildId)
+    {
+        await using var db = GetDbContext();
+
+        var guild = await db.Guilds.FirstOrDefaultAsync(g => g.GuildId == guildId);
+
+        return guild;
+    }
+
+    public async Task SetDefaultUpdateChannelForGuild(ulong guildId, ulong defaultUpdateChannel)
+    {
+        await using var db = GetDbContext();
+
+        var guild = db.Guilds.SingleOrDefault(x => x.GuildId == guildId);
+
+        if (guild is null)
+        {
+            throw new ObjectNotFoundException();
+        }
+
+        guild.UpdateChannel = defaultUpdateChannel;
+
+        await db.SaveChangesAsync();
+    }
+
+    public async Task<bool> AddGuildAsync(ulong guildId)
+    {
+        await using var db = GetDbContext();
+
+        // We check if the guild is already added
+        var guild = await db.Guilds.FirstOrDefaultAsync(g => g.GuildId == guildId);
+
+        if (guild is not null)
+        {
+            _logger.LogError("Guild id {Id} is already registered in database", guildId);
+            return false;
+        }
+
+        var arrayEntry = db.Arrays.Add(new Database.Array()
+            {
+                Type = ArrayType.Modrinth
+            }
+        );
+
+        var guildEntry = db.Guilds.Add(new Guild()
+        {
+            GuildId = guildId,
+            ModrinthArray = arrayEntry.Entity,
+            Created = DateTime.Now
+        });
+
+        arrayEntry.Entity.Guild = guildEntry.Entity;
+
+        await db.SaveChangesAsync();
+
+        return true;
+    }
+
+    public async Task<bool> AddModrinthProjectToGuildAsync(ulong guildId, string projectId, string lastCheckVersion, ulong? customChannelId = null)
+    {
+        await using var db = GetDbContext();
+
+        var guild = db.Guilds.Include(o => o.ModrinthArray).FirstOrDefault(x => x.GuildId == guildId);
+
+        if (guild is null)
+        {
+            _logger.LogError("No guild with ID {ID}", guildId);
+            return false;
+        }
+
+        // Let's find out if the project is already in the database
+        var project = db.ModrinthProjects.FirstOrDefault(x => x.ProjectId == projectId);
+
+        // Project is not in database, we have to add it
+        if (project is null)
+        {
+            project = db.ModrinthProjects.Add(new ModrinthProject()
+            {
+                ProjectId = projectId,
+                Created = DateTime.Now,
+                LastUpdated = DateTime.Now,
+                LastCheckVersion = lastCheckVersion
+            }).Entity;
+        }
         
-        _logger.LogInformation("Creating tables..");
-        string createArray = @"CREATE TABLE ""Arrays"" (
-	""ID""	INTEGER,
-	""Type""	INTEGER,
-	PRIMARY KEY(""ID"" AUTOINCREMENT)
-)";
+        db.ModrinthEntries.Add(new ModrinthEntry()
+        {
+            CustomUpdateChannel = customChannelId,
+            Created = DateTime.Now,
+            Guild = guild,
+            Project = project,
+            Array = guild.ModrinthArray
+        });
+
+        await db.SaveChangesAsync();
+
+        return true;
+    }
+
+    public async Task<bool> RemoveModrinthProjectFromGuildAsync(ulong guildId, string projectId)
+    {
+        await using var db = GetDbContext();
+
+        var entry = await GetModrinthEntryAsync(guildId, projectId);
+
+        if (entry is null)
+        {
+            return false;
+        }
+
+        db.ModrinthEntries.Remove(entry);
+
+        await db.SaveChangesAsync();
+
+        var guilds = await GetAllGuildsSubscribedToProject(projectId);
+
+        // No other guild is subscribed to this project, we can remove it
+        if (guilds.Count == 0)
+        {
+            var project = db.ModrinthProjects.Single(x => x.ProjectId == projectId);
+
+            db.Remove(project);
+
+            await db.SaveChangesAsync();
+        }
+
+        return true;
+    }
+
+    public async Task<ModrinthProject?> GetModrinthProjectByIdAsync(string projectId)
+    {
+        await using var db = GetDbContext();
+
+        var project = db.ModrinthProjects.FirstOrDefault(x => x.ProjectId == projectId);
         
-        string createArrayItem = @"CREATE TABLE ""ArrayProjects"" (
-	""ArrayId""	INTEGER,
-	""ProjectId""	TEXT,
-	""CustomUpdateChannel""	INTEGER,
-	FOREIGN KEY(""ArrayId"") REFERENCES ""Arrays""(""ID"")
-)";
-        string createModrinthProject = @"CREATE TABLE ""ModrinthProjects"" (
-	""ID""	TEXT NOT NULL UNIQUE,
-	""LastCheckVersion""	TEXT,
-	""Title""	TEXT,
-	PRIMARY KEY(""ID"")
-)";
-        string createGuildTable = @"CREATE TABLE ""Guilds"" (
-	""ID""	INTEGER NOT NULL UNIQUE,
-	""UpdateChannel""	INTEGER,
-	""MessageStyle""	INTEGER NOT NULL DEFAULT 0,
-	""RemoveOnLeave""	INTEGER NOT NULL DEFAULT 1,
-	""Active""	INTEGER NOT NULL DEFAULT 1,
-	""SubscribedProjectsArrayId""	INTEGER NOT NULL,
-	""PingRole""	INTEGER,
-	""ManageRole""	INTEGER,
-	PRIMARY KEY(""ID"")
-)";
+        return project;
+    }
+
+    public async Task<IList<ModrinthEntry>?> GetAllGuildsSubscribedProjectsAsync(ulong guildId)
+    {
+        await using var db = GetDbContext();
         
-        var command = new SQLiteCommand(createArray, dbConnection);
-        command.ExecuteNonQuery();
-        command = new SQLiteCommand(createModrinthProject, dbConnection);
-        command.ExecuteNonQuery();
-        command = new SQLiteCommand(createArrayItem, dbConnection);
-        command.ExecuteNonQuery();
-        command = new SQLiteCommand(createGuildTable, dbConnection);
-        command.ExecuteNonQuery();
-        
-        _logger.LogInformation("Tables created");
-    }
+        var guild = await GetGuildByIdAsync(guildId);
 
-    public Task RegisterNewGuild(SocketGuild guild)
-    {
-	    _logger.LogDebug("Inserting new guild into database (id: {Value})", guild.Id);
-	    
-	    using var db = new QueryFactory(NewSqlConnection(), _sqLiteCompiler);
+        if (guild is null)
+        {
+            return null;
+        }
 
-	    var array = db.Query("arrays").InsertGetId<ulong>(new
-	    {
-		    Type = 0
-	    });
-	    
-	    var affected = db.Query("guilds").Insert(new
-	    {
-			ID = guild.Id,
-			SubscribedProjectsArrayId = array,
-			/*MessageStyle = 0,
-			RemoveOnLeave = true,
-			Active = true*/
-	    });
+        var entries = db.ModrinthEntries.Where(x => x.ArrayId == guild.ModrinthArrayId).ToList();
 
-	    if (affected > 0)
-	    {
-		    _logger.LogDebug("Guild successfully inserted (id: {Value})", guild.Id);
-	    }
-	    else
-	    {
-		    _logger.LogWarning("Guild Insertion failed (id: {Value})", guild.Id);
-	    }
-	    
-	    return Task.CompletedTask;
-    }
-
-    public Task UnregisterGuild(SocketGuild guild)
-    {
-	    _logger.LogInformation("Removing guild from database (id: {Value})", guild.Id);
-
-	    using var db = new QueryFactory(NewSqlConnection(), _sqLiteCompiler);
-
-		// Get Guild
-		var guildDb = db.Query("guilds").Select("SubscribedProjectsArrayId").Where("id", guild.Id).First<Guild>();
-		// Get Array
-		var array = db.Query("arrays").Where("id", guildDb.SubscribedProjectsArrayId).First<Models.Db.Array>();
-		
-		// Remove all array items
-		db.Query("ArrayProjects").Where("ArrayId", array.Id).Delete();
-		
-		// Remove array
-		db.Query("arrays").Where("id", guildDb.SubscribedProjectsArrayId).Delete();
-		
-		// Remove guild
-		db.Query("guilds").Where("id", guild.Id).Delete();
-
-		_logger.LogInformation("Guild removed (id: {Value})", guild.Id);
-
-		return Task.CompletedTask;
-    }
-
-    public Task AddWatchedProject(SocketGuild guildId, Project modrinthProject, string latestVersionId, SocketChannel? customUpdateChannel = null)
-    {
-	    AddWatchedProject(guildId.Id, modrinthProject, latestVersionId, customUpdateChannel?.Id);
-
-	    return Task.CompletedTask;
-    }
-
-    public Task AddWatchedProject(ulong guildId, Project modrinthProject, string latestVersionId, ulong? customUpdateChannelId = null)
-    {
-	    using var db = new QueryFactory(NewSqlConnection(), _sqLiteCompiler);
-	    var guildDb = db.Query("guilds").Where("ID", guildId).First<Guild>();
-
-	    _logger.LogDebug("Adding watched project {ModrinthProject} for guild {GuildId}", modrinthProject.Id, guildId);
-	    // Check if Project exists, if not, create one
-	    var projects = db.Query("ModrinthProjects").Where("ID", modrinthProject.Id).Get<ModrinthProject>();
-	    // No project
-	    if (!projects.Any())
-	    {
-		    // Let's create one
-		    db.Query("ModrinthProjects").Insert(new
-		    {
-				Id = modrinthProject.Id,
-				Title = modrinthProject.Title,
-				LastCheckVersion = latestVersionId
-		    });
-	    }
-
-	    var arrayProjects = db.Query("ArrayProjects").Where(new
-	    {
-		    ArrayId = guildDb.SubscribedProjectsArrayId,
-		    ProjectId = modrinthProject.Id
-	    }).Get();
-	    // The project is already being watched
-	    if (arrayProjects.Any())
-	    {
-		    _logger.LogDebug("The project {ModrinthProjectId} is already being watched", modrinthProject.Id);
-		    return Task.CompletedTask;
-	    }
-	    
-		// Add project to subscribes 
-	    if (customUpdateChannelId != null)
-	    {
-		    db.Query("ArrayProjects").Insert(new
-		    {
-			    ArrayId = guildDb.SubscribedProjectsArrayId,
-			    ProjectId = modrinthProject.Id,
-			    CustomUpdateChannel = customUpdateChannelId
-		    });
-	    }
-	    else
-	    {
-		    db.Query("ArrayProjects").Insert(new
-		    {
-			    ArrayId = guildDb.SubscribedProjectsArrayId,
-			    ProjectId = modrinthProject.Id
-		    });
-	    }
-
-	    return Task.CompletedTask;
-    }
-
-    public void RemoveWatchedProject(SocketGuild guild, string modrinthProjectId)
-    {
-	    RemoveWatchedProject(guild.Id, modrinthProjectId);
-    }
-
-    public void RemoveWatchedProject(ulong guildId, string modrinthProjectId)
-    {
-	    using var db = new QueryFactory(NewSqlConnection(), _sqLiteCompiler);
-	    var guildDb = db.Query("guilds").Where("ID", guildId).First<Guild>();
-	    
-	    // Query for searching ArrayProjects
-	    var affected = db.Query("ArrayProjects").Where(new
-	    {
-		    ArrayId = guildDb.SubscribedProjectsArrayId,
-		    ProjectId = modrinthProjectId
-	    }).Delete();
-
-	    // The ID probably didn't exist
-	    if (affected == 0)
-	    {
-		    return;
-	    }
-	    
-	    // Let's check if there are any more guilds subscribed to this project is, if not, we can remove the project from db
-	    var projects = db.Query("ArrayProjects").Where("ProjectId", modrinthProjectId).Get();
-	    // No projects, let's remove the main project from directory
-	    if (!projects.Any())
-	    {
-		    db.Query("ModrinthProjects").Where("ID", modrinthProjectId).Delete();
-	    }
-    }
-
-    public IEnumerable<ArrayProject> ListProjects(SocketGuild guild)
-    {
-	    using var db = new QueryFactory(NewSqlConnection(), _sqLiteCompiler);
-	    var guildDb = db.Query("guilds").Where("id", guild.Id).First<Guild>();
-
-	    var projects = db.Query("ArrayProjects").Where("ArrayId", guildDb.SubscribedProjectsArrayId).Get<ArrayProject>();
-
-	    return projects;
-    }
-
-    public ArrayProject? GetProjectInfo(SocketGuild guild, Project project)
-    {
-	    return GetProjectInfo(guild.Id, project.Id);
+        return entries;
     }
     
-    public ArrayProject? GetProjectInfo(Guild guild, Project project)
+    public async Task<bool> UpdateModrinthProjectAsync(string projectId, string newVersion, DateTime? lastUpdate = null)
     {
-	    return GetProjectInfo(guild.Id, project.Id);
+        await using var db = GetDbContext();
+        
+        lastUpdate ??= DateTime.Now;
+
+        var project = db.ModrinthProjects.SingleOrDefault(x => x.ProjectId == projectId);
+
+        if (project is null)
+        {
+            return false;
+        }
+
+        project.LastUpdated = lastUpdate;
+        project.LastCheckVersion = newVersion;
+        
+        await db.SaveChangesAsync();
+
+        return true;
+    }
+
+
+    public async Task<IList<ModrinthProject>> GetAllModrinthProjectsAsync()
+    {
+        await using var db = GetDbContext();
+
+        var projects = db.ModrinthProjects.Select(x => x).ToList();
+
+        return projects;
     }
     
-    public ArrayProject? GetProjectInfo(ulong guildId, string projectId)
+    public async Task<bool> IsGuildSubscribedToProjectAsync(ulong guildId, string projectId)
     {
-	    using var db = new QueryFactory(NewSqlConnection(), _sqLiteCompiler);
+        await using var db = GetDbContext();
 
-	    var guild = GetGuild(guildId);
-	    var project = db.Query("ArrayProjects").Where(new
-	    {
-		    ArrayId = guild.SubscribedProjectsArrayId,
-		    ProjectId = projectId
-	    }).First<ArrayProject>();
+        var guildsProjects = await GetAllGuildsSubscribedProjectsAsync(guildId);
 
-	    return project;
+        if (guildsProjects is null)
+        {
+            _logger.LogError("Guild with ID {GuildId} does not exist", guildId);
+            throw new ObjectNotFoundException($"Guild with ID {guildId} does not exist");
+        }
+
+        var entry = guildsProjects.FirstOrDefault(x => x.ProjectId == projectId && x.GuildId == guildId);
+
+        return entry is not null;
     }
 
-    public IEnumerable<Guild> GetAllGuilds()
+    public async Task<ModrinthEntry?> GetModrinthEntryAsync(ulong guildId, string projectId)
     {
-	    using var db = new QueryFactory(NewSqlConnection(), _sqLiteCompiler);
+        await using var db = GetDbContext();
 
-	    var guilds = db.Query("guilds").Get<Guild>();
+        var entry = db.ModrinthEntries.FirstOrDefault(x => x.GuildId == guildId && x.ProjectId == projectId);
 
-	    return guilds;
+        return entry;
     }
 
-    public IEnumerable<ArrayProject> GetGuildsSubscribedProjects(SocketGuild guild)
+    public async Task<IList<Guild>> GetAllGuildsSubscribedToProject(string projectId)
     {
-	    return GetGuildsSubscribedProjects(guild.Id);
+        await using var db = GetDbContext();
+        
+        // TODO: Test if this works
+
+        var guilds = db.ModrinthEntries.Include(o => o.Guild).Where(x => x.ProjectId == projectId)
+            .Select(x => x.Guild).ToList();
+
+        return guilds;
     }
-
-    public IEnumerable<ArrayProject> GetGuildsSubscribedProjects(ulong guildId)
-    {
-	    using var db = new QueryFactory(NewSqlConnection(), _sqLiteCompiler);
-
-	    var guild = db.Query("guilds").Where("id", guildId).Select("SubscribedProjectsArrayId").First<Guild>();
-
-	    var projects = db.Query("ArrayProjects").Where("ArrayId", guild.SubscribedProjectsArrayId).Get<ArrayProject>();
-
-	    return projects;
-    }
-
-    public IEnumerable<ModrinthProject> GetAllProjects()
-    {
-	    using var db = new QueryFactory(NewSqlConnection(), _sqLiteCompiler);
-
-	    var projects = db.Query("ModrinthProjects").Get<ModrinthProject>();
-
-	    return projects;
-    }
-
-    public IEnumerable<Guild> GetAllGuildsSubscribedTo(ModrinthProject project)
-    {
-	    using var db = new QueryFactory(NewSqlConnection(), _sqLiteCompiler);
-
-	    // Get all array IDs of array projects which have this project's ID
-	    var arrays = db.Query("ArrayProjects").Select("ArrayId").Where("ProjectId", project.Id).Get<ArrayProject>();
-
-	    var arrayList = arrays.Select(array => array.ArrayId);
-
-	    // Get all guilds which have this array IDs
-	    var guilds = db.Query("Guilds").WhereIn("SubscribedProjectsArrayId", arrayList).Get<Guild>();
-
-	    return guilds;
-    }
-
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="projectId"></param>
-    /// <param name="versionId"></param>
-    /// <returns>Null if the version is already latest</returns>
-    public ModrinthProject? UpdateProjectVersionAndReturnOldOne(string projectId, string versionId)
-    {
-	    // TODO: This return bool, returning null when the version is already latest is confusing
-	    using var db = new QueryFactory(NewSqlConnection(), _sqLiteCompiler);
-
-	    var version = db.Query("ModrinthProjects").Where("ID", projectId)
-		    .First<ModrinthProject>();
-
-	    // We already have the latest version in DB
-	    if (versionId == version.LastCheckVersion)
-	    {
-		    return null;
-	    }
-
-	    db.Query("ModrinthProjects").Where("ID", projectId).Update(new
-	    {
-		    LastCheckVersion = versionId
-	    });
-
-	    // Return previous version
-	    return version;
-    }
-
-    public void SetUpdateChannel(SocketGuild guild, SocketTextChannel channel)
-    {
-	    SetUpdateChannel(guild.Id, channel.Id);
-    }
-
-    public void SetUpdateChannel(ulong guildId, ulong channelId)
-    {
-	    using var db = new QueryFactory(NewSqlConnection(), _sqLiteCompiler);
-
-	    db.Query("Guilds").Where("ID", guildId).Update(new
-	    {
-		    UpdateChannel = channelId
-	    });
-    }
-
-    public void SetManageRole(ulong guildId, ulong roleId)
-    {
-	    using var db = new QueryFactory(NewSqlConnection(), _sqLiteCompiler);
-
-	    db.Query("Guilds").Where("ID", guildId).Update(new
-	    {
-		    ManageRole = roleId
-	    });
-    }
-
-    public ulong? GetManageRoleId(ulong guildId)
-    {
-	    using var db = new QueryFactory(NewSqlConnection(), _sqLiteCompiler);
-
-	    var guild = GetGuild(guildId);
-
-	    return guild.ManageRole;
-    }
-
-    public bool IsGuildSubscribedToProject(Project project, SocketGuild guild)
-    {
-	    return IsGuildSubscribedToProject(project.Id, guild.Id);
-    }
-
-    public bool IsGuildSubscribedToProject(string projectId, ulong guildId)
-    {
-	    using var db = new QueryFactory(NewSqlConnection(), _sqLiteCompiler);
-	    
-	    // Get guild
-	    var guild = db.Query("Guilds").Where("ID", guildId).Select("SubscribedProjectsArrayId").First<Guild>();
-		
-	    // Get all 
-	    var arrayProjects = db.Query("ArrayProjects").Where(new
-	    {
-		    ArrayId = guild.SubscribedProjectsArrayId,
-		    ProjectId = projectId
-	    }).Get<ArrayProject>();
-	    
-	    return arrayProjects.Any();
-    }
-
-    public Guild GetGuild(SocketGuild guild)
-    {
-	    return GetGuild(guild.Id);
-    }
-
-    public Guild GetGuild(ulong guildId)
-    {
-	    using var db = new QueryFactory(NewSqlConnection(), _sqLiteCompiler);
-	    
-	    var guild = db.Query("Guilds").Where("ID", guildId).First<Guild>();
-
-	    return guild;
-    }
-
-    //TODO: Rewrite queries to be more efficient
 }

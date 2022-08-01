@@ -35,7 +35,6 @@ namespace RinthBot
 
         private async Task MainAsync()
         {
-            return;
             await using var services = ConfigureServices();
 
             // Setup logging

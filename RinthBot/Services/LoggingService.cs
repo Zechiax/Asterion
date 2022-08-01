@@ -53,34 +53,34 @@ public class LoggingService
     private Task OnLogAsync(LogMessage msg)
     {
         var logText = $"{msg.Source}: {msg.Exception?.ToString() ?? msg.Message}";
-        switch (msg.Severity.ToString())
+        switch (msg.Severity)
         {
-            case "Critical":
+            case LogSeverity.Critical:
                 {
                     _logger.LogCritical("{LogText}", logText);
                     break;
                 }
-            case "Warning":
+            case LogSeverity.Warning:
                 {
                     _logger.LogWarning("{LogText}", logText);
                     break;
                 }
-            case "Info":
+            case LogSeverity.Info:
                 {
                     _logger.LogInformation("{LogText}", logText);
                     break;
                 }
-            case "Verbose":
+            case LogSeverity.Verbose:
                 {
                     _logger.LogInformation("{LogText}", logText);
                     break;
                 }
-            case "Debug":
+            case LogSeverity.Debug:
                 {
                     _logger.LogDebug("{LogText}", logText);
                     break;
                 }
-            case "Error":
+            case LogSeverity.Error:
                 {
                     _logger.LogError("{LogText}", logText);
                     break;

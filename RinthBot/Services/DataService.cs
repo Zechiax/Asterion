@@ -217,6 +217,18 @@ public class DataService : IDataService
 
         await db.SaveChangesAsync();
 
+        var guilds = await GetAllGuildsSubscribedToProject(projectId);
+
+        // No other guild is subscribed to this project, we can remove it
+        if (guilds.Count == 0)
+        {
+            var project = db.ModrinthProjects.Single(x => x.ProjectId == projectId);
+
+            db.Remove(project);
+
+            await db.SaveChangesAsync();
+        }
+
         return true;
     }
 

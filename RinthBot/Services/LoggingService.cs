@@ -52,42 +52,25 @@ public class LoggingService
     // this method switches out the severity level from Discord.Net's API, and logs appropriately
     private Task OnLogAsync(LogMessage msg)
     {
-        var logText = $"{msg.Source}: {msg.Exception?.ToString() ?? msg.Message}";
-        switch (msg.Severity)
-        {
-            case LogSeverity.Critical:
-                {
-                    _logger.LogCritical("{LogText}", logText);
-                    break;
-                }
-            case LogSeverity.Warning:
-                {
-                    _logger.LogWarning("{LogText}", logText);
-                    break;
-                }
-            case LogSeverity.Info:
-                {
-                    _logger.LogInformation("{LogText}", logText);
-                    break;
-                }
-            case LogSeverity.Verbose:
-                {
-                    _logger.LogInformation("{LogText}", logText);
-                    break;
-                }
-            case LogSeverity.Debug:
-                {
-                    _logger.LogDebug("{LogText}", logText);
-                    break;
-                }
-            case LogSeverity.Error:
-                {
-                    _logger.LogError("{LogText}", logText);
-                    break;
-                }
-        }
+        var logLevel = DiscordLogSeverityToLogLevel(msg.Severity);
+        
+        _logger.Log(logLevel, "{MsgSource}: {MsgMessage}", msg.Source, msg.Exception?.ToString() ?? msg.Message);
 
         return Task.CompletedTask;
-
     }
+
+    private static LogLevel DiscordLogSeverityToLogLevel(LogSeverity logSeverity)
+    {
+        return logSeverity switch
+        {
+            LogSeverity.Critical => LogLevel.Critical,
+            LogSeverity.Warning => LogLevel.Warning,
+            LogSeverity.Info => LogLevel.Information,
+            LogSeverity.Verbose => LogLevel.Trace,
+            LogSeverity.Debug => LogLevel.Debug,
+            LogSeverity.Error => LogLevel.Error,
+            _ => LogLevel.None
+        };
+    }
+
 }

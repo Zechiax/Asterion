@@ -48,7 +48,7 @@ public class ClientService
         var count = (await _data.GetAllModrinthProjectsAsync()).Count;
 
         await _client.SetGameAsync(
-            name: $"{count} project{(count == 1 ? null : 's')} for updates",
+            name: $"{count} project{(count == 1 ? null : 's')} for updates in {_client.Guilds.Count} servers",
             type: ActivityType.Watching);
     }
 }

@@ -167,7 +167,16 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         public async Task Unsubscribe(string projectId)
         {
                 await DeferAsync();
-                await DataService.RemoveModrinthProjectFromGuildAsync(Context.Guild.Id, projectId);
+                var removed = await DataService.RemoveModrinthProjectFromGuildAsync(Context.Guild.Id, projectId);
+
+                if (removed == false)
+                {
+                        await ModifyOriginalResponseAsync(x =>
+                        {
+                                x.Content = $"Project with ID {projectId} is not subscribed";
+                        });
+                        return;
+                }
 
                 await ModifyOriginalResponseAsync(x =>
                 {

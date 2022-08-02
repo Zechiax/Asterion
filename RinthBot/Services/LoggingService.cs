@@ -3,6 +3,7 @@ using Discord.Commands;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using RinthBot.Extensions;
 
 namespace RinthBot.Services;
 
@@ -26,7 +27,6 @@ public class LoggingService
 
         _discord.Log += OnLogAsync;
         commands.Log += OnLogAsync;
-
     }
 
     // this method executes on the bot being connected/ready
@@ -52,25 +52,10 @@ public class LoggingService
     // this method switches out the severity level from Discord.Net's API, and logs appropriately
     private Task OnLogAsync(LogMessage msg)
     {
-        var logLevel = DiscordLogSeverityToLogLevel(msg.Severity);
+        var logLevel = msg.Severity.ToLogLevel();
         
         _logger.Log(logLevel, "{MsgSource}: {MsgMessage}", msg.Source, msg.Exception?.ToString() ?? msg.Message);
 
         return Task.CompletedTask;
     }
-
-    private static LogLevel DiscordLogSeverityToLogLevel(LogSeverity logSeverity)
-    {
-        return logSeverity switch
-        {
-            LogSeverity.Critical => LogLevel.Critical,
-            LogSeverity.Warning => LogLevel.Warning,
-            LogSeverity.Info => LogLevel.Information,
-            LogSeverity.Verbose => LogLevel.Trace,
-            LogSeverity.Debug => LogLevel.Debug,
-            LogSeverity.Error => LogLevel.Error,
-            _ => LogLevel.None
-        };
-    }
-
 }

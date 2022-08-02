@@ -158,48 +158,38 @@ public class ModrinthService
     }
 
     /// <summary>
-    /// Checks for update and updates the data in the database
+    /// Checks for new versions and updates the data in the database
     /// </summary>
     /// <param name="projectId"></param>
     /// <returns>List of new versions</returns>
     private async Task<Version[]?> CheckProjectForUpdates(string projectId)
     {
-        //TODO: Think of rate limiting
         try
         {
-            var versions = await GetVersionListAsync(projectId);
-
-            if (versions == null)
-            {
-                _logger.LogWarning("Could not get version list for project ID {ID}", projectId);
-                return null;
-            }
-
+            var versionList = await GetVersionListAsync(projectId);
             var oldProject = await _dataService.GetModrinthProjectByIdAsync(projectId);
 
-            if (oldProject is null)
+            if (versionList is null)
             {
-                _logger.LogWarning("No entry in database for Modrinth project ID {ID}", projectId);
+                _logger.LogError("Could not get data from Modrinth for project ID {ID}", projectId);
                 return null;
             }
-
-            await _dataService.UpdateModrinthProjectAsync(projectId, versions[0].Id);
-
-            List<Version> newVersions = new();
-            if (oldProject.LastCheckVersion == null)
-                return newVersions.ToArray();
-
-            foreach (var version in versions)
+            if (oldProject is null)
             {
-                if (version.Id == oldProject.LastCheckVersion)
-                {
-                    return newVersions.ToArray();
-                }
-
-                newVersions.Add(version);
+                _logger.LogError("Data for project ID {ID} are not present in database", projectId);
+                return null;
             }
+            
+            // Ensures the data is chronologically ordered
+            var orderedVersions = versionList.OrderByDescending(x => x.DatePublished);
 
-            return newVersions.ToArray();
+            // Take new versions from the latest to the one we already checked
+            var newVersions = orderedVersions.TakeWhile(version => version.Id != oldProject.LastCheckVersion).ToArray();
+
+            // Update data in database
+            await _dataService.UpdateModrinthProjectAsync(projectId, newVersions[0].Id);
+
+            return newVersions;
         }
         catch (Exception exception)
         {

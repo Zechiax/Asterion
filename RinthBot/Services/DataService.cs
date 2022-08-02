@@ -317,8 +317,6 @@ public class DataService : IDataService
     public async Task<IList<Guild>> GetAllGuildsSubscribedToProject(string projectId)
     {
         await using var db = GetDbContext();
-        
-        // TODO: Test if this works
 
         var guilds = db.ModrinthEntries.Include(o => o.Guild).Where(x => x.ProjectId == projectId)
             .Select(x => x.Guild).ToList();

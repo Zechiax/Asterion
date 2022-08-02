@@ -435,6 +435,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                 await ModifyOriginalResponseAsync(x =>
                 {
                         x.Content = $"Forced Update request: {ok}";
+                        x.Flags = MessageFlags.Ephemeral;
                 });
         }
 }

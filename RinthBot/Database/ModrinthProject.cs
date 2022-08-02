@@ -9,10 +9,9 @@ namespace RinthBot.Database
         [Key]
         public string ProjectId { get; set; } = null!;
         public string? Title { get; set; }
-        public string? LastCheckVersion { get; set; }
+        [Required] public string LastCheckVersion { get; set; } = null!;
         public DateTime? LastUpdated { get; set; }
 
-        [Required]
-        public DateTime Created { get; set; }
+        [Required] public DateTime Created { get; set; }
     }
 }

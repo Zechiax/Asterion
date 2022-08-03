@@ -54,20 +54,16 @@ public class InteractionCommandHandler
                     await arg2.Interaction.RespondAsync("For this command, you either need to have Administrator permission or have 'Subs manager' role", ephemeral: true);
                     break;
                 }
-
                 await arg2.Interaction.RespondAsync(arg3.ErrorReason, ephemeral: true);
                 break;
             case InteractionCommandError.UnknownCommand:
-                // implement
                 break;
             case InteractionCommandError.BadArgs:
-                // implement
                 break;
             case InteractionCommandError.Exception:
                 _logger.LogError("Component Command {Arg1Name} for user {UserUsername} failed; Exception: \'{ErrorReason}\'", arg1.Name, arg2.User.Username, arg3.ErrorReason);
                 break;
             case InteractionCommandError.Unsuccessful:
-                // implement
                 break;
             case InteractionCommandError.ConvertFailed:
                 break;
@@ -94,20 +90,15 @@ public class InteractionCommandHandler
                 }
                 
                 await arg2.Interaction.RespondAsync(arg3.ErrorReason, ephemeral: true);
-                // implement
                 break;
             case InteractionCommandError.UnknownCommand:
-                // implement
                 break;
             case InteractionCommandError.BadArgs:
-                // implement
                 break;
             case InteractionCommandError.Exception:
                 _logger.LogError("Context Command {Arg1Name} for user {UserUsername} failed; Exception: \'{ErrorReason}\'", arg1.Name, arg2.User.Username, arg3.ErrorReason);
-                // implement
                 break;
             case InteractionCommandError.Unsuccessful:
-                // implement
                 break;
             case InteractionCommandError.ConvertFailed:
                 break;
@@ -122,6 +113,8 @@ public class InteractionCommandHandler
 
     private async Task<Task> SlashCommandExecuted(SlashCommandInfo arg1, IInteractionContext arg2, IResult arg3)
     {
+        var commandType = "Slash";
+        
         if (arg3.IsSuccess) return Task.CompletedTask;
         
         switch (arg3.Error)
@@ -136,21 +129,22 @@ public class InteractionCommandHandler
                 await arg2.Interaction.RespondAsync(arg3.ErrorReason, ephemeral: true);
                 break;
             case InteractionCommandError.UnknownCommand:
-                // implement
+                _logger.LogError("Unknown {CommandType} Command {Arg1Name} for user {UserUsername}: \'{ErrorReason}\'", commandType, arg1.Name, arg2.User.Username, arg3.ErrorReason);
                 break;
             case InteractionCommandError.BadArgs:
-                // implement
+                _logger.LogError("{CommandType} Command {Arg1Name} for user {UserUsername} failed with bad arguments: \'{ErrorReason}\'", commandType, arg1.Name, arg2.User.Username, arg3.ErrorReason);
                 break;
             case InteractionCommandError.Exception:
-                _logger.LogError("Slash Command {Arg1Name} for user {UserUsername} failed; Exception: \'{ErrorReason}\'", arg1.Name, arg2.User.Username, arg3.ErrorReason);
-                // implement
+                _logger.LogError("{CommandType} Command {Arg1Name} for user {UserUsername} failed; Exception: \'{ErrorReason}\'", commandType, arg1.Name, arg2.User.Username, arg3.ErrorReason);
                 break;
             case InteractionCommandError.Unsuccessful:
-                // implement
+                _logger.LogError("{CommandType} Command {Arg1Name} for user {UserUsername} failed; Reason: \'{ErrorReason}\'", commandType, arg1.Name, arg2.User.Username, arg3.ErrorReason);
                 break;
             case InteractionCommandError.ConvertFailed:
+                _logger.LogError("{CommandType} Command {Arg1Name} for user {UserUsername} failed; Reason: \'{ErrorReason}\'", commandType, arg1.Name, arg2.User.Username, arg3.ErrorReason);
                 break;
             case InteractionCommandError.ParseFailed:
+                _logger.LogError("{CommandType} Command {Arg1Name} for user {UserUsername} failed; Reason: \'{ErrorReason}\'", commandType, arg1.Name, arg2.User.Username, arg3.ErrorReason);
                 break;
             case null:
                 break;

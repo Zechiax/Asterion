@@ -84,7 +84,7 @@ public class ModrinthService
                     continue;
                 }
 
-                if (updateInfo.Versions?.Length < 1)
+                if (updateInfo.Versions!.Length < 1)
                 {
                     _logger.LogInformation("No new versions for project ID {ID}", project.ProjectId);
                     continue;

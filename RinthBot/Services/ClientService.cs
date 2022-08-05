@@ -23,7 +23,7 @@ public class ClientService
         _refreshWorker.DoWork += RefreshAsync;
         
         // Refresh status every 30 minutes
-        var checkTimer = new Timer(TimeSpan.FromMinutes(30).TotalMilliseconds);
+        var checkTimer = new Timer(TimeSpan.FromMinutes(15).TotalMilliseconds);
         checkTimer.Elapsed += checkTimer_Elapsed;
         checkTimer.Start();
     }

@@ -27,7 +27,7 @@ namespace RinthBot.Database
             if (!optionsBuilder.IsConfigured)
             {
                 optionsBuilder.UseSqlite("DataSource=data.sqlite");
-                optionsBuilder.LogTo(Log.Logger.Information, LogLevel.Information, null);
+                optionsBuilder.LogTo(Log.Logger.Error, LogLevel.Error, null);
             }
         }
 

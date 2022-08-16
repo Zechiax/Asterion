@@ -105,7 +105,7 @@ public class ModrinthService
                         continue;
                     }
                     
-                    _logger.LogInformation("Sending updates to guild {Id} and custom channel {Channel}", guild.GuildId, channel.Id);
+                    _logger.LogInformation("Sending updates to guild ID {Id} and channel ID {Channel}", guild.GuildId, channel.Id);
                     
                     // None of these can be null, everything is checked beforehand
                     await SendUpdatesToChannel(channel, updateInfo.Project!, updateInfo.Versions!);

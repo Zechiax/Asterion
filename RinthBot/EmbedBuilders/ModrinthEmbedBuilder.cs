@@ -19,7 +19,7 @@ public static class ModrinthEmbedBuilder
 
     public static EmbedBuilder GetProjectEmbed(Project project)
     {
-        var embed = new EmbedBuilder()
+        var embed = new EmbedBuilder
         {
             Title = project.Title,
             Url = GetProjectUrl(project),
@@ -60,14 +60,14 @@ public static class ModrinthEmbedBuilder
 
         var embed = new EmbedBuilder
         {
-            Author = new EmbedAuthorBuilder()
+            Author = new EmbedAuthorBuilder
             {
                 Name = $"Modrinth | {project.ProjectType.ToString()}",
                 // TODO: Get icon from elsewhere
                 IconUrl = "https://avatars.githubusercontent.com/u/67560307",
                 Url = "https://modrinth.com/"
             },
-            Footer = new EmbedFooterBuilder()
+            Footer = new EmbedFooterBuilder
             {
                 Text = "Published"
             },
@@ -77,7 +77,7 @@ public static class ModrinthEmbedBuilder
             Url = projectUrl,
             ThumbnailUrl = project.IconUrl,
             ImageUrl = null,
-            Fields = new List<EmbedFieldBuilder>()
+            Fields = new List<EmbedFieldBuilder>
             {
                 new()
                 {

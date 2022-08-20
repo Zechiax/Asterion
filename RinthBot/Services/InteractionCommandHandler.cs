@@ -13,7 +13,7 @@ public class InteractionCommandHandler
     private readonly InteractionService _commands;
     private readonly IServiceProvider _services;
     private readonly ILogger _logger;
-
+    
     public InteractionCommandHandler(DiscordSocketClient client, InteractionService commands, IServiceProvider services)
     {
         _client = client;
@@ -23,6 +23,9 @@ public class InteractionCommandHandler
         _logger = services.GetRequiredService<ILogger<InteractionCommandHandler>>();
     }
 
+    /// <summary>
+    /// Setups Interaction service and registers interaction and error handling functions 
+    /// </summary>
     public async Task InitializeAsync()
     {
         // Add the public modules that inherit InteractionModuleBase<T> to the InteractionService

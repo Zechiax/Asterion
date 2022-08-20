@@ -277,8 +277,7 @@ public class DataService : IDataService
 
         return true;
     }
-
-
+    
     public async Task<IList<ModrinthProject>> GetAllModrinthProjectsAsync()
     {
         await using var db = GetDbContext();

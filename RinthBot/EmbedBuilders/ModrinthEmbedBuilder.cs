@@ -52,6 +52,10 @@ public static class ModrinthEmbedBuilder
             sbFiles.AppendLine($"[{file.FileName}]({file.Url}) | {ByteSize.FromBytes(file.Size).Humanize()}");
         }
 
+        var changelog = string.IsNullOrEmpty(version.Changelog) ? "\n\n*No changelog provided*" : $"\n\n**Changelog**" +
+                        $"\n---------------" +
+                        $"\n{version.Changelog}".Truncate(2000);
+
         var projectUrl = GetProjectUrl(project);
 
         var embed = new EmbedBuilder
@@ -69,9 +73,7 @@ public static class ModrinthEmbedBuilder
             },
             Title = $"{project.Title} | New Version Found",
             Description = $"Version **{version.VersionNumber}** has been uploaded to Modrinth" +
-                          $"\n\n**Changelog**" +
-                          $"\n---------------" +
-                          $"\n{version.Changelog}".Truncate(2000),
+                          changelog,
             Url = projectUrl,
             ThumbnailUrl = project.IconUrl,
             ImageUrl = null,

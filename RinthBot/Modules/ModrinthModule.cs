@@ -9,6 +9,7 @@ using RinthBot.Services;
 using Fergun.Interactive;
 using Microsoft.Extensions.Logging;
 using Modrinth.RestClient.Models;
+using RinthBot.ComponentBuilders;
 using RinthBot.Interfaces;
 // ReSharper disable MemberCanBePrivate.Global
 
@@ -50,17 +51,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                 return buttons;
         }
 
-        public static ButtonBuilder GetProjectLinkButton(Project project)
-        {
-                var linkBtn = new ButtonBuilder()
-                {
-                        Style = ButtonStyle.Link,
-                        Url = ModrinthEmbedBuilder.GetProjectUrl(project),
-                        Label = "Project's site"
-                };
 
-                return linkBtn;
-        }
 
         [SlashCommand("search", "Search Projects (by slug, ID or search) and gives you info about the first response")]
         public async Task SearchProject(string query)
@@ -117,7 +108,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                 {
                         x.Embed = ModrinthEmbedBuilder.GetProjectEmbed(project).Build();
                         x.Components = GetSubscribeButtons(project.Id, !subscribedToProject)
-                                .WithButton(GetProjectLinkButton(project))
+                                .WithButton(ModrinthComponentBuilder.GetProjectLinkButton(project))
                                 .Build();
                 });
         }
@@ -349,9 +340,14 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                 var embed = ModrinthEmbedBuilder.VersionUpdateEmbed(project, latestVersion)
                         .WithTitle($"{project.Title} | Latest version");
                 
+                var buttons =
+                        new ComponentBuilder().WithButton(
+                                ModrinthComponentBuilder.GetVersionUrlButton(project, latestVersion));
+                
                 await ModifyOriginalResponseAsync(x =>
                 {
                         x.Embed = embed.Build();
+                        x.Components = buttons.Build();
                 });
         }
 
@@ -459,7 +455,7 @@ public class ModrinthInteractionModule : InteractionModuleBase
         private MessageComponent GetButtons(Project project, bool subEnabled = true)
         {
                 var components = ModrinthModule.GetSubscribeButtons(Context.User.Id, Context.Guild.Id, project.Id, subEnabled)
-                        .WithButton(ModrinthModule.GetProjectLinkButton(project));
+                        .WithButton(ModrinthComponentBuilder.GetProjectLinkButton(project));
 
                 return components.Build();
         }

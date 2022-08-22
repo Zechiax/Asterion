@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel;
 using System.Net;
 using System.Timers;
+using Discord;
 using Discord.WebSocket;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
@@ -8,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using Modrinth.RestClient;
 using Modrinth.RestClient.Models;
 using RestEase;
+using RinthBot.ComponentBuilders;
 using RinthBot.Database;
 using Timer = System.Timers.Timer;
 using Version = Modrinth.RestClient.Models.Version;
@@ -125,9 +127,12 @@ public class ModrinthService
         foreach (var version in newVersions.Reverse())
         {
             var embed = ModrinthEmbedBuilder.VersionUpdateEmbed(currentProject, version);
+            var buttons =
+                new ComponentBuilder().WithButton(
+                    ModrinthComponentBuilder.GetVersionUrlButton(currentProject, version));
             try
             {
-                await textChannel.SendMessageAsync(embed: embed.Build());
+                await textChannel.SendMessageAsync(embed: embed.Build(), components: buttons.Build());
             }
             catch (Exception ex)
             {

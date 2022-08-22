@@ -17,6 +17,16 @@ public static class ModrinthEmbedBuilder
         return $"https://modrinth.com/{(project.ProjectType == ProjectType.Mod ? "mod" : "modpack")}/{project.Id}";
     }
 
+    public static string GetVersionUrl(Project project, Version version)
+    {
+        return $"{GetProjectUrl(project)}/version/{version.Id}";
+    }
+
+    /// <summary>
+    /// Creates embed with basic project info
+    /// </summary>
+    /// <param name="project">The project from which to get the info</param>
+    /// <returns>Embed builder, which can be further edited</returns>
     public static EmbedBuilder GetProjectEmbed(Project project)
     {
         var embed = new EmbedBuilder
@@ -52,9 +62,8 @@ public static class ModrinthEmbedBuilder
             sbFiles.AppendLine($"[{file.FileName}]({file.Url}) | {ByteSize.FromBytes(file.Size).Humanize()}");
         }
 
-        var changelog = string.IsNullOrEmpty(version.Changelog) ? "\n\n*No changelog provided*" : $"\n\n**Changelog**" +
-                        $"\n---------------" +
-                        $"\n{version.Changelog}".Truncate(2000);
+        var changelog = string.IsNullOrEmpty(version.Changelog) ? "\n\n*No changelog provided*" : $"\n\n{Format.Underline(Format.Bold("Changelog:"))}\n" +
+            $"{version.Changelog}".Truncate(2000);
 
         var projectUrl = GetProjectUrl(project);
 
@@ -99,7 +108,7 @@ public static class ModrinthEmbedBuilder
                 },
                 new()
                 {
-                    Name = $"File{(version.Files.Length > 1 ? "s" : null)}",
+                    Name = $"Files",
                     Value = sbFiles.ToString(),
                 },
                 new()
@@ -107,7 +116,7 @@ public static class ModrinthEmbedBuilder
                     Name = "Links",
                     Value = string.Join(" | ", 
                         $"[Changelog]({projectUrl}/changelog)", 
-                        $"[Version Info]({projectUrl}/version/{version.Id})")
+                        $"[Version Info]({GetVersionUrl(project, version)})")
                 }
             },
             Timestamp = version.DatePublished,

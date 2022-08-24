@@ -16,10 +16,10 @@
       <PackageReference Include="Discord.Net" Version="3.7.2" />
       <PackageReference Include="Fergun.Interactive" Version="1.6.0" />
       <PackageReference Include="Humanizer.Core" Version="2.14.1" />
-      <PackageReference Include="Microsoft.Data.Sqlite" Version="6.0.7" />
-      <PackageReference Include="Microsoft.EntityFrameworkCore" Version="6.0.7" />
-      <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="6.0.7" />
-      <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="6.0.7">
+      <PackageReference Include="Microsoft.Data.Sqlite" Version="6.0.8" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore" Version="6.0.8" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="6.0.8" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="6.0.8">
         <PrivateAssets>all</PrivateAssets>
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       </PackageReference>

@@ -21,7 +21,7 @@ public class IdCompletionHandler : AutocompleteHandler
             return AutocompletionResult.FromSuccess();
         }
 
-        var results = projects.Select(project => new AutocompleteResult(project.ProjectId, project.ProjectId)).ToList();
+        var results = projects.Select(project => new AutocompleteResult(project.ProjectId, project.ProjectId));
 
         // max - 25 suggestions at a time (API limit)
         return AutocompletionResult.FromSuccess(results.Take(25));

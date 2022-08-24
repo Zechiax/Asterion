@@ -14,7 +14,7 @@ public class IdCompletionHandler : AutocompleteHandler
     {
         var user = await context.Guild.GetUserAsync(context.User.Id);
         
-        // TODO: Make this show to everyone
+        // TODO: Make this show to people who have role for managing subscribed projects
         // Only show list of subscribed projects to administrators
         if (user.GuildPermissions.Administrator == false)
         {

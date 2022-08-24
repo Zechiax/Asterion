@@ -89,8 +89,7 @@ public class DataService : IDataService
         }
 
         var array = guild.ModrinthArray;
-
-        //TODO: Check if it is removing all related entries
+        
         // Remove all subscribed items
         db.ModrinthEntries.RemoveRange(db.ModrinthEntries.Where(x => x.ArrayId == array.ArrayId));
         // Remove the array

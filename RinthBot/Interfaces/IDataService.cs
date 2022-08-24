@@ -40,7 +40,7 @@ public interface IDataService
     /// </summary>
     /// <param name="projectId">The ID of the project to be updated</param>
     /// <param name="newVersion">The new version string</param>
-    /// <param name="lastUpdate">The time of the last update, if null, DateTime.Now() will be used</param> //TODO: Better comment, like make the method interactive or smthng
+    /// <param name="lastUpdate">The time of the last update, if null, DateTime.Now() will be used</param>
     /// <returns>True if the update was successful, False if not</returns>
     public Task<bool> UpdateModrinthProjectAsync(string projectId, string newVersion, DateTime? lastUpdate = null);
     

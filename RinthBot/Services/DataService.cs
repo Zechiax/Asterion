@@ -251,12 +251,12 @@ public class DataService : IDataService
             return null;
         }
 
-        var entries = db.ModrinthEntries.Where(x => x.ArrayId == guild.ModrinthArrayId).ToList();
+        var entries = db.ModrinthEntries.Include(o => o.Project).Where(x => x.ArrayId == guild.ModrinthArrayId).ToList();
 
         return entries;
     }
     
-    public async Task<bool> UpdateModrinthProjectAsync(string projectId, string newVersion, DateTime? lastUpdate = null)
+    public async Task<bool> UpdateModrinthProjectAsync(string projectId, string? newVersion = null, string? title = null, DateTime? lastUpdate = null)
     {
         await using var db = GetDbContext();
         
@@ -270,8 +270,19 @@ public class DataService : IDataService
         }
 
         project.LastUpdated = lastUpdate;
-        project.LastCheckVersion = newVersion;
-        
+
+        // Update version
+        if (string.IsNullOrEmpty(newVersion) == false)
+        {
+            project.LastCheckVersion = newVersion;
+        }
+
+        // Update project title
+        if (string.IsNullOrEmpty(title) == false)
+        {
+            project.Title = title;
+        }
+
         await db.SaveChangesAsync();
 
         return true;

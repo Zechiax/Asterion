@@ -85,6 +85,13 @@ public class ModrinthService
                     _logger.LogError("Updater wasn't able to get information for project ID {ID}, skipping...", project.ProjectId);
                     continue;
                 }
+                
+                // Update title of the project in the database
+                if (updateInfo.Project is not null && project.Title != updateInfo.Project.Title)
+                {
+                    _logger.LogInformation("Updating title of project ID {ID} from title '{OldTitle}' to '{NewTitle}'", project.ProjectId, project.Title, updateInfo.Project.Title);
+                    await _dataService.UpdateModrinthProjectAsync(project.ProjectId, title: updateInfo.Project.Title);
+                }
 
                 if (updateInfo.Versions!.Length < 1)
                 {

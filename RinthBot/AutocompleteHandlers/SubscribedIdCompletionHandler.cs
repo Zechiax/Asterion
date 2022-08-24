@@ -2,16 +2,18 @@
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
+using Humanizer;
 using Microsoft.Extensions.DependencyInjection;
 using RinthBot.Services;
 
 namespace RinthBot.AutocompleteHandlers;
 
-public class IdCompletionHandler : AutocompleteHandler
+public class SubscribedIdCompletionHandler : AutocompleteHandler
 {
     public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction,
         IParameterInfo parameter, IServiceProvider services)
     {
+        var data = services.GetRequiredService<DataService>();
         var user = await context.Guild.GetUserAsync(context.User.Id);
         
         // TODO: Make this show to people who have role for managing subscribed projects
@@ -20,8 +22,7 @@ public class IdCompletionHandler : AutocompleteHandler
         {
             return AutocompletionResult.FromSuccess();
         }
-        
-        var data = services.GetRequiredService<DataService>();
+
         var userInput = (context.Interaction as SocketAutocompleteInteraction)?.Data.Current.Value.ToString();
         var projects = await data.GetAllGuildsSubscribedProjectsAsync(context.Guild.Id);
 
@@ -31,7 +32,10 @@ public class IdCompletionHandler : AutocompleteHandler
             return AutocompletionResult.FromSuccess();
         }
         
-        var results = projects.Select(project => new AutocompleteResult(project.ProjectId, project.ProjectId))
+        var results = projects.Select(project =>
+                new AutocompleteResult(
+                    $"{project.ProjectId} - {project.Project.Title}".Truncate(100), // Truncate because 100 seems like Discord API's limit for autocomplete name
+                    project.ProjectId))
             .Where(x => userInput != null && x.Name.Contains(userInput, StringComparison.InvariantCultureIgnoreCase));
 
         // max - 25 suggestions at a time (API limit)

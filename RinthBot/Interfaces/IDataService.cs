@@ -34,15 +34,16 @@ public interface IDataService
     /// <param name="guildId">The guild's ID</param>
     /// <returns></returns>
     public Task<IList<ModrinthEntry>?> GetAllGuildsSubscribedProjectsAsync(ulong guildId);
-    
+
     /// <summary>
     /// Updates Modrinth project with new information
     /// </summary>
     /// <param name="projectId">The ID of the project to be updated</param>
     /// <param name="newVersion">The new version string</param>
+    /// <param name="title">The new title of the project</param>
     /// <param name="lastUpdate">The time of the last update, if null, DateTime.Now() will be used</param>
     /// <returns>True if the update was successful, False if not</returns>
-    public Task<bool> UpdateModrinthProjectAsync(string projectId, string newVersion, DateTime? lastUpdate = null);
+    public Task<bool> UpdateModrinthProjectAsync(string projectId, string? newVersion = null, string? title = null, DateTime? lastUpdate = null);
     
     /// <summary>
     /// Returns all Modrinth projects stored in database

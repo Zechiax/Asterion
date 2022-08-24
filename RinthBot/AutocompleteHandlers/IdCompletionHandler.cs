@@ -12,11 +12,8 @@ public class IdCompletionHandler : AutocompleteHandler
     public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction,
         IParameterInfo parameter, IServiceProvider services)
     {
-        
-        var userInput = (context.Interaction as SocketAutocompleteInteraction)?.Data.Current.Value.ToString();
-        
         var data = services.GetRequiredService<DataService>();
-
+        var userInput = (context.Interaction as SocketAutocompleteInteraction)?.Data.Current.Value.ToString();
         var projects = await data.GetAllGuildsSubscribedProjectsAsync(context.Guild.Id);
 
         if (projects is null)

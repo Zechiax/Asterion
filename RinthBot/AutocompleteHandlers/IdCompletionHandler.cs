@@ -12,6 +12,15 @@ public class IdCompletionHandler : AutocompleteHandler
     public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction,
         IParameterInfo parameter, IServiceProvider services)
     {
+        var user = await context.Guild.GetUserAsync(context.User.Id);
+        
+        // TODO: Make this show to everyone
+        // Only show list of subscribed projects to administrators
+        if (user.GuildPermissions.Administrator == false)
+        {
+            return AutocompletionResult.FromSuccess();
+        }
+        
         var data = services.GetRequiredService<DataService>();
         var userInput = (context.Interaction as SocketAutocompleteInteraction)?.Data.Current.Value.ToString();
         var projects = await data.GetAllGuildsSubscribedProjectsAsync(context.Guild.Id);

@@ -41,7 +41,7 @@ public static class ModrinthEmbedBuilder
                 // Format downloads from 319803 to 319,8K 
                  new() { Name = "Downloads", Value = project.Downloads.ToMetric(decimals: 1).Transform(To.UpperCase), IsInline = true },
                 // Format downloads from 319803 to 319 803
-                //new() { Name = "Downloads", Value = project.Downloads.SeparateThousands(), IsInline = true },
+                // new() { Name = "Downloads", Value = project.Downloads.SeparateThousands(), IsInline = true },
                 new() { Name = "Followers", Value = project.Followers.SeparateThousands(), IsInline = true },
                 new() { Name = "Categories", Value = string.Join(", ", project.Categories).Transform(To.TitleCase), IsInline = true },
                 new() { Name = "Type", Value = project.ProjectType.Humanize(), IsInline = true },
@@ -72,7 +72,6 @@ public static class ModrinthEmbedBuilder
             Author = new EmbedAuthorBuilder
             {
                 Name = $"Modrinth | {project.ProjectType.ToString()}",
-                // TODO: Get icon from elsewhere
                 IconUrl = "https://avatars.githubusercontent.com/u/67560307",
                 Url = "https://modrinth.com/"
             },

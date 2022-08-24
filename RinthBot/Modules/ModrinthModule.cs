@@ -9,6 +9,7 @@ using RinthBot.Services;
 using Fergun.Interactive;
 using Microsoft.Extensions.Logging;
 using Modrinth.RestClient.Models;
+using RinthBot.AutocompleteHandlers;
 using RinthBot.ComponentBuilders;
 using RinthBot.Interfaces;
 // ReSharper disable MemberCanBePrivate.Global
@@ -155,7 +156,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
         [RequireRole("Subs Manager", Group = "ManageSubs")]
         [SlashCommand("unsubscribe", "Remove Modrinth project from your watched list")]
-        public async Task Unsubscribe(string projectId)
+        public async Task Unsubscribe([Summary("project_id"), Autocomplete(typeof(IdCompletionHandler))]string projectId)
         {
                 await DeferAsync();
                 var removed = await DataService.RemoveModrinthProjectFromGuildAsync(Context.Guild.Id, projectId);

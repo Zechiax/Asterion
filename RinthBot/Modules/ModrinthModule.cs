@@ -505,6 +505,14 @@ public class ModrinthInteractionModule : InteractionModuleBase
                 await DataService.AddModrinthProjectToGuildAsync(guildId, project.Id, latestVersion.Id);
 
                 await FollowupAsync($"Subscribed to updates for project **{project.Title}** with ID **{project.Id}** :white_check_mark:", ephemeral: true);
+
+                var guild = await DataService.GetGuildByIdAsync(guildId);
+
+                if (guild is {UpdateChannel: null})
+                {
+                        await FollowupAsync(
+                                $":warning: You didn't set default update channel, updates for projects subscribed from search will be send to default channel, set it through the [/modrinth set-update-channel](https://zechiax.gitbook.io/rinthbot/commands/set-update-chanel) command :warning:");
+                }
         }
 
         [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]

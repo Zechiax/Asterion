@@ -23,6 +23,9 @@ public class DataService : IDataService
     public async Task InitializeAsync()
     {
         await RegisterNewGuilds();
+        
+        // Clean entries with no project
+        await RemoveProjectsWithNoEntries();
     }
 
     private async Task JoinGuild(SocketGuild guild)
@@ -80,7 +83,7 @@ public class DataService : IDataService
     {
         await using var db = GetDbContext();
 
-        var guild = await db.Guilds.Include(o => o.ModrinthArray).FirstOrDefaultAsync(x => x.GuildId == guildId);
+        var guild = db.Guilds.Include(o => o.ModrinthArray).SingleOrDefault(x => x.GuildId == guildId);
 
         if (guild is null)
         {
@@ -99,7 +102,31 @@ public class DataService : IDataService
 
         await db.SaveChangesAsync();
 
+        // Remove all unused projects
+        await RemoveProjectsWithNoEntries();
+        
         return true;
+    }
+
+    private async Task RemoveProjectsWithNoEntries()
+    {
+        _logger.LogInformation("Removing projects with no entries");
+        await using var db = GetDbContext();
+
+        var projects = db.ModrinthProjects.ToList();
+        
+        foreach (var project in projects)
+        {
+            var entries = db.ModrinthEntries.Where(x => x.Project == project);
+
+            
+            if (entries.Any()) continue;
+            
+            // If the project has no entries, there is no need for it in database
+            _logger.LogInformation("Project ID {ProjectId} {ProjectTitle} has no entries, it\'s being removed", project.ProjectId, project.Title);
+            db.ModrinthProjects.Remove(project);
+            await db.SaveChangesAsync();
+        }
     }
 
     public async Task<Guild?> GetGuildByIdAsync(ulong guildId)

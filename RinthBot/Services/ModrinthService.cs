@@ -72,6 +72,8 @@ public class ModrinthService
         _logger.LogInformation("Running update check");
         var projects = await _dataService.GetAllModrinthProjectsAsync();
 
+        List<ulong> notifiedGuilds = new();
+
         // Check every project for update sequentially (lesser chance for being rate-limited)
         foreach (var project in projects)
         {
@@ -111,6 +113,15 @@ public class ModrinthService
                     if (channel is null)
                     {
                         _logger.LogInformation("Guild ID {GuildID} has not yet set default update channel or custom channel for this project", guild.GuildId);
+                        var socketGuild = _client.GetGuild(guild.GuildId);
+
+                        if (socketGuild is not null && notifiedGuilds.Contains(guild.GuildId) == false)
+                        {
+                            _logger.LogInformation("Sending information message to the owner of this guild");
+                            notifiedGuilds.Add(guild.GuildId);
+                            await InformOwner(socketGuild, updateInfo.Project!);
+                        }
+
                         continue;
                     }
                     
@@ -126,6 +137,14 @@ public class ModrinthService
             }
         }
         _logger.LogInformation("Update check ended");
+    }
+
+    private async Task InformOwner(SocketGuild guild, Project project)
+    {
+        await guild.Owner.SendMessageAsync(
+            $"Hi! I've found updates for one of your subscribed projects ({project.Id} - {project.Title}), but I've noticed that you haven't set your default update channel, so I don't know where to send updates for this project" +
+            $"\n\nFor that I have the `/modrinth set-update-channel` command, you can check the documentation for this command here: https://zechiax.gitbook.io/rinthbot/commands/set-update-chanel" +
+            $"\n\nFor information regarding subscribing projects, see this guide https://zechiax.gitbook.io/rinthbot/guides/subscribe-to-your-first-project");
     }
 
     private async Task SendUpdatesToChannel(SocketTextChannel textChannel, Project currentProject, IEnumerable<Version> newVersions)

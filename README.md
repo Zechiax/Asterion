@@ -50,9 +50,9 @@ After you invite the bot to your server, it's time to set it up
     - [ ] Add config command which will have everything at hand
 - [ ] Settings with different layouts of the update message
 - [ ] Add ping role for updates
-- [ ] Add option to have a custom role for managing subscribed projects
+- [x] Add option to have a custom role for managing subscribed projects
     - [x] Added static "Subs Manager" role
-    - [ ] Add Custom role
+    - [x] Add Custom role
 - [ ] Multiple channels support (so you can set per project channel)
   - [x] Option to have custom channel for each project
   - [ ] Easier channel settings (with buttons and not command)

@@ -1,4 +1,5 @@
 ﻿using System.Data.Entity.Core;
+using Discord;
 using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -81,6 +82,11 @@ public class DataService : IDataService
     {
         _logger.LogInformation("Removing left guilds that the bot is no longer connected to");
 
+        if (_client.LoginState != LoginState.LoggedIn)
+        {
+            _logger.LogError("Guild removal interrupted because client is not logged in");
+        }
+        
         var removedGuildsCount = 0;
         var connectedGuilds = _client.Guilds;
 

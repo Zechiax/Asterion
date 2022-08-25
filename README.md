@@ -15,48 +15,8 @@
 - Easy subscribe with buttons from search
 - Custom channels! You can set per-project update channel
 
-## Get Started
-After you invite the bot to your server, it's time to set it up
-*For most commands you need to have Administrator privilege or have 'Subs Manager' role*
-1. **Set-up a default update channel**
-	- `/modrinth set-update-channel [channel]`
-	- This will set the default update channel, when you subscribe from search this will be the channel where the updates are sent
-2. **Subscribe to projects**
-	- You can use `/modrinth subscribe [projectID] [custom channel]` this way you can directly subscribe to project using it's ID
-		- You don't have to provide custom channel, then the default one will be used
-	- **Easier** `/modrinth search [query]`
-		- Where you can search for project with slug, ID or it's name
-		- The subscribe button doesn't let you pick a channel, but it will use the default one, if you want custom channel for this project, use the `subscribe` command and the ID from the search
-3. **Test your setup**
-	- Use `/modrinth test-setup` which will test if the bot can send message to your default channel and give you feedback 
-
-### Other commands
-- `/modrinth list [Plain/Table]`
-    - This will list all your subscribed projects, default is Plain which is simple text
-    - Table will generate Markdown like table
-- `/modrinth unsubscribe [projectID]`
-    - Unsubscribe project - you can actually do that even from search
-- `/modrinth unsubscribe-all`
-  - Removes all subscribed projects (will require confirmation)
-- `/modrinth latest-release [projectID]`
-  - Gives you information about the latest release with a changelog
-
-## TODOs
-- [ ] Better UX overall
-    - [x] Easy subscribe from search 
-    - [x] Unsubscribe all projects command
-    - [ ] Easier unsubscribing from list with buttons
-    - [ ] Export/Import list of subscribed projects
-    - [ ] Add config command which will have everything at hand
-- [ ] Settings with different layouts of the update message
-- [ ] Add ping role for updates
-- [ ] Add option to have a custom role for managing subscribed projects
-    - [x] Added static "Subs Manager" role
-    - [ ] Add Custom role
-- [ ] Multiple channels support (so you can set per project channel)
-  - [x] Option to have custom channel for each project
-  - [ ] Easier channel settings (with buttons and not command)
-- [ ] Support for other services? (e.g. CurseForge)
+## Wiki
+On wiki there are guides and documentation for all commands: https://zechiax.gitbook.io/rinthbot/
 
 ## Bug reports / Feature suggestions
 - Be aware that this bot is still in **early development** and it may not be 100% stable

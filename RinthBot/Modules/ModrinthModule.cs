@@ -151,6 +151,17 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                         x.Content = $@"Subscribed to updates for project **{project.Title}** with ID **{project.Id}** {
                                 (customChannel != null ? $", updates will be send to channel {customChannel.Mention}" : null)} :white_check_mark:";
                 });
+
+                if (customChannel != null)
+                {
+                        var guild = await DataService.GetGuildByIdAsync(Context.Guild.Id);
+
+                        if (guild is {UpdateChannel: null})
+                        {
+                                await FollowupAsync(
+                                        $":warning: You didn't set default update channel, updates for projects subscribed through the subscribe command without specifying custom channel will be send to default channel, set it through the [/modrinth set-update-channel](https://zechiax.gitbook.io/rinthbot/commands/set-update-chanel) command :warning:");
+                        }
+                }
         }
         
         [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]

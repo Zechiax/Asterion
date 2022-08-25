@@ -13,7 +13,9 @@ public class InteractionCommandHandler
     private readonly InteractionService _commands;
     private readonly IServiceProvider _services;
     private readonly ILogger _logger;
-    
+
+    private string _manageSubsGroupError =
+        "For this command, you either need to have Administrator permission or have role for managing subs";
     public InteractionCommandHandler(DiscordSocketClient client, InteractionService commands, IServiceProvider services)
     {
         _client = client;
@@ -54,7 +56,7 @@ public class InteractionCommandHandler
                 // Respond with the error reason
                 if (arg3.ErrorReason.Contains("ManageSubs"))
                 {
-                    await arg2.Interaction.RespondAsync("For this command, you either need to have Administrator permission or have 'Subs manager' role", ephemeral: true);
+                    await arg2.Interaction.RespondAsync(_manageSubsGroupError, ephemeral: true);
                     break;
                 }
                 await arg2.Interaction.RespondAsync(arg3.ErrorReason, ephemeral: true);
@@ -88,7 +90,7 @@ public class InteractionCommandHandler
             case InteractionCommandError.UnmetPrecondition:
                 if (arg3.ErrorReason.Contains("ManageSubs"))
                 {
-                    await arg2.Interaction.RespondAsync("For this command, you either need to have Administrator permission or have 'Subs manager' role", ephemeral: true);
+                    await arg2.Interaction.RespondAsync(_manageSubsGroupError, ephemeral: true);
                     break;
                 }
                 
@@ -125,7 +127,7 @@ public class InteractionCommandHandler
             case InteractionCommandError.UnmetPrecondition:
                 if (arg3.ErrorReason.Contains("ManageSubs"))
                 {
-                    await arg2.Interaction.RespondAsync("For this command, you either need to have Administrator permission or have 'Subs manager' role", ephemeral: true);
+                    await arg2.Interaction.RespondAsync(_manageSubsGroupError, ephemeral: true);
                     break;
                 }
                 

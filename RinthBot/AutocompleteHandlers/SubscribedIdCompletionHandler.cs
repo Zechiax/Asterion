@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Net;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
@@ -14,14 +15,20 @@ public class SubscribedIdCompletionHandler : AutocompleteHandler
         IParameterInfo parameter, IServiceProvider services)
     {
         var data = services.GetRequiredService<DataService>();
-        var user = await context.Guild.GetUserAsync(context.User.Id);
-        
-        // TODO: Make this show to people who have role for managing subscribed projects
-        // Only show list of subscribed projects to administrators
-        if (user.GuildPermissions.Administrator == false)
+
+        if (context.User is not IGuildUser guildUser)
         {
-            return AutocompletionResult.FromSuccess();
+            return AutocompletionResult.FromError(PreconditionResult.FromError("Command must be used in a guild channel."));
         }
+
+        var manageRoleId = await data.GetManageRoleIdAsync(context.Guild.Id);
+
+        // Only show list of subscribed projects to administrators or to users who have the manage subs role 
+        if (guildUser.GuildPermissions.Administrator == false && !(manageRoleId.HasValue && guildUser.RoleIds.Contains(manageRoleId.Value)))
+        {
+            return AutocompletionResult.FromError(PreconditionResult.FromError("For this command the user needs administrator permission or manage role check"));
+        }
+
 
         var userInput = (context.Interaction as SocketAutocompleteInteraction)?.Data.Current.Value.ToString();
         var projects = await data.GetAllGuildsSubscribedProjectsAsync(context.Guild.Id);

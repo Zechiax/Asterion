@@ -332,4 +332,32 @@ public class DataService : IDataService
 
         return guilds;
     }
+
+    public async Task<bool> SetManageRoleAsync(ulong guildId, ulong? roleId)
+    {
+        await using var db = GetDbContext();
+
+        var guild = db.Guilds.SingleOrDefault(x => x.GuildId == guildId);
+
+        if (guild is null)
+        {
+            return false;
+        }
+
+        guild.ManageRole = roleId;
+
+        await db.SaveChangesAsync();
+
+        return true;
+    }
+
+    public async Task<ulong?> GetManageRoleIdAsync(ulong guildId)
+    {
+        await using var db = GetDbContext();
+
+        var guild = await GetGuildByIdAsync(guildId);
+
+        // Return null if guild does not exists, otherwise return ManageRole value
+        return guild?.ManageRole;
+    }
 }

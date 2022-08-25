@@ -29,7 +29,6 @@ public class SubscribedIdCompletionHandler : AutocompleteHandler
             return AutocompletionResult.FromError(PreconditionResult.FromError("For this command the user needs administrator permission or manage role check"));
         }
 
-
         var userInput = (context.Interaction as SocketAutocompleteInteraction)?.Data.Current.Value.ToString();
         var projects = await data.GetAllGuildsSubscribedProjectsAsync(context.Guild.Id);
 
@@ -43,6 +42,7 @@ public class SubscribedIdCompletionHandler : AutocompleteHandler
                 new AutocompleteResult(
                     $"{project.ProjectId} - {project.Project.Title}".Truncate(100), // Truncate because 100 seems like Discord API's limit for autocomplete name
                     project.ProjectId))
+            // Let's filter results based on user's input
             .Where(x => userInput != null && x.Name.Contains(userInput, StringComparison.InvariantCultureIgnoreCase));
 
         // max - 25 suggestions at a time (API limit)

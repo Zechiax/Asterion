@@ -61,4 +61,19 @@ public interface IDataService
 
     public Task<ModrinthEntry?> GetModrinthEntryAsync(ulong guildId, string projectId);
     public Task<IList<Guild>> GetAllGuildsSubscribedToProject(string projectId);
+
+    /// <summary>
+    /// Saves the ManageRole to provided guild
+    /// </summary>
+    /// <param name="guildId">ID of the guild</param>
+    /// <param name="roleId">ID of the role</param>
+    /// <returns>If it was completed successfully</returns>
+    public Task<bool> SetManageRoleAsync(ulong guildId, ulong? roleId);
+
+    /// <summary>
+    /// Gets the ManageRole from provided guild
+    /// </summary>
+    /// <param name="guildId"></param>
+    /// <returns></returns>
+    public Task<ulong?> GetManageRoleIdAsync(ulong guildId);
 }

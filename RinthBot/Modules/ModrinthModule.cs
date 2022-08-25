@@ -115,7 +115,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         }
 
         [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
-        [RequireRole("Subs Manager", Group = "ManageSubs")]
+        [DoManageSubsRoleCheck(Group = "ManageSubs")]
         [SlashCommand("subscribe", "Add a Modrinth project to your watched list")]
         public async Task Subscribe(string projectId, SocketTextChannel? customChannel = null)
         {
@@ -154,7 +154,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         }
         
         [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
-        [RequireRole("Subs Manager", Group = "ManageSubs")]
+        [DoManageSubsRoleCheck(Group = "ManageSubs")]
         [SlashCommand("unsubscribe", "Remove Modrinth project from your watched list")]
         public async Task Unsubscribe([Summary("project_id"), Autocomplete(typeof(SubscribedIdCompletionHandler))]string projectId)
         {
@@ -177,7 +177,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         }
         
         [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
-        [RequireRole("Subs Manager", Group = "ManageSubs")]
+        [DoManageSubsRoleCheck(Group = "ManageSubs")]
         [SlashCommand("unsubscribe-all", "Removes all subscribed projects")]
         public async Task UnsubscribeAll()
         {
@@ -214,12 +214,12 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         }
 
         [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
-        [RequireRole("Subs Manager", Group = "ManageSubs")]
+        [DoManageSubsRoleCheck(Group = "ManageSubs")]
         [SlashCommand("list", "Lists all your subscribed projects")]
         public async Task ListSubscribed(ListType type = ListType.Plain)
         {
                 await DeferAsync();
-                var list = ((await DataService.GetAllGuildsSubscribedProjectsAsync(Context.Guild.Id))!).ToList();
+                var list = (await DataService.GetAllGuildsSubscribedProjectsAsync(Context.Guild.Id))!.ToList();
                 var guild = await DataService.GetGuildByIdAsync(Context.Guild.Id);
 
                 if (list.Count == 0)
@@ -353,7 +353,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         }
 
         [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
-        [RequireRole("Subs Manager", Group = "ManageSubs")]
+        [DoManageSubsRoleCheck(Group = "ManageSubs")]
         [SlashCommand("set-update-channel", "Sets the update channel")]
         public async Task SetUpdateChannel(SocketTextChannel channel)
         {
@@ -366,7 +366,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         }
 
         [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
-        [RequireRole("Subs Manager", Group = "ManageSubs")]
+        [DoManageSubsRoleCheck(Group = "ManageSubs")]
         [SlashCommand("test-setup", "Checks your setup (also tries to send a message to test channel and remove it)")]
         public async Task SendTextMessage()
         {
@@ -462,7 +462,7 @@ public class ModrinthInteractionModule : InteractionModuleBase
         }
 
         [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
-        [RequireRole("Subs Manager", Group = "ManageSubs")]
+        [DoManageSubsRoleCheck(Group = "ManageSubs")]
         [ComponentInteraction("sub-project:*;*;*", runMode: RunMode.Async)]
         public async Task SubProject(string userId, string projectId, ulong guildId)
         {
@@ -508,7 +508,7 @@ public class ModrinthInteractionModule : InteractionModuleBase
         }
 
         [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
-        [RequireRole("Subs Manager", Group = "ManageSubs")]
+        [DoManageSubsRoleCheck(Group = "ManageSubs")]
         [ComponentInteraction("unsub-project:*;*;*", runMode: RunMode.Async)]
         public async Task UnsubProject(string userId, string projectId, ulong guildId)
         {

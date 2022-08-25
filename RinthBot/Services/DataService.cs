@@ -84,7 +84,7 @@ public class DataService : IDataService
 
         if (guild is null)
         {
-            _logger.LogError("No guild with {ID} found in database, guild removal interrupted", guildId);
+            _logger.LogError("No guild with ID {ID} found in database, guild removal interrupted", guildId);
             return false;
         }
 

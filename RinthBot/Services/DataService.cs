@@ -23,7 +23,7 @@ public class DataService : IDataService
     public async Task InitializeAsync()
     {
         await RegisterNewGuilds();
-        
+        await RemoveLeftGuilds();
         // Clean entries with no project
         await RemoveProjectsWithNoEntries();
     }
@@ -72,6 +72,36 @@ public class DataService : IDataService
         }
         
         _logger.LogInformation("Registered {Count} new guilds", newGuildsCount);
+    }
+
+    /// <summary>
+    /// Removes guilds that the bot was kicked from while being offline
+    /// </summary>
+    private async Task RemoveLeftGuilds()
+    {
+        _logger.LogInformation("Removing left guilds that the bot is no longer connected to");
+
+        var removedGuildsCount = 0;
+        var connectedGuilds = _client.Guilds;
+
+        await using var db = GetDbContext();
+
+        foreach (var guild in db.Guilds)
+        {
+            var result = connectedGuilds.FirstOrDefault(x => x.Id == guild.GuildId);
+
+            // Bot is not connected to this guild and we can remove it
+            if (result is null)
+            {
+                _logger.LogInformation("Removing guild ID {ID}", guild.GuildId);
+                db.Remove(guild);
+                await db.SaveChangesAsync();
+
+                removedGuildsCount++;
+            }
+        }
+        
+        _logger.LogInformation("Removed {Count} guilds", removedGuildsCount);
     }
 
     private static DataContext GetDbContext()

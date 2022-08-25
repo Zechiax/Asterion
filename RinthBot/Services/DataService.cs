@@ -85,10 +85,17 @@ public class DataService : IDataService
         if (_client.LoginState != LoginState.LoggedIn)
         {
             _logger.LogError("Guild removal interrupted because client is not logged in");
+            return;
         }
         
         var removedGuildsCount = 0;
         var connectedGuilds = _client.Guilds;
+
+        if (connectedGuilds is null || connectedGuilds.Any() == false)
+        {
+            _logger.LogWarning("Guild removal interrupted because connected guilds count is zero");
+            return;
+        }
 
         await using var db = GetDbContext();
 

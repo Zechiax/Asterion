@@ -5,6 +5,11 @@ namespace RinthBot.Extensions;
 
 public static class LogExtensions
 {
+    /// <summary>
+    /// Converts DiscordNet's LogSeverity to Serilog's LogLevel 
+    /// </summary>
+    /// <param name="logSeverity"></param>
+    /// <returns></returns>
     public static LogLevel ToLogLevel(this LogSeverity logSeverity)
     {
         return logSeverity switch

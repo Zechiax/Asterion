@@ -15,12 +15,10 @@ public class LoggingService
 
     public LoggingService(IServiceProvider services)
     {
-        // get the services we need via DI, and assign the fields declared above to them
         _discord = services.GetRequiredService<DiscordSocketClient>();
         var commands = services.GetRequiredService<CommandService>();
         _logger = services.GetRequiredService<ILogger<LoggingService>>();
-
-        // hook into these events with the methods provided below
+        
         _discord.Ready += OnReadyAsync;
         _discord.JoinedGuild += GuildJoin;
         _discord.LeftGuild += GuildLeft;
@@ -28,8 +26,7 @@ public class LoggingService
         _discord.Log += OnLogAsync;
         commands.Log += OnLogAsync;
     }
-
-    // this method executes on the bot being connected/ready
+    
     private Task OnReadyAsync()
     {
         _logger.LogInformation("Connected as -> [{CurrentUser}] :)", _discord.CurrentUser.Username);
@@ -48,8 +45,12 @@ public class LoggingService
         _logger.LogInformation("Left guild {GuildId}:{GuildName}", guild.Id, guild.Name);
         return Task.CompletedTask;
     }
-
-    // this method switches out the severity level from Discord.Net's API, and logs appropriately
+    
+    /// <summary>
+    /// Logging for Discord.Net, switches the severity and logs appropriately
+    /// </summary>
+    /// <param name="msg"></param>
+    /// <returns></returns>
     private Task OnLogAsync(LogMessage msg)
     {
         var logLevel = msg.Severity.ToLogLevel();

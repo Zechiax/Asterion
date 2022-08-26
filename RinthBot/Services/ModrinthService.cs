@@ -53,7 +53,7 @@ public class ModrinthService
         };
         
         _updateWorker = new BackgroundWorker();
-        _updateWorker.DoWork += CheckUpdate;
+        _updateWorker.DoWork += CheckUpdates;
         
         
         var checkTimer = new Timer(MinutesToMilliseconds(60));
@@ -67,7 +67,12 @@ public class ModrinthService
         return TimeSpan.FromMinutes(minutes).TotalMilliseconds;
     }
 
-    private async void CheckUpdate(object? sender, DoWorkEventArgs e)
+    /// <summary>
+    /// Checks updates for every project stored in database, sends notification to every guild who has subscribed for updates  
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e"></param>
+    private async void CheckUpdates(object? sender, DoWorkEventArgs e)
     {
         _logger.LogInformation("Running update check");
         var projects = await _dataService.GetAllModrinthProjectsAsync();
@@ -281,7 +286,8 @@ public class ModrinthService
         }
 
     /// <summary>
-    /// Gets Modrinth Project, uses caching
+    /// Gets project by it's slug or ID, firstly it tries to retrieve it from cache, if it's not in cache,
+    /// then it will use Modrinth's API and saves the result to cache
     /// </summary>
     /// <param name="slugOrId"></param>
     /// <returns></returns>

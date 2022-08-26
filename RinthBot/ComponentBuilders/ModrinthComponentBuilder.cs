@@ -7,9 +7,15 @@ namespace RinthBot.ComponentBuilders;
 
 public static class ModrinthComponentBuilder
 {
+    /// <summary>
+    /// Generates link button to view specific version on Modrinth
+    /// </summary>
+    /// <param name="project"></param>
+    /// <param name="version"></param>
+    /// <returns></returns>
     public static ButtonBuilder GetVersionUrlButton(Project project, Version version)
     {
-        return new ButtonBuilder()
+        return new ButtonBuilder
         {
             Label = "View on Modrinth",
             Style = ButtonStyle.Link,
@@ -17,6 +23,11 @@ public static class ModrinthComponentBuilder
         };
     }
     
+    /// <summary>
+    /// Generates link button to view the project on Modrinth
+    /// </summary>
+    /// <param name="project"></param>
+    /// <returns></returns>
     public static ButtonBuilder GetProjectLinkButton(Project project)
     {
         var linkBtn = new ButtonBuilder()

@@ -9,7 +9,7 @@ using RinthBot.Services;
 
 namespace RinthBot.AutocompleteHandlers;
 
-public class SubscribedIdCompletionHandler : AutocompleteHandler
+public class SubscribedIdAutocompletionHandler : AutocompleteHandler
 {
     public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction,
         IParameterInfo parameter, IServiceProvider services)
@@ -26,6 +26,7 @@ public class SubscribedIdCompletionHandler : AutocompleteHandler
         // Only show list of subscribed projects to administrators or to users who have the manage subs role 
         if (guildUser.GuildPermissions.Administrator == false && !(manageRoleId.HasValue && guildUser.RoleIds.Contains(manageRoleId.Value)))
         {
+            // The error won't show to user, but to autocompletion handler
             return AutocompletionResult.FromError(PreconditionResult.FromError("For this command the user needs administrator permission or manage role check"));
         }
 

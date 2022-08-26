@@ -21,12 +21,41 @@ public interface IDataService
     /// <param name="guildId">ID of the guild to be removed</param>
     /// <returns>True if the guild was removed, false if the removal failed; guild doesn't exists</returns>
     public Task<bool> RemoveGuildAsync(ulong guildId);
+    /// <summary>
+    /// Gets guild by its ID
+    /// </summary>
+    /// <param name="guildId"></param>
+    /// <returns></returns>
     public Task<Guild?> GetGuildByIdAsync(ulong guildId);
+    /// <summary>
+    /// Sets the default update channel for the guild
+    /// </summary>
+    /// <param name="guildId"></param>
+    /// <param name="defaultUpdateChannel"></param>
+    /// <returns></returns>
     public Task SetDefaultUpdateChannelForGuild(ulong guildId, ulong defaultUpdateChannel);
+    /// <summary>
+    /// Adds Modrinth project to specific guild and generates Modrinth entry for this guild
+    /// </summary>
+    /// <param name="guildId"></param>
+    /// <param name="projectId"></param>
+    /// <param name="lastCheckVersion">ID of the latest version of this project</param>
+    /// <param name="customChannelId">Custom channel, if it should differ from default channel, left null if default is to be used</param>
+    /// <returns>If the operation was successful</returns>
     public Task<bool> AddModrinthProjectToGuildAsync(ulong guildId, string projectId, string lastCheckVersion,
         ulong? customChannelId);
-
+    /// <summary>
+    /// Removes Modrinth entry for specific guild and project
+    /// </summary>
+    /// <param name="guildId"></param>
+    /// <param name="projectId"></param>
+    /// <returns></returns>
     public Task<bool> RemoveModrinthProjectFromGuildAsync(ulong guildId, string projectId);
+    /// <summary>
+    /// Gets Modrinth project stored in database
+    /// </summary>
+    /// <param name="projectId"></param>
+    /// <returns>Null if the project is not in database</returns>
     public Task<ModrinthProject?> GetModrinthProjectByIdAsync(string projectId);
     /// <summary>
     /// Returns all subscribed projects of the guild
@@ -59,7 +88,18 @@ public interface IDataService
     /// <returns>True if guild is subscribed to project, false if not</returns>
     public Task<bool> IsGuildSubscribedToProjectAsync(ulong guildId, string projectId);
 
+    /// <summary>
+    /// Gets Modrinth entry for the specific project and guild
+    /// </summary>
+    /// <param name="guildId"></param>
+    /// <param name="projectId"></param>
+    /// <returns></returns>
     public Task<ModrinthEntry?> GetModrinthEntryAsync(ulong guildId, string projectId);
+    /// <summary>
+    /// Gets all guilds subscribed to specific project
+    /// </summary>
+    /// <param name="projectId"></param>
+    /// <returns></returns>
     public Task<IList<Guild>> GetAllGuildsSubscribedToProject(string projectId);
 
     /// <summary>

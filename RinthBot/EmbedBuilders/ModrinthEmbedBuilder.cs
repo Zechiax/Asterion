@@ -100,12 +100,6 @@ public static class ModrinthEmbedBuilder
             {
                 new()
                 {
-                    Name = "Type",
-                    Value = version.VersionType.Humanize(),
-                    IsInline = true
-                },
-                new()
-                {
                     Name = "MC Version",
                     Value = string.Join(", ",version.GameVersions),
                     IsInline = true

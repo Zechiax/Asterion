@@ -22,10 +22,12 @@ public class UpdateDto
 {
     public Version[]? Versions { get; set; }
     public Project? Project { get; set; }
+    public TeamMember[]? TeamMembers { get; set; }
+
     /// <summary>
     /// True if every information has been set, false otherwise
     /// </summary>
-    public bool Successful => Versions is not null && Project is not null;
+    public bool Successful => Versions is not null && Project is not null && TeamMembers is not null;
 }
 
 public class ModrinthService
@@ -132,7 +134,7 @@ public class ModrinthService
                     _logger.LogInformation("Sending updates to guild ID {Id} and channel ID {Channel}", guild.GuildId, channel.Id);
                     
                     // None of these can be null, everything is checked beforehand
-                    await SendUpdatesToChannel(channel, updateInfo.Project!, updateInfo.Versions!);
+                    await SendUpdatesToChannel(channel, updateInfo.Project!, updateInfo.Versions!, updateInfo.TeamMembers!);
                 }
             }
             catch (Exception ex)
@@ -151,12 +153,12 @@ public class ModrinthService
             $"\n\nFor information regarding subscribing projects, see this guide https://zechiax.gitbook.io/rinthbot/guides/subscribe-to-your-first-project");
     }
 
-    private async Task SendUpdatesToChannel(SocketTextChannel textChannel, Project currentProject, IEnumerable<Version> newVersions)
+    private async Task SendUpdatesToChannel(SocketTextChannel textChannel, Project currentProject, IEnumerable<Version> newVersions, TeamMember[] team)
     {
         // Iterate versions - they are ordered from latest to oldest, we want to sent them chronologically
         foreach (var version in newVersions.Reverse())
         {
-            var embed = ModrinthEmbedBuilder.VersionUpdateEmbed(currentProject, version);
+            var embed = ModrinthEmbedBuilder.VersionUpdateEmbed(currentProject, version, team);
             var buttons =
                 new ComponentBuilder().WithButton(
                     ModrinthComponentBuilder.GetVersionUrlButton(currentProject, version));
@@ -212,6 +214,9 @@ public class ModrinthService
 
                 // Get new versions from API
                 updateDto.Versions ??= await CheckProjectForUpdates(projectId);
+
+                // Get project's team
+                updateDto.TeamMembers ??= await GetProjectsTeamMembersAsync(projectId);
             }
             // Rate-limiting
             catch(ApiException e) when (e.StatusCode == HttpStatusCode.TooManyRequests)
@@ -327,6 +332,22 @@ public class ModrinthService
         }
 
         return null;
+    }
+
+    public async Task<TeamMember[]?> GetProjectsTeamMembersAsync(string projectId)
+    {
+        try
+        {
+            var team = await _api.GetProjectTeamMembersByProjectAsync(projectId);
+            return team;
+        }
+        catch (Exception e)
+        {
+            _logger.LogInformation("{ExceptionMessage}", e.Message);
+        }
+
+        return null;
+        
     }
 
     public async Task<SearchResponse?> SearchProjects(string query)

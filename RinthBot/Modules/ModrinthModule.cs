@@ -349,7 +349,9 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                         return;
                 }
 
-                var embed = ModrinthEmbedBuilder.VersionUpdateEmbed(project, latestVersion)
+                var team = await ModrinthService.GetProjectsTeamMembersAsync(project.Id);
+
+                var embed = ModrinthEmbedBuilder.VersionUpdateEmbed(project, latestVersion, team)
                         .WithTitle($"{project.Title} | Latest version");
                 
                 var buttons =

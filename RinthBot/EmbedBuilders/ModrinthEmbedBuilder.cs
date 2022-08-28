@@ -64,7 +64,7 @@ public static class ModrinthEmbedBuilder
         return embed;
     }
 
-    public static EmbedBuilder VersionUpdateEmbed(Project project, Version version)
+    public static EmbedBuilder VersionUpdateEmbed(Project project, Version version, IEnumerable<TeamMember>? teamMembers = null)
     {
         var sbFiles = new StringBuilder();
 
@@ -78,20 +78,32 @@ public static class ModrinthEmbedBuilder
 
         var projectUrl = GetProjectUrl(project);
 
+        var embedAuthor = new EmbedAuthorBuilder();
+
+        var owner = (teamMembers ?? Array.Empty<TeamMember>()).FirstOrDefault(x => string.Equals(x.Role, "owner", StringComparison.InvariantCultureIgnoreCase));
+        
+        if (owner is null)
+        {
+            embedAuthor.Name = $"Modrinth | {project.ProjectType.ToString()}";
+            embedAuthor.IconUrl = "https://avatars.githubusercontent.com/u/67560307";
+            embedAuthor.Url = "https://modrinth.com/";
+        }
+        else
+        {
+            embedAuthor.Name = owner.User.Username;
+            embedAuthor.IconUrl = owner.User.AvatarUrl;
+            embedAuthor.Url = $"https://modrinth.com/user/{owner.User.Id}";
+        }
+
         var embed = new EmbedBuilder
         {
-            Author = new EmbedAuthorBuilder
-            {
-                Name = $"Modrinth | {project.ProjectType.ToString()}",
-                IconUrl = "https://avatars.githubusercontent.com/u/67560307",
-                Url = "https://modrinth.com/"
-            },
+            Author = embedAuthor,
             Footer = new EmbedFooterBuilder
             {
                 Text = "Published"
             },
-            Title = $"{project.Title} | New Version Found",
-            Description = $"Version **{version.VersionNumber}** has been uploaded to Modrinth" +
+            Title = $"{Format.Bold(project.Title)} | New Version Found",
+            Description = $"Version {Format.Bold(version.VersionNumber)} has been uploaded to Modrinth" +
                           changelog,
             Url = projectUrl,
             ThumbnailUrl = project.IconUrl,
@@ -112,7 +124,7 @@ public static class ModrinthEmbedBuilder
                 },
                 new()
                 {
-                    Name = $"Files",
+                    Name = "Files",
                     Value = sbFiles.ToString(),
                 },
                 new()

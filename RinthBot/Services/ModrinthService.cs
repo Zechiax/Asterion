@@ -15,7 +15,6 @@ using Timer = System.Timers.Timer;
 using Version = Modrinth.RestClient.Models.Version;
 using RinthBot.EmbedBuilders;
 using RinthBot.Interfaces;
-using RinthBot.Services;
 
 namespace RinthBot.Services;
 

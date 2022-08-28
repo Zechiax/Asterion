@@ -14,7 +14,18 @@ public static class ModrinthEmbedBuilder
     private static readonly Color ModrinthColor = new Color(27, 217, 106);
     public static string GetProjectUrl(Project project)
     {
-        return $"https://modrinth.com/{(project.ProjectType == ProjectType.Mod ? "mod" : "modpack")}/{project.Id}";
+        return $"https://modrinth.com/{GetProjectUrlType(project)}/{project.Id}";
+    }
+
+    public static string GetProjectUrlType(Project project)
+    {
+        return project.ProjectType switch
+        {
+            ProjectType.Mod => "mod",
+            ProjectType.Modpack => "modpack",
+            ProjectType.Resourcepack => "resourcepack",
+            _ => string.Empty
+        };
     }
 
     public static string GetVersionUrl(Project project, Version version)

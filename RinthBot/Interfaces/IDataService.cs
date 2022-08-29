@@ -34,6 +34,7 @@ public interface IDataService
     /// <param name="defaultUpdateChannel"></param>
     /// <returns></returns>
     public Task SetDefaultUpdateChannelForGuild(ulong guildId, ulong defaultUpdateChannel);
+
     /// <summary>
     /// Adds Modrinth project to specific guild and generates Modrinth entry for this guild
     /// </summary>
@@ -41,9 +42,10 @@ public interface IDataService
     /// <param name="projectId"></param>
     /// <param name="lastCheckVersion">ID of the latest version of this project</param>
     /// <param name="customChannelId">Custom channel, if it should differ from default channel, left null if default is to be used</param>
+    /// <param name="projectTitle">Title of the project, not required</param>
     /// <returns>If the operation was successful</returns>
     public Task<bool> AddModrinthProjectToGuildAsync(ulong guildId, string projectId, string lastCheckVersion,
-        ulong? customChannelId);
+        ulong customChannelId, string? projectTitle = null);
     /// <summary>
     /// Removes Modrinth entry for specific guild and project
     /// </summary>
@@ -116,4 +118,6 @@ public interface IDataService
     /// <param name="guildId"></param>
     /// <returns></returns>
     public Task<ulong?> GetManageRoleIdAsync(ulong guildId);
+
+    public Task<bool> ChangeModrinthEntryChannel(ulong guildId, string projectId, ulong newChannelId);
 }

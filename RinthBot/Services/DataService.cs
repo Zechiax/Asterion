@@ -176,7 +176,7 @@ public class DataService : IDataService
     {
         await using var db = GetDbContext();
 
-        var guild = await db.Guilds.FirstOrDefaultAsync(g => g.GuildId == guildId);
+        var guild = await db.Guilds.Include(o => o.ModrinthArray).FirstOrDefaultAsync(g => g.GuildId == guildId);
 
         return guild;
     }
@@ -230,7 +230,7 @@ public class DataService : IDataService
         return true;
     }
 
-    public async Task<bool> AddModrinthProjectToGuildAsync(ulong guildId, string projectId, string lastCheckVersion, ulong? customChannelId = null)
+    public async Task<bool> AddModrinthProjectToGuildAsync(ulong guildId, string projectId, string lastCheckVersion, ulong customChannelId, string? projectTitle = null)
     {
         await using var db = GetDbContext();
 
@@ -253,7 +253,8 @@ public class DataService : IDataService
                 ProjectId = projectId,
                 Created = DateTime.Now,
                 LastUpdated = DateTime.Now,
-                LastCheckVersion = lastCheckVersion
+                LastCheckVersion = lastCheckVersion,
+                Title = projectTitle
             }).Entity;
         }
         
@@ -429,5 +430,31 @@ public class DataService : IDataService
 
         // Return null if guild does not exists, otherwise return ManageRole value
         return guild?.ManageRole;
+    }
+
+    public async Task<bool> ChangeModrinthEntryChannel(ulong guildId, string projectId, ulong newChannelId)
+    {
+        await using var db = GetDbContext();
+
+        var guild = await GetGuildByIdAsync(guildId);
+
+        if (guild is null)
+        {
+            return false;
+        }
+
+        var entry = db.ModrinthEntries
+            .FirstOrDefault(x => x.Array == guild.ModrinthArray && x.ProjectId == projectId);
+
+        if (entry is null)
+        {
+            return false;
+        }
+
+        entry.CustomUpdateChannel = newChannelId;
+
+        await db.SaveChangesAsync();
+
+        return true;
     }
 }

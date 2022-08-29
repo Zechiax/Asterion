@@ -121,6 +121,8 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         {
                 await DeferAsync();
                 var project = await ModrinthService.GetProject(projectId);
+
+                var channel = customChannel ?? Context.Guild.GetTextChannel(Context.Channel.Id);
                 
                 if (project == null)
                 {
@@ -144,26 +146,52 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                 // Get last version ID
                 var lastVersion = versions.OrderByDescending(x => x.DatePublished).First().Id;
 
-                await DataService.AddModrinthProjectToGuildAsync(Context.Guild.Id, project.Id, lastVersion, customChannel?.Id);
+                await DataService.AddModrinthProjectToGuildAsync(Context.Guild.Id, project.Id, lastVersion, channel.Id, project.Title);
                 
                 await ModifyOriginalResponseAsync(x =>
                 {
-                        x.Content = $@"Subscribed to updates for project **{project.Title}** with ID **{project.Id}** {
-                                (customChannel != null ? $", updates will be send to channel {customChannel.Mention}" : null)} :white_check_mark:";
+                        x.Content = $@"Subscribed to updates for project **{project.Title}** with ID **{project.Id}** updates will be send to channel {channel.Mention} :white_check_mark:";
                 });
+        }
 
-                if (customChannel != null)
+        [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
+        [DoManageSubsRoleCheck(Group = "ManageSubs")]
+        [SlashCommand("change-channel", "Change channel for one of your subscribed projects")]
+        public async Task ChangeChannel(
+                [Summary("project_id"), Autocomplete(typeof(SubscribedIdAutocompletionHandler))] string projectId,
+                SocketTextChannel newChannel)
+        {
+                await DeferAsync();
+                
+                var subscribed = await DataService.IsGuildSubscribedToProjectAsync(Context.Guild.Id, projectId);
+
+                if (!subscribed)
                 {
-                        var guild = await DataService.GetGuildByIdAsync(Context.Guild.Id);
-
-                        if (guild is {UpdateChannel: null})
+                        await ModifyOriginalResponseAsync(x =>
                         {
-                                await FollowupAsync(
-                                        $":warning: You didn't set default update channel, updates for projects subscribed through the subscribe command without specifying custom channel will be send to default channel, set it through the [/modrinth set-update-channel](https://zechiax.gitbook.io/rinthbot/commands/set-update-chanel) command :warning:");
-                        }
+                                x.Content = $"You're now subscribed to project ID {projectId}";
+                        });
+                        return;
+                }
+
+                var success = await DataService.ChangeModrinthEntryChannel(Context.Guild.Id, projectId, newChannel.Id);
+
+                if (success)
+                {
+                        await ModifyOriginalResponseAsync(x =>
+                        {
+                                x.Content = $"New updates for project {projectId} will be send to channel {newChannel.Mention} :white_check_mark:";
+                        });
+                }
+                else
+                {
+                        await ModifyOriginalResponseAsync(x =>
+                        {
+                                x.Content = $"Something went wrong while changing the update channel, please try again later";
+                        });
                 }
         }
-        
+
         [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
         [DoManageSubsRoleCheck(Group = "ManageSubs")]
         [SlashCommand("unsubscribe", "Remove Modrinth project from your watched list")]
@@ -227,7 +255,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
         [DoManageSubsRoleCheck(Group = "ManageSubs")]
         [SlashCommand("list", "Lists all your subscribed projects")]
-        public async Task ListSubscribed(ListType type = ListType.Plain)
+        public async Task ListSubscribed()
         {
                 await DeferAsync();
                 var list = (await DataService.GetAllGuildsSubscribedProjectsAsync(Context.Guild.Id))!.ToList();
@@ -242,83 +270,28 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                         return;
                 }
                 
-                var ids = list.Select(x => x.ProjectId).ToList();
-
-                var projects = await ModrinthService.GetMultipleProjects(ids);
-                if (projects == null)
-                {
-                        await ModifyOriginalResponseAsync(x =>
-                        {
-                                x.Content = "There was an error processing your request";
-                        });
-                        return;
-                }
-
-                var tableData = new List<List<object?>>();
                 var sb = new StringBuilder();
+                
                 sb.AppendLine("Title | Id | Channel");
-                //TODO: Only use StringBuilder or TableData
-                foreach (var project in projects)
+                foreach (var project in list)
                 {
                         // Find custom channel for this project
-                        var customChannel = list.Find(x => x.ProjectId == project.Id)?.CustomUpdateChannel;
+                        var customChannel = list.Find(x => x.ProjectId == project.ProjectId)?.CustomUpdateChannel;
 
                         // Get update channel for this project
                         var channel = customChannel != null
                                 ? Client.GetGuild(Context.Guild.Id).GetTextChannel((ulong) customChannel)
-                                : guild.UpdateChannel != null ? Client.GetGuild(Context.Guild.Id).GetTextChannel((ulong) guild.UpdateChannel) : null;
-                        
-                        tableData.Add(new List<object?>
-                        {
-                                project.Title, project.Id,
-                                channel != null
-                                        ? $@"#{channel.Name}"
-                                        : null
-                        });
+                                : null;
 
-                        sb.AppendLine($@"> **{project.Title}** | {project.Id} {
+                        sb.AppendLine($@"> **{project.Project.Title}** | {project.ProjectId} {
                                 (channel != null ? 
                                         $"| {channel.Mention}" : "| *not set*")}");
                 }
-
-                var table = ConsoleTableBuilder
-                        .From(tableData)
-                        .WithColumn("Name", "Id", "Channel")
-                        .WithTitle("Subscribed Projects")
-                        .WithCharMapDefinition(new Dictionary<CharMapPositions, char>
-                        {
-                                {CharMapPositions.BorderTop, '-' },
-                                {CharMapPositions.BorderLeft, '|' },
-                                {CharMapPositions.BorderRight, '|' },
-                                {CharMapPositions.DividerY, '|' }
-                        })
-                        .WithHeaderCharMapDefinition(new Dictionary<HeaderCharMapPositions, char> {
-                                {HeaderCharMapPositions.TopLeft, '=' },
-                                {HeaderCharMapPositions.TopCenter, '=' },
-                                {HeaderCharMapPositions.TopRight, '=' },
-                                {HeaderCharMapPositions.BottomLeft, '|' },
-                                {HeaderCharMapPositions.BottomCenter, '|' },
-                                {HeaderCharMapPositions.BottomRight, '|' },
-                                {HeaderCharMapPositions.Divider, '|' },
-                                {HeaderCharMapPositions.BorderTop, '=' },
-                                {HeaderCharMapPositions.BorderBottom, '-' },
-                                {HeaderCharMapPositions.BorderLeft, '|' },
-                                {HeaderCharMapPositions.BorderRight, '|' },
-                        })
-                        .Export()
-                        .ToString();
+                
                 
                 await ModifyOriginalResponseAsync(x =>
                 {
-                        switch (type)
-                        {
-                                case ListType.Plain:
-                                        x.Content = sb.ToString();
-                                        break;
-                                case ListType.Table:
-                                        x.Content = Format.Code(table);
-                                        break;
-                        }
+                        x.Content = sb.ToString();
                 });
         }
 
@@ -456,114 +429,5 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                         x.Content = $"Forced Update request: {ok}";
                         x.Flags = MessageFlags.Ephemeral;
                 });
-        }
-}
-
-public class ModrinthInteractionModule : InteractionModuleBase
-{
-        public DataService DataService { get; set; } = null!;
-        public ModrinthService ModrinthService { get; set; } = null!;
-
-        private const string RequestError = "Sorry, there was an error processing your request, try again later";
-
-        private MessageComponent GetButtons(Project project, bool subEnabled = true)
-        {
-                var components = ModrinthModule.GetSubscribeButtons(Context.User.Id, Context.Guild.Id, project.Id, subEnabled)
-                        .WithButton(ModrinthComponentBuilder.GetProjectLinkButton(project));
-
-                return components.Build();
-        }
-
-        [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
-        [DoManageSubsRoleCheck(Group = "ManageSubs")]
-        [ComponentInteraction("sub-project:*;*;*", runMode: RunMode.Async)]
-        public async Task SubProject(string userId, string projectId, ulong guildId)
-        {
-                await DeferAsync();
-
-                var subscribed = await DataService.IsGuildSubscribedToProjectAsync(guildId, projectId);
-                
-                var project = await ModrinthService.GetProject(projectId);
-
-                if (project == null)
-                {
-                        await FollowupAsync(RequestError, ephemeral: true);
-                        return;
-                }
-
-                // Already subscribed
-                if (subscribed)
-                {
-                        await ModifyOriginalResponseAsync(x =>
-                        {
-                                x.Components = GetButtons(project, false);
-                        });
-                        await FollowupAsync("You're already subscribed to updates for this project", ephemeral: true);
-                        return;
-                }
-                
-                var latestVersion = await ModrinthService.GetProjectsLatestVersion(project);
-                
-                if (latestVersion == null)
-                {
-                        await FollowupAsync(RequestError, ephemeral: true);
-                        return;
-                }
-                
-                await ModifyOriginalResponseAsync(x =>
-                {
-                        x.Components = GetButtons(project, false);
-                });
-                
-                await DataService.AddModrinthProjectToGuildAsync(guildId, project.Id, latestVersion.Id);
-
-                await FollowupAsync($"Subscribed to updates for project **{project.Title}** with ID **{project.Id}** :white_check_mark:", ephemeral: true);
-
-                var guild = await DataService.GetGuildByIdAsync(guildId);
-
-                if (guild is {UpdateChannel: null})
-                {
-                        await FollowupAsync(
-                                $":warning: You didn't set default update channel, updates for projects subscribed from search will be send to default channel, set it through the [/modrinth set-update-channel](https://zechiax.gitbook.io/rinthbot/commands/set-update-chanel) command :warning:");
-                }
-        }
-
-        [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
-        [DoManageSubsRoleCheck(Group = "ManageSubs")]
-        [ComponentInteraction("unsub-project:*;*;*", runMode: RunMode.Async)]
-        public async Task UnsubProject(string userId, string projectId, ulong guildId)
-        {
-                await DeferAsync();
-                
-                var subscribed = await DataService.IsGuildSubscribedToProjectAsync(guildId, projectId);
-                
-                var project = await ModrinthService.GetProject(projectId);
-
-                // Error
-                if (project == null)
-                {
-                        await FollowupAsync(RequestError, ephemeral: true);
-                        return;
-                }
-
-                // Already unsubscribed
-                if (subscribed == false)
-                {
-                        await ModifyOriginalResponseAsync(x =>
-                        {
-                                x.Components = GetButtons(project);
-                        });
-                        await FollowupAsync("You're already unsubscribed from updates to this project", ephemeral: true);
-                        return;
-                }
-                
-                await DataService.RemoveModrinthProjectFromGuildAsync(guildId, projectId);
-
-                await ModifyOriginalResponseAsync(x =>
-                {
-                        x.Components = GetButtons(project);
-                });
-                
-                await FollowupAsync($"Unsubscribed from updates for project ID **{projectId}** :white_check_mark:", ephemeral: true);
         }
 }

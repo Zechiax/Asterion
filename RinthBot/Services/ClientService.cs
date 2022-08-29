@@ -28,7 +28,7 @@ public class ClientService
         checkTimer.Start();
     }
 
-    public async Task InitializeAsync()
+    public void Initialize()
     {
         _client.Ready += SetGameAsync;
     }

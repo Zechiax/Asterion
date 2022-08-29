@@ -51,7 +51,7 @@ namespace RinthBot
             
             // Initialize data service after client has been connected
             client.Ready += services.GetRequiredService<DataService>().InitializeAsync;
-            await services.GetRequiredService<ClientService>().InitializeAsync();
+            services.GetRequiredService<ClientService>().Initialize();
             
             client.Ready += async () =>
             {

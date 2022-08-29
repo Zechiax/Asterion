@@ -12,6 +12,9 @@ namespace RinthBot.EmbedBuilders;
 public static class ModrinthEmbedBuilder
 {
     private static readonly Color ModrinthColor = new Color(27, 217, 106);
+
+    private static int _embedFieldLimit = 256;
+    private static int _descriptionLimit = 2000;
     public static string GetProjectUrl(Project project)
     {
         return $"https://modrinth.com/{GetProjectUrlType(project)}/{project.Id}";
@@ -74,7 +77,7 @@ public static class ModrinthEmbedBuilder
         }
 
         var changelog = string.IsNullOrEmpty(version.Changelog) ? "\n\n*No changelog provided*" : $"\n\n{Format.Underline(Format.Bold("Changelog:"))}\n" +
-            $"{version.Changelog}".Truncate(2000);
+            $"{version.Changelog}".Truncate(_descriptionLimit);
 
         var projectUrl = GetProjectUrl(project);
 
@@ -82,6 +85,7 @@ public static class ModrinthEmbedBuilder
 
         var owner = (teamMembers ?? Array.Empty<TeamMember>()).FirstOrDefault(x => string.Equals(x.Role, "owner", StringComparison.InvariantCultureIgnoreCase));
         
+        // Adds owner information and url, if it is provided
         if (owner is null)
         {
             embedAuthor.Name = $"Modrinth | {project.ProjectType.ToString()}";
@@ -113,19 +117,19 @@ public static class ModrinthEmbedBuilder
                 new()
                 {
                     Name = "MC Version",
-                    Value = string.Join(", ",version.GameVersions),
+                    Value = string.Join(", ",version.GameVersions).Truncate(_embedFieldLimit),
                     IsInline = true
                 },
                 new()
                 {
                     Name = "Loaders",
-                    Value = string.Join(", ", version.Loaders).Transform(To.TitleCase),
+                    Value = string.Join(", ", version.Loaders).Transform(To.TitleCase).Truncate(_embedFieldLimit),
                     IsInline = true
                 },
                 new()
                 {
                     Name = "Files",
-                    Value = sbFiles.ToString(),
+                    Value = sbFiles.ToString().Truncate(_embedFieldLimit),
                 },
                 new()
                 {
@@ -136,15 +140,15 @@ public static class ModrinthEmbedBuilder
                 }
             },
             Timestamp = version.DatePublished,
-            Color = GetColorByProjectVersionType(version.VersionType)
+            Color = version.VersionType.ToColor()
         };
 
         return embed;
     }
     
-    private static Color GetColorByProjectVersionType(VersionType type)
+    private static Color ToColor(this VersionType versionType)
     {
-        return type switch
+        return versionType switch
         {
             VersionType.Alpha => new Color(219, 49, 98),
             VersionType.Beta => new Color(247, 187, 67),

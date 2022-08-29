@@ -50,14 +50,14 @@ public partial class ModrinthService
         
         _cacheEntryOptions = new MemoryCacheEntryOptions
         {
-            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30)
+            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15)
         };
         
         _updateWorker = new BackgroundWorker();
         _updateWorker.DoWork += CheckUpdates;
         
         
-        var checkTimer = new Timer(MinutesToMilliseconds(60));
+        var checkTimer = new Timer(MinutesToMilliseconds(30));
         checkTimer.Elapsed += checkTimer_Elapsed;
         checkTimer.Start();
         

@@ -1,6 +1,5 @@
 ﻿using System.ComponentModel;
 using System.Timers;
-using Discord;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
 using RinthBot.Interfaces;
@@ -22,7 +21,7 @@ public class ClientService
         _refreshWorker = new BackgroundWorker();
         _refreshWorker.DoWork += RefreshAsync;
         
-        // Refresh status every 30 minutes
+        // Refresh status every 15 minutes
         var checkTimer = new Timer(TimeSpan.FromMinutes(15).TotalMilliseconds);
         checkTimer.Elapsed += checkTimer_Elapsed;
         checkTimer.Start();

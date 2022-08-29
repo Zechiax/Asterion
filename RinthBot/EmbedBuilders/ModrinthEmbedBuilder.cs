@@ -152,6 +152,11 @@ public static class ModrinthEmbedBuilder
         return embed;
     }
     
+    /// <summary>
+    /// Chooses color based on the version type
+    /// </summary>
+    /// <param name="versionType"></param>
+    /// <returns></returns>
     private static Color ToColor(this VersionType versionType)
     {
         return versionType switch

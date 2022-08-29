@@ -16,12 +16,6 @@ using RinthBot.Interfaces;
 
 namespace RinthBot.Modules;
 
-public enum ListType
-{
-        Plain,
-        Table
-}
-
 [RequireContext(ContextType.Guild)]
 [Group("modrinth", "Everything around Modrinth")]
 // ReSharper disable once ClassNeverInstantiated.Global
@@ -104,10 +98,12 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                         }
                 }
 
+                var team = await ModrinthService.GetProjectsTeamMembersAsync(project.Id);
+
                 var subscribedToProject = await DataService.IsGuildSubscribedToProjectAsync(Context.Guild.Id, project.Id);
                 await ModifyOriginalResponseAsync(x =>
                 {
-                        x.Embed = ModrinthEmbedBuilder.GetProjectEmbed(project).Build();
+                        x.Embed = ModrinthEmbedBuilder.GetProjectEmbed(project, team).Build();
                         x.Components = GetSubscribeButtons(project.Id, !subscribedToProject)
                                 .WithButton(ModrinthComponentBuilder.GetProjectLinkButton(project))
                                 .Build();
@@ -259,7 +255,6 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         {
                 await DeferAsync();
                 var list = (await DataService.GetAllGuildsSubscribedProjectsAsync(Context.Guild.Id))!.ToList();
-                var guild = await DataService.GetGuildByIdAsync(Context.Guild.Id);
 
                 if (list.Count == 0)
                 {

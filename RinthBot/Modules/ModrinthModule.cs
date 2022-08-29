@@ -340,19 +340,6 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
 
         [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
         [DoManageSubsRoleCheck(Group = "ManageSubs")]
-        [SlashCommand("set-update-channel", "Sets the update channel")]
-        public async Task SetUpdateChannel(SocketTextChannel channel)
-        {
-                await DeferAsync();
-                await DataService.SetDefaultUpdateChannelForGuild(Context.Guild.Id, channel.Id);
-                await ModifyOriginalResponseAsync(x =>
-                {
-                        x.Content = $"Channel for updates set to {channel.Mention} :white_check_mark:";
-                });
-        }
-
-        [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
-        [DoManageSubsRoleCheck(Group = "ManageSubs")]
         [SlashCommand("test-setup", "Checks your setup (also tries to send a message to test channel and remove it)")]
         public async Task SendTextMessage()
         {

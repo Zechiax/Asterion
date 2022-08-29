@@ -13,7 +13,13 @@ public static class ModrinthEmbedBuilder
 {
     private static readonly Color ModrinthColor = new Color(27, 217, 106);
 
-    private static int _embedFieldLimit = 256;
+    /// <summary>
+    /// Limit for the length of value of fields on embed (Discord limit is 1024)
+    /// </summary>
+    private static int _embedFieldLimit = 512;
+    /// <summary>
+    /// Limit for the length of description on embed (Discord limit is 4096)
+    /// </summary>
     private static int _descriptionLimit = 2000;
     public static string GetProjectUrl(Project project)
     {

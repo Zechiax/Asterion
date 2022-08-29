@@ -80,7 +80,7 @@ public class DataService : IDataService
     /// </summary>
     private async Task RemoveLeftGuilds()
     {
-        _logger.LogInformation("Removing left guilds that the bot is no longer connected to");
+        _logger.LogInformation("Removing guilds that the bot is no longer connected to");
 
         if (_client.LoginState != LoginState.LoggedIn)
         {

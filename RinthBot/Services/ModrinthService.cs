@@ -113,10 +113,10 @@ public class ModrinthService
 
                 foreach (var guild in guilds)
                 {
-                    var channel = await GetGuildUpdateChannel(guild, project.ProjectId);
+                    var entry = await _dataService.GetModrinthEntryAsync(guild.GuildId, project.ProjectId);
 
                     // Channel is not set, skip sending updates to this guild
-                    if (channel is null)
+                    if (entry!.CustomUpdateChannel is null)
                     {
                         _logger.LogInformation("Guild ID {GuildID} has not yet set default update channel or custom channel for this project", guild.GuildId);
                         var socketGuild = _client.GetGuild(guild.GuildId);
@@ -130,6 +130,8 @@ public class ModrinthService
 
                         continue;
                     }
+
+                    var channel = _client.GetGuild(guild.GuildId).GetTextChannel((ulong)entry.CustomUpdateChannel);
                     
                     _logger.LogInformation("Sending updates to guild ID {Id} and channel ID {Channel}", guild.GuildId, channel.Id);
                     
@@ -171,32 +173,6 @@ public class ModrinthService
                 _logger.LogCritical("Error while sending message to guild {Guild}: {Exception}", textChannel.Guild.Id, ex.Message);
             }
         }
-    }
-
-    private async Task<SocketTextChannel?> GetGuildUpdateChannel(Guild guild, string projectId)
-    {
-        var projectInfo = await _dataService.GetModrinthEntryAsync(guild.GuildId, projectId);
-
-        SocketTextChannel? channel = null;
-                
-        // We check with Discord if the channel exists or has been deleted (returns null if so)
-        
-        // Custom channel is not set
-        if (projectInfo?.CustomUpdateChannel == null)
-        {
-            // Default channel is set
-            if (guild.UpdateChannel != null)
-            {
-                channel = _client.GetGuild(guild.GuildId).GetTextChannel((ulong)guild.UpdateChannel);
-            }
-        }
-        // Custom channel is set
-        else
-        {
-            channel = _client.GetGuild(guild.GuildId).GetTextChannel((ulong)projectInfo.CustomUpdateChannel);
-        }
-
-        return channel;
     }
 
     private async Task<UpdateDto> GetProjectUpdateInfo(string projectId)

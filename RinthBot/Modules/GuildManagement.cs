@@ -1,5 +1,7 @@
-﻿using Discord;
+﻿using System.Text;
+using Discord;
 using Discord.Interactions;
+using Discord.WebSocket;
 using RinthBot.Services;
 
 namespace RinthBot.Modules;
@@ -74,5 +76,41 @@ public class GuildManagement : InteractionModuleBase<SocketInteractionContext>
                                 x.AllowedMentions = AllowedMentions.None;
                         });  
                 }
+        }
+
+        [RequireUserPermission(GuildPermission.Administrator)]
+        [SlashCommand("info",
+                "List basic information")]
+        public async Task Stats()
+        {
+                await DeferAsync(ephemeral: true);
+
+                var subscribedProjects = await DataService.GetAllGuildsSubscribedProjectsAsync(Context.Guild.Id);
+                var roleId = await DataService.GetManageRoleIdAsync(Context.Guild.Id);
+
+                var role = roleId is null ? null : Context.Guild.GetRole((ulong)roleId);
+
+                if (subscribedProjects is null)
+                {
+                        await ModifyOriginalResponseAsync(x =>
+                        {
+                                x.Content = "There was an error while processing this request";
+                                x.Flags = MessageFlags.Ephemeral;
+                                x.AllowedMentions = AllowedMentions.None;
+                        });  
+                }
+
+                var sb = new StringBuilder();
+
+                sb.AppendLine(Format.Bold(Format.Underline($"Info for guild {Context.Guild.Name}")));
+                sb.AppendLine();
+
+                sb.AppendLine(Format.Bold("Manage role: ") + $"{(role is null ? "Not set" : role.Mention)}");
+                sb.AppendLine(Format.Bold("Number of subscribed projects: ") + subscribedProjects!.Count);
+
+                await ModifyOriginalResponseAsync(x =>
+                {
+                        x.Content = sb.ToString();
+                });
         }
 }

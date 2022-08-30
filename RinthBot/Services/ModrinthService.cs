@@ -10,7 +10,6 @@ using Modrinth.RestClient;
 using Modrinth.RestClient.Models;
 using RestEase;
 using RinthBot.ComponentBuilders;
-using RinthBot.Database;
 using Version = Modrinth.RestClient.Models.Version;
 using Timer = System.Timers.Timer;
 using RinthBot.EmbedBuilders;

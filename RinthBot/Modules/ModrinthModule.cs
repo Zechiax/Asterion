@@ -217,24 +217,12 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         [SlashCommand("unsubscribe-all", "Removes all subscribed projects")]
         public async Task UnsubscribeAll()
         {
-                var builder = new ComponentBuilder()
-                        .WithButton("Yes", "remove-all-data-yes", ButtonStyle.Danger);
+                await DeferAsync();
 
-                await RespondAsync("**Are you sure you want to remove all projects?** \n\n**Click the button if Yes, if not, just wait**", components: builder.Build());
-                
-                // Wait for a user to press the button
-                var result = await Interactive.NextMessageComponentAsync(x => x.Data.Type == ComponentType.Button 
-                                                                              && x.Data.CustomId == "remove-all-data-yes" 
-                                                                              && Context.User.Id == x.User.Id 
-                                                                              && x.Message.Interaction.Id == Context.Interaction.Id, 
-                        timeout: TimeSpan.FromSeconds(15));
+                var confirmation = await InteractionUtility.ConfirmAsync(Client, Context.Channel, TimeSpan.FromSeconds(15), "Are you sure you want to remove all projects?");
 
-
-                if (result.IsSuccess)
+                if (confirmation)
                 {
-                        // Acknowledge the interaction
-                        await result.Value!.DeferAsync();
-
                         foreach (var versions in (await DataService.GetAllGuildsSubscribedProjectsAsync(Context.Guild.Id))!)
                         {
                                 await DataService.RemoveModrinthProjectFromGuildAsync(Context.Guild.Id, versions.ProjectId);
@@ -243,8 +231,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
 
                 await ModifyOriginalResponseAsync(x =>
                 {
-                        x.Content = result.IsSuccess ? $"All data cleared" : $"Action cancelled";
-                        x.Components = new ComponentBuilder().Build(); // No components
+                        x.Content = confirmation ? $"All data cleared" : $"Action cancelled";
                         x.AllowedMentions = AllowedMentions.None;
                 });
         }
@@ -351,7 +338,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                         });
                         return;
                 }
-                
+
                 var channel = Client.GetGuild(guildInfoDb.GuildId).GetTextChannel((ulong)guildInfoDb.UpdateChannel!);
 
                 try

@@ -170,7 +170,7 @@ public static class ModrinthEmbedBuilder
                 },
                 new()
                 {
-                    Name = "Files",
+                    Name = $"Files ({version.Files.Length})",
                     Value = sbFiles.ToString().Truncate(_embedFieldLimit),
                 },
                 new()

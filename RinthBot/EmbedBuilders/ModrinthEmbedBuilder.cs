@@ -21,6 +21,12 @@ public static class ModrinthEmbedBuilder
     /// Limit for the length of description on embed (Discord limit is 4096)
     /// </summary>
     private static int _descriptionLimit = 2000;
+    
+    /// <summary>
+    /// Creates direct URL string to the specific project 
+    /// </summary>
+    /// <param name="project"></param>
+    /// <returns></returns>
     public static string GetProjectUrl(Project project)
     {
         return $"https://modrinth.com/{GetProjectUrlType(project)}/{project.Id}";
@@ -30,16 +36,59 @@ public static class ModrinthEmbedBuilder
     {
         return project.ProjectType switch
         {
-            ProjectType.Mod => "mod",
-            ProjectType.Modpack => "modpack",
-            ProjectType.Resourcepack => "resourcepack",
+            ProjectType.Mod => "Mod",
+            ProjectType.Modpack => "Modpack",
+            ProjectType.Resourcepack => "Resourcepack",
             _ => string.Empty
         };
     }
 
+    /// <summary>
+    /// Creates direct URL string to the specific version details of the project 
+    /// </summary>
+    /// <param name="project"></param>
+    /// <param name="version"></param>
+    /// <returns></returns>
     public static string GetVersionUrl(Project project, Version version)
     {
         return $"{GetProjectUrl(project)}/version/{version.Id}";
+    }
+    
+    private static EmbedAuthorBuilder GetProjectAuthor(TeamMember owner)
+    {
+        var embedAuthor = new EmbedAuthorBuilder
+        {
+            Name = owner.User.Username,
+            IconUrl = owner.User.AvatarUrl,
+            Url = $"https://modrinth.com/user/{owner.User.Id}"
+        };
+
+        return embedAuthor;
+    }
+
+    private static EmbedAuthorBuilder GetModrinthAuthor(Project project)
+    {
+        var embedAuthor = new EmbedAuthorBuilder
+        {
+            Name = $"Modrinth | {project.ProjectType.ToString()}",
+            IconUrl = "https://avatars.githubusercontent.com/u/67560307",
+            Url = "https://modrinth.com/"
+        };
+
+        return embedAuthor;
+    }
+    
+    private static TeamMember? GetOwner(IEnumerable<TeamMember>? teamMembers)
+    {
+        return (teamMembers ?? Array.Empty<TeamMember>()).FirstOrDefault(x =>
+            string.Equals(x.Role, "owner", StringComparison.InvariantCultureIgnoreCase));
+    }
+
+    private static EmbedAuthorBuilder GetEmbedAuthor(Project project, IEnumerable<TeamMember>? teamMembers = null)
+    {
+        var owner = GetOwner(teamMembers);
+        
+        return owner is null ? GetModrinthAuthor(project) : GetProjectAuthor(owner);
     }
 
     /// <summary>
@@ -49,9 +98,7 @@ public static class ModrinthEmbedBuilder
     /// <returns>Embed builder, which can be further edited</returns>
     public static EmbedBuilder GetProjectEmbed(Project project, IEnumerable<TeamMember>? teamMembers = null)
     {
-        var owner = GetOwner(teamMembers);
-        
-        var author = owner is null ? GetModrinthAuthor(project) : GetProjectAuthor(owner);
+        var author = GetEmbedAuthor(project, teamMembers);
         
         var embed = new EmbedBuilder
         {
@@ -78,36 +125,6 @@ public static class ModrinthEmbedBuilder
         return embed;
     }
 
-    private static EmbedAuthorBuilder GetProjectAuthor(TeamMember owner)
-    {
-        var embedAuthor = new EmbedAuthorBuilder
-        {
-            Name = owner.User.Username,
-            IconUrl = owner.User.AvatarUrl,
-            Url = $"https://modrinth.com/user/{owner.User.Id}"
-        };
-
-        return embedAuthor;
-    }
-
-    private static EmbedAuthorBuilder GetModrinthAuthor(Project project)
-    {
-        var embedAuthor = new EmbedAuthorBuilder
-        {
-            Name = $"Modrinth | {project.ProjectType.ToString()}",
-            IconUrl = "https://avatars.githubusercontent.com/u/67560307",
-            Url = "https://modrinth.com/"
-        };
-
-        return embedAuthor;
-    }
-
-    private static TeamMember? GetOwner(IEnumerable<TeamMember>? teamMembers)
-    {
-        return (teamMembers ?? Array.Empty<TeamMember>()).FirstOrDefault(x =>
-            string.Equals(x.Role, "owner", StringComparison.InvariantCultureIgnoreCase));
-    }
-
     public static EmbedBuilder VersionUpdateEmbed(Project project, Version version, IEnumerable<TeamMember>? teamMembers = null)
     {
         var sbFiles = new StringBuilder();
@@ -121,11 +138,8 @@ public static class ModrinthEmbedBuilder
             $"{version.Changelog}".Truncate(_descriptionLimit);
 
         var projectUrl = GetProjectUrl(project);
-
-        var owner = GetOwner(teamMembers);
-
-        // Adds owner information and url, if it is provided
-        var embedAuthor = owner is null ? GetModrinthAuthor(project) : GetProjectAuthor(owner);
+        
+        var embedAuthor = GetEmbedAuthor(project, teamMembers);
 
         var embed = new EmbedBuilder
         {

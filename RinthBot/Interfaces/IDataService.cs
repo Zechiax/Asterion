@@ -118,6 +118,12 @@ public interface IDataService
     /// <param name="guildId"></param>
     /// <returns></returns>
     public Task<ulong?> GetManageRoleIdAsync(ulong guildId);
-
+    /// <summary>
+    /// Updates channel for specific Modrinth entry
+    /// </summary>
+    /// <param name="guildId">ID of the guild</param>
+    /// <param name="projectId">ID of the project</param>
+    /// <param name="newChannelId">ID of the new channel</param>
+    /// <returns></returns>
     public Task<bool> ChangeModrinthEntryChannel(ulong guildId, string projectId, ulong newChannelId);
 }

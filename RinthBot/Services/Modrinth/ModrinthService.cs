@@ -264,6 +264,11 @@ public partial class ModrinthService
         return newVersions;
     }
 
+    /// <summary>
+    /// Tries to find project on Modrinth
+    /// </summary>
+    /// <param name="query">Either project's slug, ID or general query</param>
+    /// <returns></returns>
     public async Task<SearchResult<Project>> FindProject(string query)
     {
         Project? project = null;

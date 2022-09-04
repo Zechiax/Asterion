@@ -1,18 +1,14 @@
 ﻿using System.Text;
-using ConsoleTableExt;
 using Discord;
 using Discord.Interactions;
-using Discord.Rest;
 using Discord.WebSocket;
 using RinthBot.Attributes;
 using RinthBot.EmbedBuilders;
 using RinthBot.Services;
 using Fergun.Interactive;
 using Microsoft.Extensions.Logging;
-using Modrinth.RestClient.Models;
 using RinthBot.AutocompleteHandlers;
 using RinthBot.ComponentBuilders;
-using RinthBot.Interfaces;
 using RinthBot.Services.Modrinth;
 
 // ReSharper disable MemberCanBePrivate.Global

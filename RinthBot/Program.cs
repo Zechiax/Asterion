@@ -7,7 +7,6 @@ using Fergun.Interactive;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using RinthBot.Database;
 using RinthBot.Services;
 using RinthBot.Services.Modrinth;
 using Serilog;

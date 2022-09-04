@@ -1,7 +1,6 @@
 ﻿using System.Text;
 using Discord;
 using Discord.Interactions;
-using Discord.WebSocket;
 using RinthBot.Services;
 
 namespace RinthBot.Modules;

@@ -1,6 +1,5 @@
 ﻿using Discord;
 using Discord.Interactions;
-using Discord.WebSocket;
 using Microsoft.Extensions.Logging;
 using RinthBot.Attributes;
 using RinthBot.Services;

@@ -1,6 +1,4 @@
 ﻿using Discord.Interactions;
-using RinthBot.Attributes;
-using RinthBot.Database;
 
 namespace RinthBot.Modules;
 

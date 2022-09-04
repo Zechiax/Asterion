@@ -91,7 +91,7 @@ public class ModrinthInteractionModule : InteractionModuleBase
                 
                 var component = new ComponentBuilder().WithSelectMenu(options);
                 await FollowupAsync(
-                        embed: GeneralEmbedBuilder.GetChangeChannelEmbed(project.Id, guildChannels.Count > 25).Build(),
+                        embed: GeneralEmbedBuilder.GetChangeChannelEmbed(project, guildChannels.Count > 25).Build(),
                         ephemeral: true, components: component.Build());
         }
         
@@ -109,6 +109,13 @@ public class ModrinthInteractionModule : InteractionModuleBase
                 await DeferAsync();
         }
 
+        /// <summary>
+        /// Returns list of all channels for Select Menu to be used
+        /// </summary>
+        /// <param name="guild"></param>
+        /// <param name="guildChannels"></param>
+        /// <param name="defaultChannel">Default selected option</param>
+        /// <returns></returns>
         public async static Task<List<SelectMenuOptionBuilder>> GetSelectMenuChannelList(IGuild guild, IReadOnlyCollection<ITextChannel>? guildChannels = null, ITextChannel? defaultChannel = null)
         {
                 var channels = new List<SelectMenuOptionBuilder>();

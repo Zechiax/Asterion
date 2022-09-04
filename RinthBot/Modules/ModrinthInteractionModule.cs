@@ -7,6 +7,7 @@ using RinthBot.Services;
 using Modrinth.RestClient.Models;
 using RinthBot.ComponentBuilders;
 using RinthBot.EmbedBuilders;
+using RinthBot.Services.Modrinth;
 
 namespace RinthBot.Modules;
 

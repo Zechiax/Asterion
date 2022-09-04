@@ -13,6 +13,8 @@ using Modrinth.RestClient.Models;
 using RinthBot.AutocompleteHandlers;
 using RinthBot.ComponentBuilders;
 using RinthBot.Interfaces;
+using RinthBot.Services.Modrinth;
+
 // ReSharper disable MemberCanBePrivate.Global
 
 namespace RinthBot.Modules;
@@ -53,51 +55,38 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         public async Task SearchProject(string query)
         {
                 await DeferAsync();
-                
-                // First let's try searching by slug or ID
-                // If the query contains space, it can't be slug or ID
-                var project = query.Contains(' ') ? null : await ModrinthService.GetProject(query);
 
-                // No results? Let's try normal search
-                if (project == null)
+                var searchResult = await ModrinthService.FindProject(query);
+
+                switch (searchResult.SearchStatus)
                 {
-                        var searchResponse = await ModrinthService.SearchProjects(query);
-
-                        // APIs could be down
-                        if (searchResponse == null)
-                        {
+                        case SearchStatus.ApiDown:
                                 await ModifyOriginalResponseAsync(x =>
                                 {
-                                        // TODO: Check modrinth status message
-                                        x.Content = "Something went wrong";
-                                });
-                        }
-                        // No search results
-                        else if (searchResponse.TotalHits < 1)
-                        {
-                                if (project == null)
-                                {
-                                        await ModifyOriginalResponseAsync(x =>
-                                        {
-                                                x.Content = $"No search results for query '{query}'";
-                                        });
-                                        return;
-                                }
-                        }
-                        
-                        // Get info about the first search result
-                        project = await ModrinthService.GetProject(searchResponse!.Hits[0].ProjectId);  
-                        
-                        // Something failed while getting the info
-                        if (project == null)
-                        {
-                                await ModifyOriginalResponseAsync(x =>
-                                {
-                                        x.Content = "There was an error with the request";
+                                        x.Content = "Modrinth API's are down, please try again later";
                                 });
                                 return;
-                        }
+                        case SearchStatus.NoResult:
+                                await ModifyOriginalResponseAsync(x =>
+                                {
+                                        x.Content = $"No result for query '{query}'";
+                                });
+                                return;
+                        case SearchStatus.UnknownError:
+                                await ModifyOriginalResponseAsync(x =>
+                                {
+                                        x.Content = "Unknown error, please try again later";
+                                });
+                                return;
+                        case SearchStatus.FoundById:
+                                break;
+                        case SearchStatus.FoundBySearch:
+                                break;
+                        default:
+                                throw new ArgumentOutOfRangeException();
                 }
+
+                var project = searchResult.Payload;
 
                 var team = await ModrinthService.GetProjectsTeamMembersAsync(project.Id);
                 

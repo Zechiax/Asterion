@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 using Modrinth.RestClient.Models;
 using Version = Modrinth.RestClient.Models.Version;
 
-namespace RinthBot.Services;
+namespace RinthBot.Services.Modrinth;
 
 public partial class ModrinthService
 {

@@ -10,13 +10,12 @@ using Modrinth.RestClient;
 using Modrinth.RestClient.Models;
 using RestEase;
 using RinthBot.ComponentBuilders;
-using RinthBot.Database;
-using Version = Modrinth.RestClient.Models.Version;
-using Timer = System.Timers.Timer;
 using RinthBot.EmbedBuilders;
 using RinthBot.Interfaces;
+using Version = Modrinth.RestClient.Models.Version;
+using Timer = System.Timers.Timer;
 
-namespace RinthBot.Services;
+namespace RinthBot.Services.Modrinth;
 
 public class UpdateDto
 {
@@ -263,6 +262,58 @@ public partial class ModrinthService
         }
 
         return newVersions;
+    }
+
+    public async Task<SearchResult<Project>> FindProject(string query)
+    {
+        Project? project = null;
+
+        // Slug or ID can't contain space
+        if (query.Contains(' '))
+        {
+            var projectFoundById = false;
+            try
+            {
+                project = await _api.GetProjectAsync(query);
+
+                // Won't be set if exception is thrown
+                projectFoundById = true;
+            }
+            // Not found status code is returned when requested project was not found
+            catch (ApiException e) when (e.StatusCode == HttpStatusCode.NotFound)
+            {
+                // Project not found by slug or id
+                _logger.LogDebug("Project query '{Query}' not found with ID or slug", query);
+            }
+            catch (Exception e)
+            {
+                return new SearchResult<Project>(null, SearchStatus.ApiDown);
+            }
+
+            if (projectFoundById && project is not null)
+            {
+                return new SearchResult<Project>(project, SearchStatus.FoundById);
+            }
         }
-    
+
+        try
+        {
+            var searchResult = await _api.SearchProjectsAsync(query);
+
+            if (searchResult.TotalHits > 0)
+            {
+                project = await _api.GetProjectAsync(searchResult.Hits[0].ProjectId);
+
+                return new SearchResult<Project>(project, SearchStatus.FoundBySearch);
+            }
+            else
+            {
+                return new SearchResult<Project>(null, SearchStatus.NoResult);
+            }
+        }
+        catch (Exception e)
+        {
+            return new SearchResult<Project>(null, SearchStatus.ApiDown);
+        }
+    }
 }

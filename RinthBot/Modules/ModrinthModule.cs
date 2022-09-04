@@ -17,8 +17,8 @@ using RinthBot.Interfaces;
 
 namespace RinthBot.Modules;
 
+[EnabledInDm(false)]
 [RequireContext(ContextType.Guild)]
-[Group("modrinth", "Everything around Modrinth")]
 // ReSharper disable once ClassNeverInstantiated.Global
 public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
 {
@@ -100,7 +100,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                 }
 
                 var team = await ModrinthService.GetProjectsTeamMembersAsync(project.Id);
-
+                
                 var subscribedToProject = await DataService.IsGuildSubscribedToProjectAsync(Context.Guild.Id, project.Id);
                 await ModifyOriginalResponseAsync(x =>
                 {

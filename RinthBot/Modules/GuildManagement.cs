@@ -6,6 +6,7 @@ using RinthBot.Services;
 
 namespace RinthBot.Modules;
 
+[EnabledInDm(false)]
 public class GuildManagement : InteractionModuleBase<SocketInteractionContext>
 {
         public DataService DataService { get; set; } = null!;

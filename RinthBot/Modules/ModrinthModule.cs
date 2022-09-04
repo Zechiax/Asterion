@@ -45,8 +45,6 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                 return buttons;
         }
 
-
-
         [SlashCommand("search", "Search Projects (by slug, ID or search) and gives you info about the first response")]
         public async Task SearchProject(string query)
         {
@@ -94,6 +92,12 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                                 .WithButton(ModrinthComponentBuilder.GetProjectLinkButton(project))
                                 .Build();
                 });
+        }
+
+        [MessageCommand("Search on Modrinth")]
+        public async Task SearchOnModrinth(IMessage msg)
+        {
+                await SearchProject(msg.Content);
         }
 
         [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]

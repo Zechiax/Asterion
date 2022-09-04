@@ -7,6 +7,7 @@ using RinthBot.EmbedBuilders;
 using RinthBot.Services;
 using Fergun.Interactive;
 using Microsoft.Extensions.Logging;
+using Modrinth.RestClient.Models;
 using RinthBot.AutocompleteHandlers;
 using RinthBot.ComponentBuilders;
 using RinthBot.Services.Modrinth;
@@ -80,7 +81,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                                 throw new ArgumentOutOfRangeException();
                 }
 
-                var project = searchResult.Payload;
+                var project = searchResult.Payload!;
 
                 var team = await ModrinthService.GetProjectsTeamMembersAsync(project.Id);
                 

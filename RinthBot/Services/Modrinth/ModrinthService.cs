@@ -285,7 +285,7 @@ public partial class ModrinthService
                 // Project not found by slug or id
                 _logger.LogDebug("Project query '{Query}' not found with ID or slug", query);
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 return new SearchResult<Project>(null, SearchStatus.ApiDown);
             }
@@ -311,7 +311,7 @@ public partial class ModrinthService
                 return new SearchResult<Project>(null, SearchStatus.NoResult);
             }
         }
-        catch (Exception e)
+        catch (Exception)
         {
             return new SearchResult<Project>(null, SearchStatus.ApiDown);
         }

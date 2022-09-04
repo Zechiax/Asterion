@@ -63,7 +63,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                         case SearchStatus.ApiDown:
                                 await ModifyOriginalResponseAsync(x =>
                                 {
-                                        x.Content = "Modrinth API's are down, please try again later";
+                                        x.Content = "Modrinth API is probably down, please try again later";
                                 });
                                 return;
                         case SearchStatus.NoResult:

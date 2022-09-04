@@ -55,7 +55,7 @@ public class LoggingService
     {
         var logLevel = msg.Severity.ToLogLevel();
         
-        _logger.Log(logLevel, "{MsgSource}: {MsgMessage}", msg.Source, msg.Exception?.ToString() ?? msg.Message);
+        _logger.Log(logLevel, "[{MsgSource}] {MsgMessage}", msg.Source, msg.Exception?.ToString() ?? msg.Message);
 
         return Task.CompletedTask;
     }

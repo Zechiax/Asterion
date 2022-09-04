@@ -7,7 +7,6 @@ using RinthBot.EmbedBuilders;
 using RinthBot.Services;
 using Fergun.Interactive;
 using Microsoft.Extensions.Logging;
-using Modrinth.RestClient.Models;
 using RinthBot.AutocompleteHandlers;
 using RinthBot.ComponentBuilders;
 using RinthBot.Services.Modrinth;
@@ -98,6 +97,12 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         [MessageCommand("Search on Modrinth")]
         public async Task SearchOnModrinth(IMessage msg)
         {
+                if (string.IsNullOrEmpty(msg.Content))
+                {
+                        await RespondAsync("Message contains no content to search for", ephemeral: true);
+                        return;
+                }
+
                 await SearchProject(msg.Content);
         }
 

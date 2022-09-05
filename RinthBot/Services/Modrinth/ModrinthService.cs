@@ -24,9 +24,9 @@ public class UpdateDto
     public TeamMember[]? TeamMembers { get; set; }
 
     /// <summary>
-    /// True if every information has been set, false otherwise
+    /// True if every required information has been set, false otherwise
     /// </summary>
-    public bool Successful => Versions is not null && Project is not null && TeamMembers is not null;
+    public bool Successful => Versions is not null && Project is not null;
 }
 
 public partial class ModrinthService
@@ -135,7 +135,7 @@ public partial class ModrinthService
                     _logger.LogInformation("Sending updates to guild ID {Id} and channel ID {Channel}", guild.GuildId, channel.Id);
                     
                     // None of these can be null, everything is checked beforehand
-                    await SendUpdatesToChannel(channel, updateInfo.Project!, updateInfo.Versions!, updateInfo.TeamMembers!);
+                    await SendUpdatesToChannel(channel, updateInfo.Project!, updateInfo.Versions!, updateInfo.TeamMembers);
                 }
             }
             catch (Exception ex)
@@ -154,7 +154,14 @@ public partial class ModrinthService
             $"\n\nFor more information regarding subscribing projects, see this guide https://zechiax.gitbook.io/rinthbot/guides/subscribe-to-your-first-project");
     }
 
-    private async Task SendUpdatesToChannel(SocketTextChannel textChannel, Project currentProject, IEnumerable<Version> newVersions, TeamMember[] team)
+    /// <summary>
+    /// Sends update information about all
+    /// </summary>
+    /// <param name="textChannel"></param>
+    /// <param name="currentProject"></param>
+    /// <param name="newVersions"></param>
+    /// <param name="team"></param>
+    private async Task SendUpdatesToChannel(SocketTextChannel textChannel, Project currentProject, IEnumerable<Version> newVersions, TeamMember[]? team)
     {
         // Iterate versions - they are ordered from latest to oldest, we want to sent them chronologically
         foreach (var version in newVersions.Reverse())
@@ -187,8 +194,11 @@ public partial class ModrinthService
                 // If project is null, retrieve information from API
                 updateDto.Project ??= await GetProject(projectId);
 
-                // Get new versions from API
-                updateDto.Versions ??= await CheckProjectForUpdates(projectId);
+                // Get new versions from API, but only search if we have required information, as we wouldn't have send any updates
+                if (updateDto.Project is not null)
+                {
+                    updateDto.Versions ??= await CheckProjectForUpdates(projectId);
+                }
 
                 // Get project's team
                 updateDto.TeamMembers ??= await GetProjectsTeamMembersAsync(projectId);

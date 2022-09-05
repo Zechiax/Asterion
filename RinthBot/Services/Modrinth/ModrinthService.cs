@@ -38,7 +38,7 @@ public partial class ModrinthService
     private readonly MemoryCacheEntryOptions _cacheEntryOptions;
     private readonly IDataService _dataService;
     private readonly DiscordSocketClient _client;
-    
+
     public ModrinthService(IServiceProvider serviceProvider)
     {
         _api = ModrinthApi.NewClient(userAgent: "RinthBot");
@@ -59,7 +59,7 @@ public partial class ModrinthService
         var checkTimer = new Timer(MinutesToMilliseconds(45));
         checkTimer.Elapsed += checkTimer_Elapsed;
         checkTimer.Start();
-        
+
         _logger.LogInformation("Modrinth service initialized");
     }
     private static double MinutesToMilliseconds(int minutes)

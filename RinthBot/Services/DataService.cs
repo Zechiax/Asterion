@@ -103,7 +103,7 @@ public class DataService : IDataService
         {
             var result = connectedGuilds.FirstOrDefault(x => x.Id == guild.GuildId);
 
-            // Bot is not connected to this guild and we can remove it
+            // RinthBot is not connected to this guild and we can remove it
             if (result is null)
             {
                 _logger.LogInformation("Removing guild ID {ID}", guild.GuildId);

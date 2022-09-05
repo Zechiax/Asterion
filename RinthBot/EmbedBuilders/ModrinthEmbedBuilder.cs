@@ -84,11 +84,17 @@ public static class ModrinthEmbedBuilder
             string.Equals(x.Role, "owner", StringComparison.InvariantCultureIgnoreCase));
     }
 
-    private static EmbedAuthorBuilder GetEmbedAuthor(Project project, IEnumerable<TeamMember>? teamMembers = null)
+    private static TeamMember? GetVersionPublisher(IEnumerable<TeamMember>? teamMembers, string authorId)
     {
-        var owner = GetOwner(teamMembers);
+        return (teamMembers ?? Array.Empty<TeamMember>()).FirstOrDefault(x =>
+            string.Equals(x.User.Id, authorId));
+    }
+
+    private static EmbedAuthorBuilder GetEmbedAuthor(Project project, IEnumerable<TeamMember>? teamMembers = null, Version? version = null)
+    {
+        var author = version is not null ? GetVersionPublisher(teamMembers, version.AuthorId) : GetOwner(teamMembers);
         
-        return owner is null ? GetModrinthAuthor(project) : GetProjectAuthor(owner);
+        return author is null ? GetModrinthAuthor(project) : GetProjectAuthor(author);
     }
 
     /// <summary>
@@ -141,7 +147,7 @@ public static class ModrinthEmbedBuilder
 
         var projectUrl = GetProjectUrl(project);
         
-        var embedAuthor = GetEmbedAuthor(project, teamMembers);
+        var embedAuthor = GetEmbedAuthor(project, teamMembers, version);
 
         var embed = new EmbedBuilder
         {

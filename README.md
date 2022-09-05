@@ -13,20 +13,19 @@
 - Search for Modrinth projects
 - Sends message when one of your subscribed projects got an update
 - Easy subscribe with buttons from search
-- Custom channels! You can set per-project update channel
+- Each project can send updates to different channel
 
 ## Wiki
 On wiki there are guides and documentation for all commands: https://zechiax.gitbook.io/rinthbot/
 
 ## Bug reports / Feature suggestions
-- Be aware that this bot is still in **early development** and it may not be 100% stable
 - If something's not working and the bot is online, check [Modrinth's status page](https://status.modrinth.com/) as Modrinth can be offline
 - For bug reports and feature suggestions start a [new issue](https://github.com/Zechiax/RinthBot/issues/new)
 
-## Data collected
+## Data stored
 - This bot needs to store some data so it can provide you with the updates
 - Data stored are
     - Guild ID
-    - Update Channel ID
+    - IDs of channels where you want to send updates
     - List of subscribed projects
-- Additional data may be added in the future (like planned layout options etc.)
+    - Additional settings

@@ -3,7 +3,7 @@ using Discord.Interactions;
 using Discord.WebSocket;
 using Humanizer;
 using Microsoft.Extensions.DependencyInjection;
-using RinthBot.Services;
+using RinthBot.Interfaces;
 
 namespace RinthBot.AutocompleteHandlers;
 
@@ -12,7 +12,7 @@ public class SubscribedIdAutocompletionHandler : AutocompleteHandler
     public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction,
         IParameterInfo parameter, IServiceProvider services)
     {
-        var data = services.GetRequiredService<DataService>();
+        var data = services.GetRequiredService<IDataService>();
 
         if (context.User is not IGuildUser guildUser)
         {

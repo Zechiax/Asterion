@@ -2,7 +2,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using RinthBot.Attributes;
 using RinthBot.Interfaces;
-using RinthBot.Services;
 
 namespace RinthBot.Modules;
 
@@ -13,7 +12,7 @@ public class BotManagement: InteractionModuleBase<SocketInteractionContext>
 
     public BotManagement(IServiceProvider serviceProvider)
     {
-        _dataService = serviceProvider.GetRequiredService<DataService>();
+        _dataService = serviceProvider.GetRequiredService<IDataService>();
     }
 
 #if DEBUG

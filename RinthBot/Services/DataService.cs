@@ -2,6 +2,7 @@
 using Discord;
 using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using RinthBot.Database;
 using RinthBot.Interfaces;
@@ -12,8 +13,10 @@ public class DataService : IDataService
 {
     private readonly ILogger<DataService> _logger;
     private readonly DiscordSocketClient _client;
-    public DataService(ILogger<DataService> logger, DiscordSocketClient client)
+    private readonly IServiceProvider _services;
+    public DataService(IServiceProvider services, ILogger<DataService> logger, DiscordSocketClient client)
     {
+        _services = services;
         _logger = logger;
         _client = client;
 
@@ -80,6 +83,9 @@ public class DataService : IDataService
     /// </summary>
     private async Task RemoveLeftGuilds()
     {
+        using var scope = _services.CreateScope();
+        await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
+        
         _logger.LogInformation("Removing guilds that the bot is no longer connected to");
 
         if (_client.LoginState != LoginState.LoggedIn)
@@ -96,8 +102,6 @@ public class DataService : IDataService
             _logger.LogWarning("Guild removal interrupted because connected guilds count is zero");
             return;
         }
-
-        await using var db = GetDbContext();
 
         foreach (var guild in db.Guilds)
         {
@@ -117,14 +121,10 @@ public class DataService : IDataService
         _logger.LogInformation("Removed {Count} guilds", removedGuildsCount);
     }
 
-    private static DataContext GetDbContext()
-    {
-        return new DataContext();
-    }
-
     public async Task<bool> RemoveGuildAsync(ulong guildId)
     {
-        await using var db = GetDbContext();
+        using var scope = _services.CreateScope();
+        await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
 
         var guild = db.Guilds.Include(o => o.ModrinthArray).SingleOrDefault(x => x.GuildId == guildId);
 
@@ -154,7 +154,8 @@ public class DataService : IDataService
     private async Task RemoveProjectsWithNoEntries()
     {
         _logger.LogInformation("Removing projects with no entries");
-        await using var db = GetDbContext();
+        using var scope = _services.CreateScope();
+        await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
 
         var projects = db.ModrinthProjects.ToList();
         
@@ -174,7 +175,8 @@ public class DataService : IDataService
 
     public async Task<Guild?> GetGuildByIdAsync(ulong guildId)
     {
-        await using var db = GetDbContext();
+        using var scope = _services.CreateScope();
+        await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
 
         var guild = await db.Guilds.Include(o => o.ModrinthArray).FirstOrDefaultAsync(g => g.GuildId == guildId);
 
@@ -183,7 +185,8 @@ public class DataService : IDataService
 
     public async Task SetDefaultUpdateChannelForGuild(ulong guildId, ulong defaultUpdateChannel)
     {
-        await using var db = GetDbContext();
+        using var scope = _services.CreateScope();
+        await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
 
         var guild = db.Guilds.SingleOrDefault(x => x.GuildId == guildId);
 
@@ -199,7 +202,8 @@ public class DataService : IDataService
 
     public async Task<bool> AddGuildAsync(ulong guildId)
     {
-        await using var db = GetDbContext();
+        using var scope = _services.CreateScope();
+        await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
 
         // We check if the guild is already added
         var guild = await db.Guilds.FirstOrDefaultAsync(g => g.GuildId == guildId);
@@ -232,7 +236,8 @@ public class DataService : IDataService
 
     public async Task<bool> AddModrinthProjectToGuildAsync(ulong guildId, string projectId, string lastCheckVersion, ulong customChannelId, string? projectTitle = null)
     {
-        await using var db = GetDbContext();
+        using var scope = _services.CreateScope();
+        await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
 
         var guild = db.Guilds.Include(o => o.ModrinthArray).FirstOrDefault(x => x.GuildId == guildId);
 
@@ -274,7 +279,8 @@ public class DataService : IDataService
 
     public async Task<bool> RemoveModrinthProjectFromGuildAsync(ulong guildId, string projectId)
     {
-        await using var db = GetDbContext();
+        using var scope = _services.CreateScope();
+        await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
 
         var entry = await GetModrinthEntryAsync(guildId, projectId);
 
@@ -304,7 +310,8 @@ public class DataService : IDataService
 
     public async Task<ModrinthProject?> GetModrinthProjectByIdAsync(string projectId)
     {
-        await using var db = GetDbContext();
+        using var scope = _services.CreateScope();
+        await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
 
         var project = db.ModrinthProjects.FirstOrDefault(x => x.ProjectId == projectId);
         
@@ -313,7 +320,8 @@ public class DataService : IDataService
 
     public async Task<IList<ModrinthEntry>?> GetAllGuildsSubscribedProjectsAsync(ulong guildId)
     {
-        await using var db = GetDbContext();
+        using var scope = _services.CreateScope();
+        await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
         
         var guild = await GetGuildByIdAsync(guildId);
 
@@ -329,7 +337,8 @@ public class DataService : IDataService
     
     public async Task<bool> UpdateModrinthProjectAsync(string projectId, string? newVersion = null, string? title = null, DateTime? lastUpdate = null)
     {
-        await using var db = GetDbContext();
+        using var scope = _services.CreateScope();
+        await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
         
         lastUpdate ??= DateTime.Now;
 
@@ -361,7 +370,8 @@ public class DataService : IDataService
     
     public async Task<IList<ModrinthProject>> GetAllModrinthProjectsAsync()
     {
-        await using var db = GetDbContext();
+        using var scope = _services.CreateScope();
+        await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
 
         var projects = db.ModrinthProjects.Select(x => x).ToList();
 
@@ -370,7 +380,8 @@ public class DataService : IDataService
     
     public async Task<bool> IsGuildSubscribedToProjectAsync(ulong guildId, string projectId)
     {
-        await using var db = GetDbContext();
+        using var scope = _services.CreateScope();
+        await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
 
         var guildsProjects = await GetAllGuildsSubscribedProjectsAsync(guildId);
 
@@ -387,7 +398,8 @@ public class DataService : IDataService
 
     public async Task<ModrinthEntry?> GetModrinthEntryAsync(ulong guildId, string projectId)
     {
-        await using var db = GetDbContext();
+        using var scope = _services.CreateScope();
+        await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
 
         var entry = db.ModrinthEntries.FirstOrDefault(x => x.GuildId == guildId && x.ProjectId == projectId);
 
@@ -396,7 +408,8 @@ public class DataService : IDataService
 
     public async Task<IList<Guild>> GetAllGuildsSubscribedToProject(string projectId)
     {
-        await using var db = GetDbContext();
+        using var scope = _services.CreateScope();
+        await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
 
         var guilds = db.ModrinthEntries.Include(o => o.Guild).Where(x => x.ProjectId == projectId)
             .Select(x => x.Guild).ToList();
@@ -406,7 +419,8 @@ public class DataService : IDataService
 
     public async Task<bool> SetManageRoleAsync(ulong guildId, ulong? roleId)
     {
-        await using var db = GetDbContext();
+        using var scope = _services.CreateScope();
+        await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
 
         var guild = db.Guilds.SingleOrDefault(x => x.GuildId == guildId);
 
@@ -424,7 +438,8 @@ public class DataService : IDataService
 
     public async Task<ulong?> GetManageRoleIdAsync(ulong guildId)
     {
-        await using var db = GetDbContext();
+        using var scope = _services.CreateScope();
+        await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
 
         var guild = await GetGuildByIdAsync(guildId);
 
@@ -434,7 +449,8 @@ public class DataService : IDataService
 
     public async Task<bool> ChangeModrinthEntryChannel(ulong guildId, string projectId, ulong newChannelId)
     {
-        await using var db = GetDbContext();
+        using var scope = _services.CreateScope();
+        await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
 
         var guild = await GetGuildByIdAsync(guildId);
 

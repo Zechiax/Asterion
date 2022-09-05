@@ -1,14 +1,14 @@
 ﻿using System.Text;
 using Discord;
 using Discord.Interactions;
-using RinthBot.Services;
+using RinthBot.Interfaces;
 
 namespace RinthBot.Modules;
 
 [EnabledInDm(false)]
 public class GuildManagement : InteractionModuleBase<SocketInteractionContext>
 {
-        public DataService DataService { get; set; } = null!;
+        public IDataService DataService { get; set; } = null!;
         
         [RequireUserPermission(GuildPermission.Administrator)]
         [SlashCommand("set-manage-role", "Set's the role so that users with that role can manage subscription")]

@@ -6,6 +6,8 @@ using Fergun.Interactive;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using RinthBot.Database;
+using RinthBot.Interfaces;
 using RinthBot.Services;
 using RinthBot.Services.Modrinth;
 using Serilog;
@@ -48,7 +50,7 @@ public class RinthBot
         await services.GetRequiredService<InteractionCommandHandler>().InitializeAsync();
 
         // Initialize data service after client has been connected
-        client.Ready += services.GetRequiredService<DataService>().InitializeAsync;
+        client.Ready += services.GetRequiredService<IDataService>().InitializeAsync;
         services.GetRequiredService<ClientService>().Initialize();
 
         client.Ready += async () =>
@@ -82,7 +84,8 @@ public class RinthBot
             logger.LogInformation("Stopping the client");
             client.StopAsync().Wait();
 
-            Log.CloseAndFlush();
+            logger.LogInformation("Disposing services");
+            services.DisposeAsync().GetAwaiter().GetResult();
 
             args.Cancel = false;
         };
@@ -94,7 +97,7 @@ public class RinthBot
     {
         var config = new DiscordSocketConfig
         {
-            //AlwaysDownloadUsers = true,
+            AlwaysDownloadUsers = true,
             MessageCacheSize = 100
         };
 
@@ -110,12 +113,13 @@ public class RinthBot
             .AddSingleton<InteractionService>()
             .AddSingleton<InteractionCommandHandler>()
             .AddSingleton<LoggingService>()
-            .AddSingleton<DataService>()
+            .AddSingleton<IDataService, DataService>()
             .AddSingleton<ModrinthService>()
             .AddSingleton<InteractiveService>()
             .AddSingleton<ClientService>()
+            .AddDbContext<DataContext>()
             .AddMemoryCache()
-            .AddLogging(configure => configure.AddSerilog());
+            .AddLogging(configure => configure.AddSerilog(dispose: true));
 
         if (IsDebug())
         {
@@ -129,7 +133,7 @@ public class RinthBot
         var serviceProvider = services.BuildServiceProvider();
         return serviceProvider;
     }
-
+    
     private static bool IsDebug()
     {
 #if DEBUG

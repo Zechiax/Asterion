@@ -1,10 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Serilog;
 
 namespace RinthBot.Database
 {
-    public partial class DataContext : DbContext
+    public class DataContext : DbContext
     {
 
         public DataContext()
@@ -23,11 +24,14 @@ namespace RinthBot.Database
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            if (!optionsBuilder.IsConfigured)
-            {
-                optionsBuilder.UseSqlite("DataSource=data.sqlite");
-                optionsBuilder.LogTo(Log.Logger.Error, LogLevel.Error, null);
-            }
+            if (optionsBuilder.IsConfigured) return;
+            
+            optionsBuilder.UseSqlite("DataSource=data.sqlite");
+            optionsBuilder.LogTo(Log.Logger.Error, LogLevel.Error, null);
+            
+            // Disables dbcontext intialized messages
+            optionsBuilder.ConfigureWarnings(warnings => warnings
+                .Ignore(CoreEventId.ContextInitialized));
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

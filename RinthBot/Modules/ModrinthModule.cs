@@ -4,11 +4,11 @@ using Discord.Interactions;
 using Discord.WebSocket;
 using RinthBot.Attributes;
 using RinthBot.EmbedBuilders;
-using RinthBot.Services;
 using Fergun.Interactive;
 using Microsoft.Extensions.Logging;
 using RinthBot.AutocompleteHandlers;
 using RinthBot.ComponentBuilders;
+using RinthBot.Interfaces;
 using RinthBot.Services.Modrinth;
 
 // ReSharper disable MemberCanBePrivate.Global
@@ -20,7 +20,7 @@ namespace RinthBot.Modules;
 // ReSharper disable once ClassNeverInstantiated.Global
 public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
 {
-        public DataService DataService { get; set; } = null!;
+        public IDataService DataService { get; set; } = null!;
         public ModrinthService ModrinthService { get; set; } = null!;
         public InteractiveService Interactive { get; set; } = null!;
         public DiscordSocketClient Client { get; set; } = null!;

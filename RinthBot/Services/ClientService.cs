@@ -16,7 +16,7 @@ public class ClientService
     public ClientService(IServiceProvider serviceProvider)
     {
         _client = serviceProvider.GetRequiredService<DiscordSocketClient>();
-        _data = serviceProvider.GetRequiredService<DataService>();
+        _data = serviceProvider.GetRequiredService<IDataService>();
         
         _refreshWorker = new BackgroundWorker();
         _refreshWorker.DoWork += RefreshAsync;

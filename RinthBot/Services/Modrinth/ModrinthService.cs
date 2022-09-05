@@ -44,7 +44,7 @@ public partial class ModrinthService
         _api = ModrinthApi.NewClient(userAgent: "RinthBot");
         _logger = serviceProvider.GetRequiredService<ILogger<ModrinthService>>();
         _cache = serviceProvider.GetRequiredService<IMemoryCache>();
-        _dataService = serviceProvider.GetRequiredService<DataService>();
+        _dataService = serviceProvider.GetRequiredService<IDataService>();
         _client = serviceProvider.GetRequiredService<DiscordSocketClient>();
         
         _cacheEntryOptions = new MemoryCacheEntryOptions

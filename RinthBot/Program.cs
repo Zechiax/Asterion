@@ -12,6 +12,12 @@ namespace RinthBot
             Log.Logger = new LoggerConfiguration()
                 .WriteTo.File(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs/rinthbot.log"),
                     rollingInterval: RollingInterval.Day)
+#if DEBUG
+                .MinimumLevel.Override("Microsoft.EntityFrameworkCore.Database.Command", Serilog.Events.LogEventLevel.Debug)
+#else
+                .MinimumLevel.Override("Microsoft.EntityFrameworkCore.Database.Command", Serilog.Events.LogEventLevel.Warning)
+#endif
+                .Enrich.FromLogContext()
                 .WriteTo.Console()
                 .CreateLogger();
 

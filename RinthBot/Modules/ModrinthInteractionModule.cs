@@ -2,10 +2,10 @@
 using Discord.Interactions;
 using Microsoft.Extensions.Logging;
 using RinthBot.Attributes;
-using RinthBot.Services;
 using Modrinth.RestClient.Models;
 using RinthBot.ComponentBuilders;
 using RinthBot.EmbedBuilders;
+using RinthBot.Interfaces;
 using RinthBot.Services.Modrinth;
 
 namespace RinthBot.Modules;
@@ -13,7 +13,7 @@ namespace RinthBot.Modules;
 [EnabledInDm(false)]
 public class ModrinthInteractionModule : InteractionModuleBase
 {
-        public DataService DataService { get; set; } = null!;
+        public IDataService DataService { get; set; } = null!;
         public ModrinthService ModrinthService { get; set; } = null!;
         public ILogger<ModrinthInteractionModule> Logger = null!;
 

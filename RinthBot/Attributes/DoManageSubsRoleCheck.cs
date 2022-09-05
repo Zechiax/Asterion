@@ -1,7 +1,7 @@
 ﻿using Discord;
 using Discord.Interactions;
 using Microsoft.Extensions.DependencyInjection;
-using RinthBot.Services;
+using RinthBot.Interfaces;
 
 namespace RinthBot.Attributes;
 
@@ -13,7 +13,7 @@ public class DoManageSubsRoleCheck : PreconditionAttribute
         if (context.User is not IGuildUser guildUser)
             return PreconditionResult.FromError("Command must be used in a guild channel.");
         
-        var data = services.GetRequiredService<DataService>();
+        var data = services.GetRequiredService<IDataService>();
 
         // Get manage role id
         var roleId = await data.GetManageRoleIdAsync(context.Guild.Id);

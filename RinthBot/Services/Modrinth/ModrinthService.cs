@@ -274,7 +274,7 @@ public partial class ModrinthService
         Project? project = null;
 
         // Slug or ID can't contain space
-        if (query.Contains(' '))
+        if (!query.Contains(' '))
         {
             var projectFoundById = false;
             try

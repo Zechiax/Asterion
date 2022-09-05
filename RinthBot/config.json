@@ -1,0 +1,5 @@
+﻿{
+  "token": "<insert-bot-token-here>",
+  "testGuild": "<insert-test-guild-id>",
+  "testChannel": "<insert-test-channel-id>"
+}

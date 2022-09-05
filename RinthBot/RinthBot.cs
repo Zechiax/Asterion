@@ -21,15 +21,9 @@ public class RinthBot
 
     public RinthBot()
     {
-        //Create the configuration and build
-        if (!File.Exists("config.toml"))
-        {
-            throw new FileNotFoundException("There is no configuration file present in program directory");
-        }
-
         _config = new ConfigurationBuilder()
             .SetBasePath(AppContext.BaseDirectory)
-            .AddTomlFile(path: "config.toml", false, true)
+            .AddJsonFile(path: "config.json", false, true)
             .Build();
     }
 
@@ -57,7 +51,7 @@ public class RinthBot
         {
             if (IsDebug())
             {
-                var testGuildId = _config.GetSection("guilds").GetSection("test").GetValue<ulong>("id");
+                var testGuildId = _config.GetValue<ulong>("testGuild");
                 logger.LogInformation("Registering commands to test guild (D) ID {Value}", testGuildId);
 
                 await commands.RegisterCommandsToGuildAsync(testGuildId);
@@ -69,8 +63,7 @@ public class RinthBot
             }
         };
 
-        var clientSection = _config.GetSection("client");
-        await client.LoginAsync(TokenType.Bot, clientSection["token"]);
+        await client.LoginAsync(TokenType.Bot, _config.GetValue<string>("token"));
         await client.StartAsync();
 
         // Disconnect from Discord when pressing Ctrl+C

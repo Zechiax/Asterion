@@ -22,7 +22,7 @@ namespace RinthBot
         static void Main(string[] args)
         {
             Thread.CurrentThread.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
-            if (args.Count() != 0)
+            if (args.Length != 0)
             {
                 _logLevel = args[0];
             }
@@ -30,6 +30,7 @@ namespace RinthBot
                 .WriteTo.File(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs/rinthbot.log"), rollingInterval: RollingInterval.Day)
                 .WriteTo.Console()
                 .CreateLogger();
+
             new Program().MainAsync().GetAwaiter().GetResult();
         }
 
@@ -72,10 +73,24 @@ namespace RinthBot
             var clientSection = _config.GetSection("client");
             await client.LoginAsync(TokenType.Bot, clientSection["token"]);
             await client.StartAsync();
+            
+            // Disconnect from Discord when pressing Ctrl+C
+            Console.CancelKeyPress += (sender, args) =>
+            {
+                args.Cancel = true;
+                logger.LogInformation("{Key} pressed, exiting bot", args.SpecialKey);
+                
+                logger.LogInformation("Logging out from Discord");
+                client.LogoutAsync().Wait();
+                logger.LogInformation("Stopping the client");
+                client.StopAsync().Wait();
+                
+                Log.CloseAndFlush();
+                
+                args.Cancel = false;
+            }; 
 
             await Task.Delay(Timeout.Infinite);
-            
-            Log.CloseAndFlush();
         }
 
         private Program()
@@ -91,7 +106,7 @@ namespace RinthBot
                 .AddTomlFile(path: "config.toml", false, true)
                 .Build();
         }
-        
+
         private ServiceProvider ConfigureServices()
         {
             var config = new DiscordSocketConfig

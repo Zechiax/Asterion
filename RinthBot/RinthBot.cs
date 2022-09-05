@@ -1,5 +1,4 @@
-﻿using System.Globalization;
-using Discord;
+﻿using Discord;
 using Discord.Commands;
 using Discord.Interactions;
 using Discord.WebSocket;
@@ -73,7 +72,7 @@ public class RinthBot
         await client.StartAsync();
 
         // Disconnect from Discord when pressing Ctrl+C
-        Console.CancelKeyPress += (sender, args) =>
+        Console.CancelKeyPress += (_, args) =>
         {
             args.Cancel = true;
             logger.LogInformation("{Key} pressed, exiting bot", args.SpecialKey);

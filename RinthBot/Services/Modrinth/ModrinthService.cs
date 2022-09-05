@@ -155,7 +155,7 @@ public partial class ModrinthService
     }
 
     /// <summary>
-    /// Sends update information about all
+    /// Sends update information about every new version to specified Text Channel
     /// </summary>
     /// <param name="textChannel"></param>
     /// <param name="currentProject"></param>

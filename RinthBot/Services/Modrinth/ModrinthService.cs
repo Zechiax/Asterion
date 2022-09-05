@@ -305,16 +305,17 @@ public partial class ModrinthService
         {
             var searchResult = await _api.SearchProjectsAsync(query);
 
-            if (searchResult.TotalHits > 0)
-            {
-                project = await _api.GetProjectAsync(searchResult.Hits[0].ProjectId);
-
-                return new SearchResult<Project>(project, SearchStatus.FoundBySearch);
-            }
-            else
+            // No search results
+            if (searchResult.TotalHits <= 0)
             {
                 return new SearchResult<Project>(null, SearchStatus.NoResult);
             }
+            
+            // Return first result
+            project = await _api.GetProjectAsync(searchResult.Hits[0].ProjectId);
+
+            return new SearchResult<Project>(project, SearchStatus.FoundBySearch);
+
         }
         catch (Exception)
         {

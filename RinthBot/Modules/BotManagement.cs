@@ -1,11 +1,10 @@
 ﻿using Discord.Interactions;
 using Microsoft.Extensions.DependencyInjection;
-using RinthBot.Attributes;
 using RinthBot.Interfaces;
 
 namespace RinthBot.Modules;
 
-[DoOwnerCheck]
+[RequireOwner]
 public class BotManagement: InteractionModuleBase<SocketInteractionContext>
 {
     private readonly IDataService _dataService;

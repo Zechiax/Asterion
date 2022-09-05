@@ -32,6 +32,11 @@ public static class ModrinthEmbedBuilder
         return $"https://modrinth.com/{GetProjectUrlType(project)}/{project.Id}";
     }
 
+    /// <summary>
+    /// Returns formatted type used in Modrinth url to specific project
+    /// </summary>
+    /// <param name="project"></param>
+    /// <returns></returns>
     public static string GetProjectUrlType(Project project)
     {
         return project.ProjectType switch
@@ -66,6 +71,11 @@ public static class ModrinthEmbedBuilder
         return embedAuthor;
     }
 
+    /// <summary>
+    /// Returns generic Modrinth embed author
+    /// </summary>
+    /// <param name="project"></param>
+    /// <returns></returns>
     private static EmbedAuthorBuilder GetModrinthAuthor(Project project)
     {
         var embedAuthor = new EmbedAuthorBuilder
@@ -83,16 +93,23 @@ public static class ModrinthEmbedBuilder
         return (teamMembers ?? Array.Empty<TeamMember>()).FirstOrDefault(x =>
             string.Equals(x.Role, "owner", StringComparison.InvariantCultureIgnoreCase));
     }
-
-    private static TeamMember? GetVersionPublisher(IEnumerable<TeamMember>? teamMembers, string authorId)
+    
+    private static TeamMember? GetByUserId(IEnumerable<TeamMember>? teamMembers, string authorId)
     {
         return (teamMembers ?? Array.Empty<TeamMember>()).FirstOrDefault(x =>
             string.Equals(x.User.Id, authorId));
     }
 
+    /// <summary>
+    /// Creates EmbedAuthor based on provided information
+    /// </summary>
+    /// <param name="project"></param>
+    /// <param name="teamMembers"></param>
+    /// <param name="version"></param>
+    /// <returns></returns>
     private static EmbedAuthorBuilder GetEmbedAuthor(Project project, IEnumerable<TeamMember>? teamMembers = null, Version? version = null)
     {
-        var author = version is not null ? GetVersionPublisher(teamMembers, version.AuthorId) : GetOwner(teamMembers);
+        var author = version is not null ? GetByUserId(teamMembers, version.AuthorId) : GetOwner(teamMembers);
         
         return author is null ? GetModrinthAuthor(project) : GetProjectAuthor(author);
     }
@@ -101,6 +118,7 @@ public static class ModrinthEmbedBuilder
     /// Creates embed with basic project info
     /// </summary>
     /// <param name="project">The project from which to get the info</param>
+    /// <param name="teamMembers">Members of the team for this project, not required, if not provided, will show generic Modrinth Author</param>
     /// <returns>Embed builder, which can be further edited</returns>
     public static EmbedBuilder GetProjectEmbed(Project project, IEnumerable<TeamMember>? teamMembers = null)
     {

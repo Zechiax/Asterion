@@ -36,9 +36,9 @@ public static class ModrinthEmbedBuilder
     {
         return project.ProjectType switch
         {
-            ProjectType.Mod => "Mod",
-            ProjectType.Modpack => "Modpack",
-            ProjectType.Resourcepack => "Resourcepack",
+            ProjectType.Mod => "mod",
+            ProjectType.Modpack => "modpack",
+            ProjectType.Resourcepack => "resourcepack",
             _ => string.Empty
         };
     }
@@ -103,7 +103,7 @@ public static class ModrinthEmbedBuilder
         var embed = new EmbedBuilder
         {
             Author = author,
-            Title = project.Title,
+            Title = $"{project.ProjectType.Humanize()} | {project.Title}",
             Url = GetProjectUrl(project),
             Description = project.Description,
             ThumbnailUrl = project.IconUrl,
@@ -116,7 +116,7 @@ public static class ModrinthEmbedBuilder
                 // new() { Name = "Downloads", Value = project.Downloads.SeparateThousands(), IsInline = true },
                 new() { Name = "Followers", Value = project.Followers.SeparateThousands(), IsInline = true },
                 new() { Name = "Categories", Value = string.Join(", ", project.Categories).Transform(To.TitleCase), IsInline = true },
-                new() { Name = "Type", Value = project.ProjectType.Humanize(), IsInline = true },
+                // new() { Name = "Type", Value = project.ProjectType.Humanize(), IsInline = true },
                 new() { Name = "ID", Value = project.Id, IsInline = true },
                 new() { Name = "Created | Last updated", Value = $"{TimestampTag.FromDateTime(project.Published, TimestampTagStyles.Relative)} | {TimestampTag.FromDateTime(project.Updated, TimestampTagStyles.Relative)}"  }
             }

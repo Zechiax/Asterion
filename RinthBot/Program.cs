@@ -77,7 +77,6 @@ namespace RinthBot
             
             Log.CloseAndFlush();
         }
-        
 
         private Program()
         {

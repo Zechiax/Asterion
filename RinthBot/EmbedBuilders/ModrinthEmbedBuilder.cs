@@ -120,10 +120,10 @@ public static class ModrinthEmbedBuilder
                 new() { Name = "ID", Value = project.Id, IsInline = true },
                 new() { Name = "Created | Last updated", Value = $"{TimestampTag.FromDateTime(project.Published, TimestampTagStyles.Relative)} | {TimestampTag.FromDateTime(project.Updated, TimestampTagStyles.Relative)}"  }
             },
-            // Choose 'random' picture from gallery
-            ImageUrl = project.Gallery.Length > 0 ? project.Gallery[DateTime.Now.Millisecond % project.Gallery.Length].Url : null
+            // Choose 'random' picture from gallery through TickCount
+            ImageUrl = project.Gallery.Length > 0 ? project.Gallery[Math.Abs(Environment.TickCount) % project.Gallery.Length].Url : null
         };
-
+        
         return embed;
     }
 

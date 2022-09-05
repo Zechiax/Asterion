@@ -46,7 +46,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         }
 
         [SlashCommand("search", "Search Projects (by slug, ID or search) and gives you info about the first response")]
-        public async Task SearchProject(string query)
+        public async Task SearchProject(string query) // TODO: in Discord.NET >3.8 use MaxLength of 60
         {
                 await DeferAsync();
 
@@ -302,8 +302,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                 }
 
                 var latestVersion = await ModrinthService.GetProjectsLatestVersion(project);
-
-                // TODO: Centralize error messages
+                
                 if (latestVersion == null)
                 {
                         await ModifyOriginalResponseAsync(x =>
@@ -329,72 +328,6 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                 });
         }
 
-        [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
-        [DoManageSubsRoleCheck(Group = "ManageSubs")]
-        [SlashCommand("test-setup", "Checks your setup (also tries to send a message to test channel and remove it)")]
-        public async Task SendTextMessage()
-        {
-                await DeferAsync();
-                       
-                var guildInfoDb = await DataService.GetGuildByIdAsync(Context.Guild.Id);
-
-                if (guildInfoDb?.UpdateChannel == null)
-                {
-                        await ModifyOriginalResponseAsync(x =>
-                        {
-                                x.Content = $":no_entry_sign: You didn't setup your update channel";
-                        });
-                        return;
-                }
-                
-                var channel = Client.GetGuild(guildInfoDb.GuildId).GetTextChannel((ulong)guildInfoDb.UpdateChannel!);
-
-                try
-                {
-                        var msg = await channel.SendMessageAsync("Test message");
-
-                        await msg.DeleteAsync();
-                }
-                // null reference exception will only be thrown when channel is null
-                catch (NullReferenceException)
-                {
-                        await ModifyOriginalResponseAsync(x =>
-                        {
-                                x.Content =
-                                        $":no_entry_sign: Looks like the current update channel doesn't exists, please set a different one";
-                        });
-                        return;
-                }
-                catch (Exception e)
-                {
-                        if (e.Message.Contains("Missing Access") || e.Message.Contains("Missing Permissions"))
-                        {
-                                await ModifyOriginalResponseAsync(x =>
-                                {
-                                        x.Content =
-                                                $":no_entry_sign: Looks like I don't have permission to send messages to {channel.Mention} channel, check my permissions for that channel and try again";
-                                });
-                        }
-                        else
-                        {
-                                Logger.LogWarning("Test setup on server {Guild}: Unknown error: '{ExceptionMessage}'", Context.Guild.Id, e.Message);
-                                await ModifyOriginalResponseAsync(x =>
-                                {
-                                        x.Content = $"Unknown error happened";
-                                });
-                        }
-
-                        return;
-                }
-
-                var subs = await DataService.GetAllGuildsSubscribedProjectsAsync(Context.Guild.Id);
-                
-                await ModifyOriginalResponseAsync(x =>
-                {
-                        x.Content = $"Everything's in check :white_check_mark: {(subs != null && subs.Any() ? null : "Now I recommend subscribing to some projects")}";
-                });
-        }
-        
         [RequireOwner]
         [SlashCommand("force-update", "Forces check for updates")]
         public async Task ForceUpdate()

@@ -157,7 +157,7 @@ public partial class ModrinthService
     {
         await guild.Owner.SendMessageAsync(
             $"Hi! I've found updates for one of your subscribed projects ({project.Id} - {project.Title}), but due to changes on how subscribing project works, this project has no update channel set" +
-            $"\n\nPlease use `/modrinth change-channel [projectId] [newChannel]` command, you can check the documentation for this command here: https://zechiax.gitbook.io/rinthbot/commands/change-channel" +
+            $"\n\nPlease use `/change-channel [projectId] [newChannel]` command, you can check the documentation for this command here: https://zechiax.gitbook.io/rinthbot/commands/change-channel" +
             $"\n\nFor more information regarding subscribing projects, see this guide https://zechiax.gitbook.io/rinthbot/guides/subscribe-to-your-first-project");
     }
 

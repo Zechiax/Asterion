@@ -115,8 +115,8 @@ public interface IDataService
     /// <summary>
     /// Gets the ManageRole from provided guild
     /// </summary>
-    /// <param name="guildId"></param>
-    /// <returns></returns>
+    /// <param name="guildId">ID of the guild</param>
+    /// <returns>ID of the manage role or null if it has not been set</returns>
     public Task<ulong?> GetManageRoleIdAsync(ulong guildId);
     /// <summary>
     /// Updates channel for specific Modrinth entry

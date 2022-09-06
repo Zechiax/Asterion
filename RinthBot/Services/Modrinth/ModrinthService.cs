@@ -10,6 +10,7 @@ using Modrinth.RestClient;
 using Modrinth.RestClient.Models;
 using RestEase;
 using RinthBot.ComponentBuilders;
+using RinthBot.Database;
 using RinthBot.EmbedBuilders;
 using RinthBot.Interfaces;
 using Version = Modrinth.RestClient.Models.Version;
@@ -38,6 +39,9 @@ public partial class ModrinthService
     private readonly MemoryCacheEntryOptions _cacheEntryOptions;
     private readonly IDataService _dataService;
     private readonly DiscordSocketClient _client;
+
+    // Temporary solution for sending notifications to guilds with no channel set
+    private List<ulong> _notifiedGuilds = new();
 
     public ModrinthService(IServiceProvider serviceProvider)
     {
@@ -77,8 +81,6 @@ public partial class ModrinthService
         _logger.LogInformation("Running update check");
         var projects = await _dataService.GetAllModrinthProjectsAsync();
 
-        List<ulong> notifiedGuilds = new();
-
         // Check every project for update sequentially (lesser chance for being rate-limited)
         foreach (var project in projects)
         {
@@ -110,33 +112,7 @@ public partial class ModrinthService
                 
                 var guilds = await _dataService.GetAllGuildsSubscribedToProject(project.ProjectId);
 
-                foreach (var guild in guilds)
-                {
-                    var entry = await _dataService.GetModrinthEntryAsync(guild.GuildId, project.ProjectId);
-
-                    // Channel is not set, skip sending updates to this guild
-                    if (entry!.CustomUpdateChannel is null)
-                    {
-                        _logger.LogInformation("Guild ID {GuildID} has not yet set default update channel or custom channel for this project", guild.GuildId);
-                        var socketGuild = _client.GetGuild(guild.GuildId);
-
-                        if (socketGuild is not null && notifiedGuilds.Contains(guild.GuildId) == false)
-                        {
-                            _logger.LogInformation("Sending information message to the owner of this guild");
-                            notifiedGuilds.Add(guild.GuildId);
-                            await InformOwner(socketGuild, updateInfo.Project!);
-                        }
-
-                        continue;
-                    }
-
-                    var channel = _client.GetGuild(guild.GuildId).GetTextChannel((ulong)entry.CustomUpdateChannel);
-                    
-                    _logger.LogInformation("Sending updates to guild ID {Id} and channel ID {Channel}", guild.GuildId, channel.Id);
-                    
-                    // None of these can be null, everything is checked beforehand
-                    await SendUpdatesToChannel(channel, updateInfo.Project!, updateInfo.Versions!, updateInfo.TeamMembers);
-                }
+                await CheckGuilds(updateInfo, project, guilds);
             }
             catch (Exception ex)
             {
@@ -146,7 +122,38 @@ public partial class ModrinthService
         _logger.LogInformation("Update check ended");
     }
 
-    private async Task InformOwner(SocketGuild guild, Project project)
+    private async Task CheckGuilds(UpdateDto updateInfo, ModrinthProject project, IEnumerable<Guild> guilds)
+    {
+        foreach (var guild in guilds)
+        {
+            var entry = await _dataService.GetModrinthEntryAsync(guild.GuildId, project.ProjectId);
+
+            // Channel is not set, skip sending updates to this guild
+            if (entry!.CustomUpdateChannel is null)
+            {
+                _logger.LogInformation("Guild ID {GuildID} has not yet set default update channel or custom channel for this project", guild.GuildId);
+                var socketGuild = _client.GetGuild(guild.GuildId);
+
+                if (socketGuild is not null && _notifiedGuilds.Contains(guild.GuildId) == false)
+                {
+                    _logger.LogInformation("Sending information message to the owner of this guild");
+                    _notifiedGuilds.Add(guild.GuildId);
+                    await InformOwner(socketGuild, updateInfo.Project!);
+                }
+
+                continue;
+            }
+
+            var channel = _client.GetGuild(guild.GuildId).GetTextChannel((ulong)entry.CustomUpdateChannel);
+                    
+            _logger.LogInformation("Sending updates to guild ID {Id} and channel ID {Channel}", guild.GuildId, channel.Id);
+                    
+            // None of these can be null, everything is checked beforehand
+            await SendUpdatesToChannel(channel, updateInfo.Project!, updateInfo.Versions!, updateInfo.TeamMembers);
+        }
+    }
+
+    private static async Task InformOwner(SocketGuild guild, Project project)
     {
         await guild.Owner.SendMessageAsync(
             $"Hi! I've found updates for one of your subscribed projects ({project.Id} - {project.Title}), but due to changes on how subscribing project works, this project has no update channel set" +

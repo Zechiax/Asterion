@@ -132,14 +132,18 @@ public static class ModrinthEmbedBuilder
             Description = project.Description,
             ThumbnailUrl = project.IconUrl,
             Color = ModrinthColor,
-            Fields = new List<EmbedFieldBuilder>
+            Fields = new List<EmbedFieldBuilder?>
             {
                 // Format downloads from 319803 to 319,8K 
                  new() { Name = "Downloads", Value = project.Downloads.ToMetric(decimals: 1).Transform(To.UpperCase), IsInline = true },
                 // Format downloads from 319803 to 319 803
                 // new() { Name = "Downloads", Value = project.Downloads.SeparateThousands(), IsInline = true },
                 new() { Name = "Followers", Value = project.Followers.SeparateThousands(), IsInline = true },
-                new() { Name = "Categories", Value = string.Join(", ", project.Categories).Transform(To.TitleCase), IsInline = true },
+                new()
+                {
+                    Name = "Categories", Value = project.Categories.Length > 0
+                        ? string.Join(", ", project.Categories).Transform(To.TitleCase) 
+                    : Format.Italics("No categories") , IsInline = true },
                 new() { Name = "Type", Value = project.ProjectType.Humanize(), IsInline = true },
                 new() { Name = "ID", Value = project.Id, IsInline = true },
                 new() { Name = "Created | Last updated", Value = $"{TimestampTag.FromDateTime(project.Published, TimestampTagStyles.Relative)} | {TimestampTag.FromDateTime(project.Updated, TimestampTagStyles.Relative)}"  }
@@ -147,7 +151,7 @@ public static class ModrinthEmbedBuilder
             // Choose 'random' picture from gallery through TickCount
             ImageUrl = project.Gallery.Length > 0 ? project.Gallery[Math.Abs(Environment.TickCount) % project.Gallery.Length].Url : null
         };
-        
+
         return embed;
     }
 

@@ -49,9 +49,9 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         public async Task SearchProject(string query) // TODO: in Discord.NET >3.8 use MaxLength of 60
         {
                 await DeferAsync();
-
+                Logger.LogDebug("Search for query '{Query}'", query);
                 var searchResult = await ModrinthService.FindProject(query);
-
+                Logger.LogDebug("Search status: {SearchStatus}", searchResult.SearchStatus);
                 switch (searchResult.SearchStatus)
                 {
                         case SearchStatus.ApiDown:
@@ -80,7 +80,16 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                                 throw new ArgumentOutOfRangeException();
                 }
 
-                var project = searchResult.Payload!;
+                if (searchResult.Payload is null)
+                {
+                        await ModifyOriginalResponseAsync(x =>
+                        {
+                                x.Content = "Unknown error, please try again later";
+                        });
+                        return;
+                }
+
+                var project = searchResult.Payload;
 
                 var team = await ModrinthService.GetProjectsTeamMembersAsync(project.Id);
                 

@@ -138,7 +138,7 @@ public partial class ModrinthService
                 {
                     _logger.LogInformation("Sending information message to the owner of this guild");
                     _notifiedGuilds.Add(guild.GuildId);
-                    await InformOwner(socketGuild, updateInfo.Project!);
+                    await InformOwner(socketGuild, updateInfo.Project);
                 }
 
                 continue;
@@ -153,10 +153,10 @@ public partial class ModrinthService
         }
     }
 
-    private static async Task InformOwner(SocketGuild guild, Project project)
+    private static async Task InformOwner(SocketGuild guild, Project? project)
     {
         await guild.Owner.SendMessageAsync(
-            $"Hi! I've found updates for one of your subscribed projects ({project.Id} - {project.Title}), but due to changes on how subscribing project works, this project has no update channel set" +
+            $"Hi! I've found updates for one of your subscribed projects ({project?.Id} - {project?.Title}), but due to changes on how subscribing project works, this project has no update channel set" +
             $"\n\nPlease use `/change-channel [projectId] [newChannel]` command, you can check the documentation for this command here: https://zechiax.gitbook.io/rinthbot/commands/change-channel" +
             $"\n\nFor more information regarding subscribing projects, see this guide https://zechiax.gitbook.io/rinthbot/guides/subscribe-to-your-first-project");
     }

@@ -80,16 +80,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                                 throw new ArgumentOutOfRangeException();
                 }
 
-                if (searchResult.Payload is null)
-                {
-                        await ModifyOriginalResponseAsync(x =>
-                        {
-                                x.Content = "Unknown error, please try again later";
-                        });
-                        return;
-                }
-
-                var project = searchResult.Payload;
+                var project = searchResult.Payload!;
 
                 var team = await ModrinthService.GetProjectsTeamMembersAsync(project.Id);
                 

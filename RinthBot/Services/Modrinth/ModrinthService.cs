@@ -116,7 +116,7 @@ public partial class ModrinthService
             }
             catch (Exception ex)
             {
-                _logger.LogCritical("Exception while checking for update for project ID {ID}; Exception: {Exception}", project.ProjectId, ex.Message);
+                _logger.LogCritical("Exception while checking for update for project ID {ID}; Exception: {Exception} \n Stacktrace: {StackTrace}", project.ProjectId, ex.Message, ex.StackTrace);
             }
         }
         _logger.LogInformation("Update check ended");

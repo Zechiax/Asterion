@@ -33,6 +33,9 @@ public class RinthBot
 
         // Setup logging
         services.GetRequiredService<LoggingService>();
+        
+        // Run database migration
+        services.GetRequiredService<DatabaseMigrationService>().MigrateDatabase();
 
         var client = services.GetRequiredService<DiscordSocketClient>();
         var logger = services.GetRequiredService<ILogger<Program>>();
@@ -110,6 +113,7 @@ public class RinthBot
             .AddSingleton<ModrinthService>()
             .AddSingleton<InteractiveService>()
             .AddSingleton<ClientService>()
+            .AddSingleton<DatabaseMigrationService>()
             .AddDbContext<DataContext>()
             .AddMemoryCache()
             .AddLogging(configure => configure.AddSerilog(dispose: true));

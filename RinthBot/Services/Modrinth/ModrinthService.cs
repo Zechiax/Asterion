@@ -28,9 +28,6 @@ public partial class ModrinthService
     private readonly IDataService _dataService;
     private readonly DiscordSocketClient _client;
 
-    // Temporary solution for sending notifications to guilds with no channel set
-    private List<ulong> _notifiedGuilds = new();
-
     public ModrinthService(IServiceProvider serviceProvider)
     {
         _api = ModrinthApi.NewClient(userAgent: "RinthBot");

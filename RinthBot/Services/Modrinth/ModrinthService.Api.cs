@@ -27,8 +27,9 @@ public partial class ModrinthService
         {
             p = await _api.GetProjectAsync(slugOrId);
         }
-        catch (Exception)
+        catch (Exception e)
         {
+            _logger.LogWarning("{ExceptionMessage}", e.Message);
             return null;
         }
         
@@ -46,7 +47,22 @@ public partial class ModrinthService
         }
         catch (Exception e)
         {
-            _logger.LogInformation("{ExceptionMessage}", e.Message);
+            _logger.LogWarning("{ExceptionMessage}", e.Message);
+        }
+
+        return null;
+    }
+
+    public async Task<Version[]?> GetMultipleVersionsAsync(IEnumerable<string> versions)
+    {
+        try
+        {
+            var searchResponse = await _api.GetMultipleVersionsAsync(versions);
+            return searchResponse;
+        }
+        catch (Exception e)
+        {
+            _logger.LogWarning("{ExceptionMessage}", e.Message);
         }
 
         return null;
@@ -61,7 +77,7 @@ public partial class ModrinthService
         }
         catch (Exception e)
         {
-            _logger.LogInformation("{ExceptionMessage}", e.Message);
+            _logger.LogWarning("{ExceptionMessage}", e.Message);
         }
 
         return null;
@@ -77,7 +93,7 @@ public partial class ModrinthService
         }
         catch (Exception e)
         {
-            _logger.LogInformation("{ExceptionMessage}", e.Message);
+            _logger.LogWarning("{ExceptionMessage}", e.Message);
         }
 
         return null;
@@ -92,7 +108,7 @@ public partial class ModrinthService
         }
         catch (Exception e)
         {
-            _logger.LogInformation("{ExceptionMessage}", e.Message);
+            _logger.LogWarning("{ExceptionMessage}", e.Message);
         }
 
         return null;

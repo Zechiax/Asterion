@@ -18,18 +18,6 @@ using Timer = System.Timers.Timer;
 
 namespace RinthBot.Services.Modrinth;
 
-public class UpdateDto
-{
-    public Version[]? Versions { get; set; }
-    public Project? Project { get; set; }
-    public TeamMember[]? TeamMembers { get; set; }
-
-    /// <summary>
-    /// True if every required information has been set, false otherwise
-    /// </summary>
-    public bool Successful => Versions is not null && Project is not null;
-}
-
 public partial class ModrinthService
 {
     private readonly BackgroundWorker _updateWorker;

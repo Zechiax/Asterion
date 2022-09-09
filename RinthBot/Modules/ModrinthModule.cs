@@ -254,10 +254,8 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
 
                 if (list.Count == 0)
                 {
-                        await ModifyOriginalResponseAsync(x =>
-                        {
-                                x.Content = "You have not subscribed to any projects";
-                        });
+
+                        await FollowupAsync("You are not subscribed to any projects");
                         return;
                 }
                 

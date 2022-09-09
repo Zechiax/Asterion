@@ -101,7 +101,7 @@ public partial class ModrinthService
 
             foreach (var project in apiProjects)
             {
-                _logger.LogInformation("Checking new versions for project ID {ProjectId}", project.Id);
+                _logger.LogInformation("Checking new versions for project {Title} ID {ProjectId}",project.Title ,project.Id);
                 var versionList = apiVersions.Where(x => x.ProjectId == project.Id);
 
                 var newVersions = await GetNewVersions(versionList, project.Id);
@@ -114,7 +114,7 @@ public partial class ModrinthService
 
                 if (newVersions.Length == 0)
                 {
-                    _logger.LogInformation("No new versions for project {ID}", project.Id);
+                    _logger.LogInformation("No new versions for project {Title} ID {ID}",project.Title ,project.Id);
                     continue;
                 }
                 

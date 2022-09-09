@@ -22,7 +22,7 @@ public class DatabaseMigrationService
     {
         if (Migrated)
         {
-            _logger.LogWarning("Database migration requested, database migration has already been run");
+            _logger.LogWarning("Request for database migration rejected, the migration has already been done");
             return;
         }
 
@@ -31,7 +31,7 @@ public class DatabaseMigrationService
 
         var db = scope.ServiceProvider.GetRequiredService<DataContext>();
         db.Database.Migrate();
-        _logger.LogInformation("Migration completed");
+        _logger.LogInformation("Migration complete");
 
         Migrated = true;
     }

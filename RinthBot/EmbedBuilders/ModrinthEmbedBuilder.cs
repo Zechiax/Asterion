@@ -193,7 +193,7 @@ public static class ModrinthEmbedBuilder
         var projectUrl = GetProjectUrl(project);
         
         var embedAuthor = GetEmbedAuthor(project, teamMembers, version);
-
+        
         var embed = new EmbedBuilder
         {
             Author = embedAuthor,
@@ -211,7 +211,7 @@ public static class ModrinthEmbedBuilder
             {
                 new()
                 {
-                    Name = "MC Version",
+                    Name = "MC Versions",
                     Value = string.Join(", ",version.GameVersions).Truncate(EmbedFieldLimit),
                     IsInline = true
                 },

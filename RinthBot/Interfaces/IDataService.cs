@@ -126,4 +126,6 @@ public interface IDataService
     /// <param name="newChannelId">ID of the new channel</param>
     /// <returns></returns>
     public Task<bool> ChangeModrinthEntryChannel(ulong guildId, string projectId, ulong newChannelId);
+    public Task<bool> SetPingRoleAsync(ulong guildId, ulong? roleId);
+    public Task<ulong?> GetPingRoleIdAsync(ulong guildId);
 }

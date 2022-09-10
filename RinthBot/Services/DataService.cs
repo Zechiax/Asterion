@@ -473,4 +473,34 @@ public class DataService : IDataService
 
         return true;
     }
+
+    public async Task<bool> SetPingRoleAsync(ulong guildId, ulong? roleId)
+    {
+        using var scope = _services.CreateScope();
+        await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
+
+        var guild = db.Guilds.SingleOrDefault(x => x.GuildId == guildId);
+
+        if (guild is null)
+        {
+            return false;
+        }
+
+        guild.PingRole = roleId;
+
+        await db.SaveChangesAsync();
+
+        return true;
+    }
+
+    public async Task<ulong?> GetPingRoleIdAsync(ulong guildId)
+    {
+        using var scope = _services.CreateScope();
+        await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
+
+        var guild = await GetGuildByIdAsync(guildId);
+
+        // Return null if guild does not exists, otherwise return ManageRole value
+        return guild?.PingRole;
+    }
 }

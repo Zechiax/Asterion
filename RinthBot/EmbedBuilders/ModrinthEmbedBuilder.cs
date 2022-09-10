@@ -11,17 +11,21 @@ namespace RinthBot.EmbedBuilders;
 
 public static class ModrinthEmbedBuilder
 {
-    private static readonly Color ModrinthColor = new Color(27, 217, 106);
+    /// <summary>
+    /// The main color of the Modrinth logo
+    /// </summary>
+    private static readonly Color ModrinthColor = new(27, 217, 106);
 
     /// <summary>
     /// Limit for the length of value of fields on embed (Discord limit is 1024)
     /// </summary>
-    private static int _embedFieldLimit = 512;
+    private const int EmbedFieldLimit = 512;
+
     /// <summary>
     /// Limit for the length of description on embed (Discord limit is 4096)
     /// </summary>
-    private static int _descriptionLimit = 2000;
-    
+    private const int DescriptionLimit = 2000;
+
     /// <summary>
     /// Creates direct URL string to the specific project 
     /// </summary>
@@ -184,7 +188,7 @@ public static class ModrinthEmbedBuilder
         }
 
         var changelog = string.IsNullOrEmpty(version.Changelog) ? "\n\n*No changelog provided*" : $"\n\n{Format.Underline(Format.Bold("Changelog:"))}\n" +
-            $"{version.Changelog}".Truncate(_descriptionLimit);
+            $"{version.Changelog}".Truncate(DescriptionLimit);
 
         var projectUrl = GetProjectUrl(project);
         
@@ -208,19 +212,19 @@ public static class ModrinthEmbedBuilder
                 new()
                 {
                     Name = "MC Version",
-                    Value = string.Join(", ",version.GameVersions).Truncate(_embedFieldLimit),
+                    Value = string.Join(", ",version.GameVersions).Truncate(EmbedFieldLimit),
                     IsInline = true
                 },
                 new()
                 {
                     Name = "Loaders",
-                    Value = string.Join(", ", version.Loaders).Transform(To.TitleCase).Truncate(_embedFieldLimit),
+                    Value = string.Join(", ", version.Loaders).Transform(To.TitleCase).Truncate(EmbedFieldLimit),
                     IsInline = true
                 },
                 new()
                 {
                     Name = $"Files ({version.Files.Length})",
-                    Value = sbFiles.ToString().Truncate(_embedFieldLimit),
+                    Value = sbFiles.ToString().Truncate(EmbedFieldLimit),
                 },
                 new()
                 {
@@ -260,7 +264,7 @@ public static class ModrinthEmbedBuilder
             Title = $"{Format.Bold(user.Username)}",
             Url = GetUserUrl(user),
             ThumbnailUrl = user.AvatarUrl,
-            Description = string.IsNullOrEmpty(user.Bio) ? Format.Italics("No bio set") : user.Bio.Truncate(_descriptionLimit),
+            Description = string.IsNullOrEmpty(user.Bio) ? Format.Italics("No bio set") : user.Bio.Truncate(DescriptionLimit),
             Fields = new List<EmbedFieldBuilder>
             {
                 new()

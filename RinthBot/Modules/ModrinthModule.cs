@@ -46,7 +46,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                 return buttons;
         }
 
-        [SlashCommand("user", "Finds information about user")]
+        [SlashCommand("user", "Finds information about user, search by ID or username")]
         public async Task FindUser(string query) // TODO: in Discord.NET >3.8 use MaxLength of 60
         {
                 await DeferAsync();
@@ -73,7 +73,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                                 throw new ArgumentOutOfRangeException();
                 }
 
-                var userDto = searchResult.Payload!;
+                var userDto = searchResult.Payload;
 
                 var embed = ModrinthEmbedBuilder.GetUserEmbed(userDto.User, userDto.Projects);
 

@@ -289,11 +289,10 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         public async Task ListSubscribed()
         {
                 await DeferAsync();
-                var list = (await DataService.GetAllGuildsSubscribedProjectsAsync(Context.Guild.Id))!.ToList();
+                var list = (await DataService.GetAllGuildsSubscribedProjectsAsync(Context.Guild.Id))!.OrderBy(x => x.Project.Title).ToList();
 
                 if (list.Count == 0)
                 {
-
                         await FollowupAsync("You are not subscribed to any projects");
                         return;
                 }

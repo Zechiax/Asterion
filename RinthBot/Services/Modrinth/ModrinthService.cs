@@ -202,7 +202,15 @@ public partial class ModrinthService
                     ModrinthComponentBuilder.GetVersionUrlButton(currentProject, version));
             try
             {
-                await textChannel.SendMessageAsync(embed: embed.Build(), components: buttons.Build());
+                var pingRoleId = await _dataService.GetPingRoleIdAsync(textChannel.Guild.Id);
+
+                SocketRole? pingRole = null;
+                if (pingRoleId is not null)
+                {
+                    pingRole = textChannel.Guild.GetRole((ulong)pingRoleId);
+                }
+
+                await textChannel.SendMessageAsync(text: pingRole?.Mention, embed: embed.Build(), components: buttons.Build());
             }
             catch (Exception ex)
             {

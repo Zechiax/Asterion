@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using Discord;
 using Discord.Interactions;
+using RinthBot.Attributes;
 using RinthBot.Interfaces;
 
 namespace RinthBot.Modules;
@@ -14,7 +15,7 @@ public class GuildManagement : InteractionModuleBase<SocketInteractionContext>
         [SlashCommand("set-manage-role", "Set's the role so that users with that role can manage subscription")]
         public async Task SetManageRole(IRole role)
         {
-                await DeferAsync();
+                await DeferAsync(true);
                 var success = await DataService.SetManageRoleAsync(Context.Guild.Id, role.Id);
 
                 if (success)
@@ -22,7 +23,6 @@ public class GuildManagement : InteractionModuleBase<SocketInteractionContext>
                         await ModifyOriginalResponseAsync(x =>
                         {
                                 x.Content = $"Manage role set to role {role.Mention} :white_check_mark: Users with this role can now manage subscription";
-                                x.Flags = MessageFlags.Ephemeral;
                                 x.AllowedMentions = AllowedMentions.None;
                         });
                 }
@@ -31,7 +31,6 @@ public class GuildManagement : InteractionModuleBase<SocketInteractionContext>
                         await ModifyOriginalResponseAsync(x =>
                         {
                                 x.Content = "There was an error while setting the manage role, please try again later";
-                                x.Flags = MessageFlags.Ephemeral;
                                 x.AllowedMentions = AllowedMentions.None;
                         });   
                 }
@@ -42,7 +41,7 @@ public class GuildManagement : InteractionModuleBase<SocketInteractionContext>
                 "Removes the management role")]
         public async Task RemoveManageRole()
         {
-                await DeferAsync();
+                await DeferAsync(true);
 
                 var oldRole = await DataService.GetManageRoleIdAsync(Context.Guild.Id);
 
@@ -63,7 +62,6 @@ public class GuildManagement : InteractionModuleBase<SocketInteractionContext>
                         await ModifyOriginalResponseAsync(x =>
                         {
                                 x.Content = $"Manage role has been removed";
-                                x.Flags = MessageFlags.Ephemeral;
                                 x.AllowedMentions = AllowedMentions.None;
                         });
                 }
@@ -72,9 +70,54 @@ public class GuildManagement : InteractionModuleBase<SocketInteractionContext>
                         await ModifyOriginalResponseAsync(x =>
                         {
                                 x.Content = "There was an error while removing the manage role, please try again later";
-                                x.Flags = MessageFlags.Ephemeral;
                                 x.AllowedMentions = AllowedMentions.None;
                         });  
+                }
+        }
+
+        [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
+        [DoManageSubsRoleCheck(Group = "ManageSubs")]
+        [SlashCommand("set-ping-role", "Sets the role, which will be notified every time a project gets an update")]
+        public async Task SetPingRole(IRole role)
+        {
+                await DeferAsync(true);
+                var success = await DataService.SetPingRoleAsync(Context.Guild.Id, role.Id);
+
+                if (success)
+                {
+                        await FollowupAsync(
+                                $"Ping role set to role {role.Mention} :white_check_mark: This role will be notified with each update");
+                }
+                else
+                {
+                        await FollowupAsync("There was an error while setting the ping role, please try again later");
+                }
+        }
+        
+        [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
+        [DoManageSubsRoleCheck(Group = "ManageSubs")]
+        [SlashCommand("remove-ping-role", "Removes the ping role")]
+        public async Task RemovePingRole()
+        {
+                await DeferAsync(true);
+                var oldRole = await DataService.GetPingRoleIdAsync(Context.Guild.Id);
+                
+                if (oldRole.HasValue == false)
+                {
+                        await FollowupAsync("There is no ping role set");
+                        return;
+                }
+                
+                var success = await DataService.SetPingRoleAsync(Context.Guild.Id, null);
+
+                if (success)
+                {
+                        await FollowupAsync(
+                                "Ping role has been removed");
+                }
+                else
+                {
+                        await FollowupAsync("There was an error while removing the ping role, please try again later");
                 }
         }
 
@@ -86,9 +129,11 @@ public class GuildManagement : InteractionModuleBase<SocketInteractionContext>
                 await DeferAsync(ephemeral: true);
 
                 var subscribedProjects = await DataService.GetAllGuildsSubscribedProjectsAsync(Context.Guild.Id);
-                var roleId = await DataService.GetManageRoleIdAsync(Context.Guild.Id);
+                var manageRoleId = await DataService.GetManageRoleIdAsync(Context.Guild.Id);
+                var pingRoleId = await DataService.GetPingRoleIdAsync(Context.Guild.Id);
 
-                var role = roleId is null ? null : Context.Guild.GetRole((ulong)roleId);
+                var manageRole = manageRoleId is null ? null : Context.Guild.GetRole((ulong)manageRoleId);
+                var pingRole = pingRoleId is null ? null : Context.Guild.GetRole((ulong) pingRoleId);
 
                 if (subscribedProjects is null)
                 {
@@ -105,7 +150,8 @@ public class GuildManagement : InteractionModuleBase<SocketInteractionContext>
                 sb.AppendLine(Format.Bold(Format.Underline($"Info for guild {Context.Guild.Name}")));
                 sb.AppendLine();
 
-                sb.AppendLine(Format.Bold("Manage role: ") + $"{(role is null ? "Not set" : role.Mention)}");
+                sb.AppendLine(Format.Bold("Ping role: ") + $"{(pingRole is null ? "Not set" : pingRole.Mention)}");
+                sb.AppendLine(Format.Bold("Manage role: ") + $"{(manageRole is null ? "Not set" : manageRole.Mention)}");
                 sb.AppendLine(Format.Bold("Number of subscribed projects: ") + subscribedProjects!.Count);
 
                 await ModifyOriginalResponseAsync(x =>

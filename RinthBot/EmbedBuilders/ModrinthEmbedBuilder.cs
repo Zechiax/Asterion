@@ -58,14 +58,31 @@ public static class ModrinthEmbedBuilder
     {
         return $"{GetProjectUrl(project)}/version/{version.Id}";
     }
-    
+
+    public static string GetUserUrl(User user)
+    {
+        return $"https://modrinth.com/user/{user.Id}";
+    }
+
+    public static EmbedAuthorBuilder GetUserAuthor(User user)
+    {
+        var embedAuthor = new EmbedAuthorBuilder
+        {
+            Name = user.Username,
+            IconUrl = user.AvatarUrl,
+            Url = GetUserUrl(user)
+        };
+
+        return embedAuthor;
+    }
+
     private static EmbedAuthorBuilder GetProjectAuthor(TeamMember owner)
     {
         var embedAuthor = new EmbedAuthorBuilder
         {
             Name = owner.User.Username,
             IconUrl = owner.User.AvatarUrl,
-            Url = $"https://modrinth.com/user/{owner.User.Id}"
+            Url = GetUserUrl(owner.User)
         };
 
         return embedAuthor;
@@ -75,12 +92,14 @@ public static class ModrinthEmbedBuilder
     /// Returns generic Modrinth embed author
     /// </summary>
     /// <param name="project"></param>
+    /// <param name="user"></param>
     /// <returns></returns>
-    private static EmbedAuthorBuilder GetModrinthAuthor(Project project)
+    private static EmbedAuthorBuilder GetModrinthAuthor(Project? project = null, User? user = null)
     {
         var embedAuthor = new EmbedAuthorBuilder
         {
-            Name = $"Modrinth | {project.ProjectType.ToString()}",
+            Name =
+                $"Modrinth {(project is not null || user is not null ? '|' : null)} {(project is not null ? project.ProjectType.ToString() : "User")}",
             IconUrl = "https://avatars.githubusercontent.com/u/67560307",
             Url = "https://modrinth.com/"
         };
@@ -217,7 +236,75 @@ public static class ModrinthEmbedBuilder
 
         return embed;
     }
-    
+
+    private static string FormatMostDownloaded(IEnumerable<Project> mostDownloaded)
+    {
+        var sb = new StringBuilder();
+        
+        foreach (var p in mostDownloaded.Take(3))
+        {
+            sb.Append(Format.Url(p.Title, GetProjectUrl(p)));
+            sb.Append($" | {p.Downloads.ToModrinthFormat()} downloads");
+            sb.AppendLine();
+        }
+
+        return sb.ToString();
+    }
+
+    public static EmbedBuilder GetUserEmbed(User user, Project[] userProjects)
+    {
+        var mostDownloaded = userProjects.OrderByDescending(x => x.Downloads + x.Followers);
+
+        var embed = new EmbedBuilder()
+        {
+            Author = GetModrinthAuthor(user: user),
+            Title = $"{Format.Bold(user.Username)}",
+            Url = GetUserUrl(user),
+            ThumbnailUrl = user.AvatarUrl,
+            Description = string.IsNullOrEmpty(user.Bio) ? Format.Italics("No bio set") : user.Bio.Truncate(_descriptionLimit),
+            Fields = new List<EmbedFieldBuilder>
+            {
+                new()
+                {
+                    Name = "Info",
+                    Value = Format.Bold("Projects: ") + userProjects.Length +
+                            Format.Bold("\nDownloads: ") + userProjects.Sum(x => x.Downloads).ToModrinthFormat() +
+                            Format.Bold("\nFollowers: ") + userProjects.Sum(x => x.Followers).SeparateThousands()
+                },
+                new()
+                {
+                    Name = "Most popular projects",
+                    Value = userProjects.Length < 1 ? Format.Italics("No projects") : FormatMostDownloaded(mostDownloaded),
+                    IsInline = false
+                },
+                new()
+                {
+                    Name = "Role",
+                    Value = user.Role.Humanize(),
+                    IsInline = true
+                },
+                new()
+                {
+                    Name = "Joined",
+                    Value = TimestampTag.FromDateTime(user.Created, TimestampTagStyles.Relative),
+                    IsInline = true
+                },
+                new()
+                {
+                    Name = "Id",
+                    Value = user.Id,
+                    IsInline = true
+                }
+            },
+            Footer = new EmbedFooterBuilder()
+            {
+                Text = "Information to date"
+            },
+            Timestamp = DateTimeOffset.Now
+        };
+        return embed;
+    }
+
     /// <summary>
     /// Chooses color based on the version type
     /// </summary>

@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using Humanizer;
 
 namespace RinthBot.Extensions;
 
@@ -11,5 +12,10 @@ public static class IntExtensions
         nfi.NumberGroupSeparator = separator;
         
         return n.ToString("#,0", nfi);
+    }
+
+    public static string ToModrinthFormat(this int n)
+    {
+        return n.ToMetric(decimals: 1).Transform(To.UpperCase);
     }
 }

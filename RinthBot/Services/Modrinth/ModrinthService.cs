@@ -291,4 +291,56 @@ public partial class ModrinthService
             return new SearchResult<Project>(null, SearchStatus.ApiDown);
         }
     }
+
+    public async Task<SearchResult<UserDto>> FindUser(string query)
+    {
+        User? user = null;
+
+        try
+        {
+            user = await _api.GetUserByUsernameAsync(query);
+        }
+        catch (ApiException e) when (e.StatusCode == HttpStatusCode.NotFound)
+        {
+            // Project not found by slug or id
+            _logger.LogDebug("User query '{Query}' not found by username, searching by ID", query);
+        }
+        catch (Exception e)
+        {
+            return new SearchResult<UserDto>(new UserDto(), SearchStatus.ApiDown);
+        }
+
+        if (user is null)
+        {
+            try
+            {
+                user = await _api.GetUserByIdAsync(query);
+            }
+            catch (ApiException e) when (e.StatusCode == HttpStatusCode.NotFound)
+            {
+                return new SearchResult<UserDto>(new UserDto(), SearchStatus.NoResult);
+            }
+            catch (Exception e)
+            {
+                return new SearchResult<UserDto>(new UserDto(), SearchStatus.ApiDown);
+            }
+        }
+
+        // User can't be null from here
+        try
+        {
+            var projects = await _api.GetUsersProjectsByUserIdAsync(user.Id);
+            
+            return new SearchResult<UserDto>(new UserDto()
+            {
+                User = user,
+                Projects = projects
+            }, SearchStatus.FoundBySearch);
+        }
+        catch (Exception e)
+        {
+            return new SearchResult<UserDto>(new UserDto(), SearchStatus.ApiDown);
+        }
+
+    }
 }

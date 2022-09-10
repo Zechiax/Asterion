@@ -32,7 +32,8 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                 return GetSubscribeButtons(Context.User.Id, Context.Guild.Id, projectId, subEnabled);
         }
 
-        public static ComponentBuilder GetSubscribeButtons(ulong userId, ulong guildId, string projectId, bool subEnabled = true)
+        public static ComponentBuilder GetSubscribeButtons(ulong userId, ulong guildId, string projectId,
+                bool subEnabled = true)
         {
                 var buttons = new ComponentBuilder()
                         .WithButton(
@@ -43,6 +44,40 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                                 emote: subEnabled ? Emoji.Parse(":bell:") : Emoji.Parse(":no_bell:"));
 
                 return buttons;
+        }
+
+        [SlashCommand("user", "Finds information about user")]
+        public async Task FindUser(string query) // TODO: in Discord.NET >3.8 use MaxLength of 60
+        {
+                await DeferAsync();
+                Logger.LogDebug("Search for user '{Query}", query);
+                var searchResult = await ModrinthService.FindUser(query);
+                Logger.LogDebug("Search status: {SearchStatus}", searchResult.SearchStatus);
+                
+                switch (searchResult.SearchStatus)
+                {
+                        case SearchStatus.ApiDown:
+                                await FollowupAsync("Modrinth API is probably down, please try again later");
+                                return;
+                        case SearchStatus.NoResult:
+                                await FollowupAsync($"No result for query '{query}'");
+                                return;
+                        case SearchStatus.UnknownError:
+                                await FollowupAsync("Unknown error, please try again later");
+                                return;
+                        case SearchStatus.FoundById:
+                                break;
+                        case SearchStatus.FoundBySearch:
+                                break;
+                        default:
+                                throw new ArgumentOutOfRangeException();
+                }
+
+                var userDto = searchResult.Payload!;
+
+                var embed = ModrinthEmbedBuilder.GetUserEmbed(userDto.User, userDto.Projects);
+
+                await FollowupAsync(embed: embed.Build());
         }
 
         [SlashCommand("search", "Search Projects (by slug, ID or search) and gives you info about the first response")]
@@ -94,7 +129,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                 });
         }
 
-        [MessageCommand("Search on Modrinth")]
+        [MessageCommand("Search project on Modrinth")]
         public async Task SearchOnModrinth(IMessage msg)
         {
                 if (string.IsNullOrEmpty(msg.Content))

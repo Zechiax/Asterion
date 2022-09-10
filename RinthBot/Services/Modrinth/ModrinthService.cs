@@ -305,7 +305,7 @@ public partial class ModrinthService
             // Project not found by slug or id
             _logger.LogDebug("User query '{Query}' not found by username, searching by ID", query);
         }
-        catch (Exception e)
+        catch (Exception)
         {
             return new SearchResult<UserDto>(new UserDto(), SearchStatus.ApiDown);
         }
@@ -320,7 +320,7 @@ public partial class ModrinthService
             {
                 return new SearchResult<UserDto>(new UserDto(), SearchStatus.NoResult);
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 return new SearchResult<UserDto>(new UserDto(), SearchStatus.ApiDown);
             }
@@ -337,7 +337,7 @@ public partial class ModrinthService
                 Projects = projects
             }, SearchStatus.FoundBySearch);
         }
-        catch (Exception e)
+        catch (Exception)
         {
             return new SearchResult<UserDto>(new UserDto(), SearchStatus.ApiDown);
         }

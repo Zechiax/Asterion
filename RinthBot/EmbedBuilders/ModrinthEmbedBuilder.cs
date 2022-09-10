@@ -254,7 +254,6 @@ public static class ModrinthEmbedBuilder
     public static EmbedBuilder GetUserEmbed(User user, Project[] userProjects)
     {
         var mostDownloaded = userProjects.OrderByDescending(x => x.Downloads + x.Followers);
-
         var embed = new EmbedBuilder()
         {
             Author = GetModrinthAuthor(user: user),

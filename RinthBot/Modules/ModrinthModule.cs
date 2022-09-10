@@ -1,5 +1,4 @@
-﻿using System.ComponentModel;
-using System.Text;
+﻿using System.Text;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
@@ -277,7 +276,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
 
                 await ModifyOriginalResponseAsync(x =>
                 {
-                        x.Content = result.IsSuccess ? $"All data cleared" : $"Action cancelled";
+                        x.Content = result.IsSuccess ? "All data cleared" : "Action cancelled";
                         x.Components = new ComponentBuilder().Build(); // No components
                         x.AllowedMentions = AllowedMentions.None;
                 });
@@ -368,13 +367,8 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         [SlashCommand("force-update", "Forces check for updates")]
         public async Task ForceUpdate()
         {
-                await DeferAsync();
+                await DeferAsync(true);
                 var ok = ModrinthService.ForceUpdate();
-
-                await ModifyOriginalResponseAsync(x =>
-                {
-                        x.Content = $"Forced Update request: {ok}";
-                        x.Flags = MessageFlags.Ephemeral;
-                });
+                await FollowupAsync($"Forced Update request: {ok}");
         }
 }

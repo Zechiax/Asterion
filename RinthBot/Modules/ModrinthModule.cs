@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.ComponentModel;
+using System.Text;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
@@ -77,7 +78,10 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
 
                 var embed = ModrinthEmbedBuilder.GetUserEmbed(userDto.User, userDto.Projects);
 
-                await FollowupAsync(embed: embed.Build());
+                var components =
+                        new ComponentBuilder().WithButton(ModrinthComponentBuilder.GetUserLinkButton(userDto.User));
+                
+                await FollowupAsync(embed: embed.Build(), components: components.Build());
         }
 
         [SlashCommand("search", "Search Projects (by slug, ID or search) and gives you info about the first response")]

@@ -39,4 +39,14 @@ public static class ModrinthComponentBuilder
 
         return linkBtn;
     }
+
+    public static ButtonBuilder GetUserLinkButton(User user)
+    {
+        return new ButtonBuilder
+        {
+            Style = ButtonStyle.Link,
+            Url = ModrinthEmbedBuilder.GetUserUrl(user),
+            Label = "User on Modrinth"
+        };
+    }
 }

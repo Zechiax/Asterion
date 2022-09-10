@@ -168,7 +168,7 @@ public static class ModrinthEmbedBuilder
                         ? string.Join(", ", project.Categories).Transform(To.TitleCase) 
                     : Format.Italics("No categories") , IsInline = true },
                 new() { Name = "Type", Value = project.ProjectType.Humanize(), IsInline = true },
-                new() { Name = "ID", Value = project.Id, IsInline = true },
+                new() { Name = "ID", Value = Format.Code(project.Id), IsInline = true },
                 new() { Name = "Created | Last updated", Value = $"{TimestampTag.FromDateTime(project.Published, TimestampTagStyles.Relative)} | {TimestampTag.FromDateTime(project.Updated, TimestampTagStyles.Relative)}"  }
             },
             // Choose 'random' picture from gallery through TickCount

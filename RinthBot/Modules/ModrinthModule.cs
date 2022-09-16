@@ -47,7 +47,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         }
 
         [SlashCommand("user", "Finds information about user, search by ID or username")]
-        public async Task FindUser(string query) // TODO: in Discord.NET >3.8 use MaxLength of 60
+        public async Task FindUser([MaxLength(60)] string query)
         {
                 await DeferAsync();
                 Logger.LogDebug("Search for user '{Query}", query);
@@ -84,7 +84,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         }
 
         [SlashCommand("search", "Search Projects (by slug, ID or search) and gives you info about the first response")]
-        public async Task SearchProject(string query) // TODO: in Discord.NET >3.8 use MaxLength of 60
+        public async Task SearchProject([MaxLength(60)] string query)
         {
                 await DeferAsync();
                 Logger.LogDebug("Search for query '{Query}'", query);

@@ -55,7 +55,7 @@ public class RinthBot
             if (IsDebug())
             {
                 var testGuildId = _config.GetValue<ulong>("testGuild");
-                logger.LogInformation("Registering commands to test guild (D) ID {Value}", testGuildId);
+                logger.LogInformation("Registering commands to test guild ID {Value}", testGuildId);
 
                 await commands.RegisterCommandsToGuildAsync(testGuildId);
             }

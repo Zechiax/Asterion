@@ -48,7 +48,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         }
 
         [SlashCommand("user", "Finds information about user, search by ID or username")]
-        public async Task FindUser([MaxLength(60)] string query)
+        public async Task FindUser([Summary("Query", "ID or username")][MaxLength(60)] string query)
         {
                 await DeferAsync();
                 Logger.LogDebug("Search for user '{Query}", query);
@@ -85,7 +85,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         }
 
         [SlashCommand("search", "Search Projects (by slug, ID or search) and gives you info about the first response")]
-        public async Task SearchProject([MaxLength(60)] string query)
+        public async Task SearchProject([Summary("Query", "Query, ID or slug")][MaxLength(60)] string query)
         {
                 await DeferAsync();
                 Logger.LogDebug("Search for query '{Query}'", query);

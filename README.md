@@ -25,6 +25,7 @@ On wiki there are guides and documentation for all commands: https://zechiax.git
 - This bot needs to store some data so it can provide you with the updates
 - Data stored are
     - Guild ID
+    - Date the bot joined your guild
     - IDs of channels where you want to send updates
     - List of subscribed projects
     - Additional settings

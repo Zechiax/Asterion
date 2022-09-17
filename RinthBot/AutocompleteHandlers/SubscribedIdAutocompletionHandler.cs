@@ -28,7 +28,7 @@ public class SubscribedIdAutocompletionHandler : AutocompleteHandler
             return AutocompletionResult.FromError(PreconditionResult.FromError("For this command the user needs administrator permission or manage role check"));
         }
 
-        var userInput = (context.Interaction as SocketAutocompleteInteraction)?.Data.Current.Value.ToString();
+        var userInput = autocompleteInteraction.Data.Current.Value.ToString();
         var projects = await data.GetAllGuildsSubscribedProjectsAsync(context.Guild.Id);
 
         if (projects is null)

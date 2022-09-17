@@ -1,5 +1,6 @@
 ﻿using Discord.Interactions;
 using Microsoft.Extensions.DependencyInjection;
+using RinthBot.AutocompleteHandlers;
 using RinthBot.Interfaces;
 
 namespace RinthBot.Modules;
@@ -29,6 +30,12 @@ public class BotManagement: InteractionModuleBase<SocketInteractionContext>
         await RespondAsync("Unregistering this guild", ephemeral: true);
         await _dataService.RemoveGuildAsync(Context.Guild.Id);
         await FollowupAsync("Unregistered", ephemeral: true);
+    }
+    
+    [SlashCommand("test", "general testing command")]
+    public async Task Test([Autocomplete(typeof(GameVersionAutocompletionHandler))] string gameVersion)
+    {
+        await RespondAsync(gameVersion, ephemeral: true);
     }
 #endif
     

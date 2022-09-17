@@ -134,7 +134,7 @@ public partial class ModrinthService
     {
         if (_cache.TryGetValue("gameVersions", out var value) && value is GameVersion[] versions)
         {
-            _logger.LogDebug("All game versions in cache");
+            _logger.LogDebug("Fetched game version list from cache");
             return versions;
         }
 
@@ -143,12 +143,14 @@ public partial class ModrinthService
             _logger.LogDebug("Game versions not in cache, fetching from api...");
             var gameVersions = await _api.GetGameVersionsAsync();
             
-            _cache.Set("gameVersions", gameVersions, absoluteExpirationRelativeToNow: TimeSpan.FromHours(1));
-
+            _cache.Set("gameVersions", gameVersions, absoluteExpirationRelativeToNow: TimeSpan.FromHours(12));
+            
+            _logger.LogDebug("Game versions set in cache");
             return gameVersions;
         }
         catch (Exception e)
         {
+            _logger.LogWarning("Could not get list of game versions: {Exception}", e.Message);
             return null;
         }
     }

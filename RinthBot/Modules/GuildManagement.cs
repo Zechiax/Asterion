@@ -2,6 +2,7 @@
 using Discord;
 using Discord.Interactions;
 using RinthBot.Attributes;
+using RinthBot.Database.Models;
 using RinthBot.Interfaces;
 
 namespace RinthBot.Modules;
@@ -93,7 +94,35 @@ public class GuildManagement : InteractionModuleBase<SocketInteractionContext>
                         await FollowupAsync("There was an error while setting the ping role, please try again later");
                 }
         }
-        
+
+        [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
+        [DoManageSubsRoleCheck(Group = "ManageSubs")]
+        [SlashCommand("message-style", "Sets the style of the update message")]
+        public async Task SetMessageStyle(MessageStyle style)
+        {
+                await DeferAsync(ephemeral: true);
+
+                var guild = await DataService.GetGuildByIdAsync(Context.Guild.Id);
+
+                if (guild is null)
+                {
+                        await FollowupAsync("Something went wrong, please try again later");
+                        return;
+                }
+
+                guild.MessageStyle = style;
+
+                var success = await DataService.UpdateGuildAsync(guild);
+
+                if (!success)
+                {
+                        await FollowupAsync("There was an error while settings the message style, please try again later");
+                        return;
+                }
+                
+                await FollowupAsync($"Message style set to '{style}' :white_check_mark:");
+        }
+
         [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
         [DoManageSubsRoleCheck(Group = "ManageSubs")]
         [SlashCommand("remove-ping-role", "Removes the ping role")]

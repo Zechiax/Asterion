@@ -8,6 +8,7 @@ using Fergun.Interactive;
 using Microsoft.Extensions.Logging;
 using RinthBot.AutocompleteHandlers;
 using RinthBot.ComponentBuilders;
+using RinthBot.Database.Models;
 using RinthBot.Interfaces;
 using RinthBot.Services.Modrinth;
 
@@ -322,7 +323,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         }
 
         [SlashCommand("latest-release", "Gets the latest release of project")]
-        public async Task LatestRelease(string slugOrId)
+        public async Task LatestRelease(string slugOrId, MessageStyle style = MessageStyle.Full)
         {
                 await DeferAsync();
                 var project = await ModrinthService.GetProject(slugOrId);
@@ -349,8 +350,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
 
                 var team = await ModrinthService.GetProjectsTeamMembersAsync(project.Id);
 
-                var embed = ModrinthEmbedBuilder.VersionUpdateEmbed(project, latestVersion, team)
-                        .WithTitle($"{project.Title} | Latest version");
+                var embed = ModrinthEmbedBuilder.VersionUpdateEmbed(style, project, latestVersion, team);
                 
                 var buttons =
                         new ComponentBuilder().WithButton(

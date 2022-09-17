@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace RinthBot.Database
+namespace RinthBot.Database.Models
 {
     [Table("Guilds")]
     public class Guild
@@ -10,7 +10,7 @@ namespace RinthBot.Database
         [Required]
         public ulong GuildId { get; set; }
         public ulong? UpdateChannel { get; set; }
-        public ulong MessageStyle { get; set; }
+        public MessageStyle MessageStyle { get; set; }
         public bool? RemoveOnLeave { get; set; } = true;
         public bool? Active { get; set; }
         public ulong? PingRole { get; set; }

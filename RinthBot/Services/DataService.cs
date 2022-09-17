@@ -5,7 +5,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using RinthBot.Database;
+using RinthBot.Database.Models;
 using RinthBot.Interfaces;
+using Array = RinthBot.Database.Models.Array;
 
 namespace RinthBot.Services;
 
@@ -214,7 +216,7 @@ public class DataService : IDataService
             return false;
         }
 
-        var arrayEntry = db.Arrays.Add(new Database.Array()
+        var arrayEntry = db.Arrays.Add(new Array()
             {
                 Type = ArrayType.Modrinth
             }

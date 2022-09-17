@@ -1,4 +1,4 @@
-﻿namespace RinthBot.Database;
+﻿namespace RinthBot.Database.Models;
 
 public enum ArrayType
 {

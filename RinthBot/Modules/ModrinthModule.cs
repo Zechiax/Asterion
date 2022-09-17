@@ -132,7 +132,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                 });
         }
 
-        [MessageCommand("Search project on Modrinth")]
+        [MessageCommand("Find project on Modrinth")]
         public async Task SearchOnModrinth(IMessage msg)
         {
                 if (string.IsNullOrEmpty(msg.Content))

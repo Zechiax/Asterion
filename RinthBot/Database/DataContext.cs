@@ -1,7 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Logging;
+using RinthBot.Database.Models;
 using Serilog;
+using Array = RinthBot.Database.Models.Array;
 
 namespace RinthBot.Database
 {

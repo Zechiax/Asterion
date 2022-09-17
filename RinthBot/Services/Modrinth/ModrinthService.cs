@@ -11,6 +11,7 @@ using Modrinth.RestClient.Models;
 using RestEase;
 using RinthBot.ComponentBuilders;
 using RinthBot.Database;
+using RinthBot.Database.Models;
 using RinthBot.EmbedBuilders;
 using RinthBot.Interfaces;
 using Version = Modrinth.RestClient.Models.Version;

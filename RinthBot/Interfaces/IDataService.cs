@@ -1,4 +1,5 @@
 ﻿using RinthBot.Database;
+using RinthBot.Database.Models;
 
 namespace RinthBot.Interfaces;
 

@@ -10,7 +10,7 @@ namespace RinthBot.Database.Models
         [Required]
         public ulong GuildId { get; set; }
         public ulong? UpdateChannel { get; set; }
-        public MessageStyle MessageStyle { get; set; }
+        public MessageStyle MessageStyle { get; set; } = MessageStyle.Full;
         public bool? RemoveOnLeave { get; set; } = true;
         public bool? Active { get; set; }
         public ulong? PingRole { get; set; }

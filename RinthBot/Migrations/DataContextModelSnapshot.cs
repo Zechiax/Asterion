@@ -15,9 +15,9 @@ namespace RinthBot.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "6.0.7");
+            modelBuilder.HasAnnotation("ProductVersion", "6.0.9");
 
-            modelBuilder.Entity("RinthBot.Database.Array", b =>
+            modelBuilder.Entity("RinthBot.Database.Models.Array", b =>
                 {
                     b.Property<ulong>("ArrayId")
                         .ValueGeneratedOnAdd()
@@ -34,7 +34,7 @@ namespace RinthBot.Migrations
                     b.ToTable("Arrays");
                 });
 
-            modelBuilder.Entity("RinthBot.Database.Guild", b =>
+            modelBuilder.Entity("RinthBot.Database.Models.Guild", b =>
                 {
                     b.Property<ulong>("GuildId")
                         .HasColumnType("INTEGER");
@@ -50,7 +50,7 @@ namespace RinthBot.Migrations
                     b.Property<ulong?>("ManageRole")
                         .HasColumnType("INTEGER");
 
-                    b.Property<ulong>("MessageStyle")
+                    b.Property<int>("MessageStyle")
                         .HasColumnType("INTEGER");
 
                     b.Property<ulong>("ModrinthArrayId")
@@ -75,7 +75,7 @@ namespace RinthBot.Migrations
                     b.ToTable("Guilds");
                 });
 
-            modelBuilder.Entity("RinthBot.Database.ModrinthEntry", b =>
+            modelBuilder.Entity("RinthBot.Database.Models.ModrinthEntry", b =>
                 {
                     b.Property<ulong>("EntryId")
                         .ValueGeneratedOnAdd()
@@ -108,7 +108,7 @@ namespace RinthBot.Migrations
                     b.ToTable("ModrinthEntries");
                 });
 
-            modelBuilder.Entity("RinthBot.Database.ModrinthProject", b =>
+            modelBuilder.Entity("RinthBot.Database.Models.ModrinthProject", b =>
                 {
                     b.Property<string>("ProjectId")
                         .HasColumnType("TEXT");
@@ -117,6 +117,7 @@ namespace RinthBot.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("LastCheckVersion")
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime?>("LastUpdated")
@@ -130,32 +131,32 @@ namespace RinthBot.Migrations
                     b.ToTable("ModrinthProjects");
                 });
 
-            modelBuilder.Entity("RinthBot.Database.Guild", b =>
+            modelBuilder.Entity("RinthBot.Database.Models.Guild", b =>
                 {
-                    b.HasOne("RinthBot.Database.Array", "ModrinthArray")
+                    b.HasOne("RinthBot.Database.Models.Array", "ModrinthArray")
                         .WithOne("Guild")
-                        .HasForeignKey("RinthBot.Database.Guild", "ModrinthArrayId")
+                        .HasForeignKey("RinthBot.Database.Models.Guild", "ModrinthArrayId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("ModrinthArray");
                 });
 
-            modelBuilder.Entity("RinthBot.Database.ModrinthEntry", b =>
+            modelBuilder.Entity("RinthBot.Database.Models.ModrinthEntry", b =>
                 {
-                    b.HasOne("RinthBot.Database.Array", "Array")
+                    b.HasOne("RinthBot.Database.Models.Array", "Array")
                         .WithMany()
                         .HasForeignKey("ArrayId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("RinthBot.Database.Guild", "Guild")
+                    b.HasOne("RinthBot.Database.Models.Guild", "Guild")
                         .WithMany()
                         .HasForeignKey("GuildId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("RinthBot.Database.ModrinthProject", "Project")
+                    b.HasOne("RinthBot.Database.Models.ModrinthProject", "Project")
                         .WithMany()
                         .HasForeignKey("ProjectId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -168,7 +169,7 @@ namespace RinthBot.Migrations
                     b.Navigation("Project");
                 });
 
-            modelBuilder.Entity("RinthBot.Database.Array", b =>
+            modelBuilder.Entity("RinthBot.Database.Models.Array", b =>
                 {
                     b.Navigation("Guild")
                         .IsRequired();

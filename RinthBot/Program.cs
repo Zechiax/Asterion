@@ -9,6 +9,11 @@ namespace RinthBot
     {
         private static void Main(string[] args)
         {
+            if (args.Length > 0 && args[0] == "migration")
+            {
+                return;
+            }
+
             Thread.CurrentThread.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
 
             Log.Logger = new LoggerConfiguration()

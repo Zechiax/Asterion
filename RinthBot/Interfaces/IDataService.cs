@@ -28,13 +28,8 @@ public interface IDataService
     /// <param name="guildId"></param>
     /// <returns></returns>
     public Task<Guild?> GetGuildByIdAsync(ulong guildId);
-    /// <summary>
-    /// Sets the default update channel for the guild
-    /// </summary>
-    /// <param name="guildId"></param>
-    /// <param name="defaultUpdateChannel"></param>
-    /// <returns></returns>
-    public Task SetDefaultUpdateChannelForGuild(ulong guildId, ulong defaultUpdateChannel);
+
+    public Task<bool> UpdateGuildAsync(Guild guild);
 
     /// <summary>
     /// Adds Modrinth project to specific guild and generates Modrinth entry for this guild

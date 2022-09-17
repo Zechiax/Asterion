@@ -185,21 +185,27 @@ public class DataService : IDataService
         return guild;
     }
 
-    public async Task SetDefaultUpdateChannelForGuild(ulong guildId, ulong defaultUpdateChannel)
+    public async Task<bool> UpdateGuildAsync(Guild updatedGuild)
     {
         using var scope = _services.CreateScope();
         await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
 
-        var guild = db.Guilds.SingleOrDefault(x => x.GuildId == guildId);
+        var guild = await db.Guilds.FirstOrDefaultAsync(g => g.GuildId == updatedGuild.GuildId);
 
         if (guild is null)
         {
-            throw new ObjectNotFoundException();
+            return false;
         }
 
-        guild.UpdateChannel = defaultUpdateChannel;
+        guild.Active = updatedGuild.Active;
+        guild.ManageRole = updatedGuild.ManageRole;
+        guild.MessageStyle = updatedGuild.MessageStyle;
+        guild.PingRole = updatedGuild.PingRole;
+        guild.RemoveOnLeave = updatedGuild.RemoveOnLeave;
 
         await db.SaveChangesAsync();
+
+        return true;
     }
 
     public async Task<bool> AddGuildAsync(ulong guildId)

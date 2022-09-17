@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Modrinth.RestClient.Models;
+using Modrinth.RestClient.Models.Tags;
 using Version = Modrinth.RestClient.Models.Version;
 
 namespace RinthBot.Services.Modrinth;
@@ -127,5 +128,28 @@ public partial class ModrinthService
     public async Task<Version?> GetProjectsLatestVersion(Project project)
     {
         return await GetProjectsLatestVersion(project.Id);
+    }
+
+    public async Task<GameVersion[]?> GetGameVersions()
+    {
+        if (_cache.TryGetValue("gameVersions", out var value) && value is GameVersion[] versions)
+        {
+            _logger.LogDebug("All game versions in cache");
+            return versions;
+        }
+
+        try
+        {
+            _logger.LogDebug("Game versions not in cache, fetching from api...");
+            var gameVersions = await _api.GetGameVersionsAsync();
+            
+            _cache.Set("gameVersions", gameVersions, absoluteExpirationRelativeToNow: TimeSpan.FromHours(1));
+
+            return gameVersions;
+        }
+        catch (Exception e)
+        {
+            return null;
+        }
     }
 }

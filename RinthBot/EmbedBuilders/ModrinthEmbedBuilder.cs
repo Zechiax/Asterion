@@ -200,7 +200,7 @@ public static class ModrinthEmbedBuilder
             Description = $"{version.Name}",
             Url = GetVersionUrl(project, version),
             Timestamp = version.DatePublished,
-            Color = version.VersionType.ToColor(),
+            Color = version.ProjectVersionType.ToColor(),
             Footer = new EmbedFooterBuilder
             {
                 IconUrl = GetEmbedAuthor(project, teamMembers, version).IconUrl,
@@ -268,7 +268,7 @@ public static class ModrinthEmbedBuilder
                 }
             },
             Timestamp = version.DatePublished,
-            Color = version.VersionType.ToColor()
+            Color = version.ProjectVersionType.ToColor()
         };
 
         return embed;
@@ -346,13 +346,13 @@ public static class ModrinthEmbedBuilder
     /// </summary>
     /// <param name="versionType"></param>
     /// <returns></returns>
-    private static Color ToColor(this VersionType versionType)
+    private static Color ToColor(this ProjectVersionType versionType)
     {
         return versionType switch
         {
-            VersionType.Alpha => new Color(219, 49, 98),
-            VersionType.Beta => new Color(247, 187, 67),
-            VersionType.Release => new Color(27, 217, 106),
+            ProjectVersionType.Alpha => new Color(219, 49, 98),
+            ProjectVersionType.Beta => new Color(247, 187, 67),
+            ProjectVersionType.Release => new Color(27, 217, 106),
             _ => Color.Default
         };
     }

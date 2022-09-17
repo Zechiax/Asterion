@@ -11,9 +11,8 @@
 
 ## Features
 - Search for Modrinth projects
-- Sends message when one of your subscribed projects got an update
-- Easy subscribe with buttons from search
-- Each project can send updates to different channel
+- Find user on Modrinth
+- Subscribe for project updates and send them to custom channel
 
 ## Wiki
 On wiki there are guides and documentation for all commands: https://zechiax.gitbook.io/rinthbot/

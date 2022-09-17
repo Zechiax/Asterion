@@ -328,7 +328,7 @@ public static class ModrinthEmbedBuilder
                 new()
                 {
                     Name = "Id",
-                    Value = Format.Code(user.Id),
+                    Value = user.Id,
                     IsInline = true
                 }
             },

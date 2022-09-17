@@ -4,7 +4,9 @@ using Humanizer;
 using Humanizer.Bytes;
 using Modrinth.RestClient.Models;
 using Modrinth.RestClient.Models.Enums;
+using RinthBot.Database.Models;
 using RinthBot.Extensions;
+using Array = System.Array;
 using Version = Modrinth.RestClient.Models.Version;
 
 namespace RinthBot.EmbedBuilders;
@@ -178,7 +180,38 @@ public static class ModrinthEmbedBuilder
         return embed;
     }
 
-    public static EmbedBuilder VersionUpdateEmbed(Project project, Version version, IEnumerable<TeamMember>? teamMembers = null)
+    public static EmbedBuilder VersionUpdateEmbed(MessageStyle style, Project project, Version version,
+        IEnumerable<TeamMember>? teamMembers = null)
+    {
+        return style switch
+        {
+            MessageStyle.Full => GetFullVersionUpdateEmbed(project, version, teamMembers),
+            MessageStyle.Compact => GetCompactVersionUpdateEmbed(project, version, teamMembers),
+            _ => throw new ArgumentOutOfRangeException(nameof(style), style, null)
+        };
+    }
+
+    private static EmbedBuilder GetCompactVersionUpdateEmbed(Project project, Version version,
+        IEnumerable<TeamMember>? teamMembers = null)
+    {
+        var embed = new EmbedBuilder
+        {
+            Title = $"{Format.Bold(project.Title)} {version.VersionNumber}",
+            Description = $"{version.Name}",
+            Url = GetVersionUrl(project, version),
+            Timestamp = version.DatePublished,
+            Color = version.VersionType.ToColor(),
+            Footer = new EmbedFooterBuilder
+            {
+                IconUrl = GetEmbedAuthor(project, teamMembers, version).IconUrl,
+                Text = "Published"
+            }
+        };
+
+        return embed;
+    }
+
+    private static EmbedBuilder GetFullVersionUpdateEmbed(Project project, Version version, IEnumerable<TeamMember>? teamMembers = null)
     {
         var sbFiles = new StringBuilder();
 

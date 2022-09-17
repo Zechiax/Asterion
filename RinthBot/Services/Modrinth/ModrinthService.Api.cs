@@ -33,6 +33,7 @@ public partial class ModrinthService
             return null;
         }
         
+        _logger.LogDebug("Saving {Id} to cache", slugOrId);
         _cache.Set(slugOrId, p, _cacheEntryOptions);
 
         return p;

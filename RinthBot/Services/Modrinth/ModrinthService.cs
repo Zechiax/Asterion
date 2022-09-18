@@ -304,11 +304,19 @@ public partial class ModrinthService
 
     public async Task<SearchResult<UserDto>> FindUser(string query)
     {
+        if (_cache.TryGetValue($"user-query:{query}", out var value) && value is SearchResult<UserDto> userDto)
+        {
+            _logger.LogDebug("User query '{Query}' in cache", query);
+            return userDto;
+        }
+
+        _logger.LogDebug("User query '{Query}' not in cache", query);
         User? user = null;
 
         try
         {
             user = await _api.GetUserByUsernameAsync(query);
+            _logger.LogDebug("User query '{Query}' found by username", query);
         }
         catch (ApiException e) when (e.StatusCode == HttpStatusCode.NotFound)
         {
@@ -325,6 +333,7 @@ public partial class ModrinthService
             try
             {
                 user = await _api.GetUserByIdAsync(query);
+                _logger.LogDebug("User query '{Query}' found by ID", query);
             }
             catch (ApiException e) when (e.StatusCode == HttpStatusCode.NotFound)
             {
@@ -341,11 +350,16 @@ public partial class ModrinthService
         {
             var projects = await _api.GetUsersProjectsByUserIdAsync(user.Id);
             
-            return new SearchResult<UserDto>(new UserDto()
+            var searchResult = new SearchResult<UserDto>(new UserDto()
             {
                 User = user,
                 Projects = projects
             }, SearchStatus.FoundBySearch);
+
+            _cache.Set($"user-query:{user.Id}", searchResult, absoluteExpirationRelativeToNow: TimeSpan.FromMinutes(30));
+            _cache.Set($"user-query:{query}", searchResult, absoluteExpirationRelativeToNow: TimeSpan.FromMinutes(30));
+            
+            return searchResult;
         }
         catch (Exception)
         {

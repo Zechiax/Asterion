@@ -112,18 +112,6 @@ public static class ModrinthEmbedBuilder
 
         return embedAuthor;
     }
-    
-    private static TeamMember? GetOwner(IEnumerable<TeamMember>? teamMembers)
-    {
-        return (teamMembers ?? Array.Empty<TeamMember>()).FirstOrDefault(x =>
-            string.Equals(x.Role, "owner", StringComparison.InvariantCultureIgnoreCase));
-    }
-    
-    private static TeamMember? GetByUserId(IEnumerable<TeamMember>? teamMembers, string authorId)
-    {
-        return (teamMembers ?? Array.Empty<TeamMember>()).FirstOrDefault(x =>
-            string.Equals(x.User.Id, authorId));
-    }
 
     /// <summary>
     /// Creates EmbedAuthor based on provided information
@@ -134,7 +122,7 @@ public static class ModrinthEmbedBuilder
     /// <returns></returns>
     private static EmbedAuthorBuilder GetEmbedAuthor(Project project, IEnumerable<TeamMember>? teamMembers = null, Version? version = null)
     {
-        var author = version is not null ? GetByUserId(teamMembers, version.AuthorId) : GetOwner(teamMembers);
+        var author = version is not null ? teamMembers.GetByUserId(version.AuthorId) : teamMembers.GetOwner();
         
         return author is null ? GetModrinthAuthor(project) : GetProjectAuthor(author);
     }
@@ -170,7 +158,7 @@ public static class ModrinthEmbedBuilder
                         ? string.Join(", ", project.Categories).Transform(To.TitleCase) 
                     : Format.Italics("No categories") , IsInline = true },
                 new() { Name = "Type", Value = project.ProjectType.Humanize(), IsInline = true },
-                new() { Name = "ID", Value = Format.Code(project.Id), IsInline = true },
+                new() { Name = "ID", Value = project.Id, IsInline = true },
                 new() { Name = "Created | Last updated", Value = $"{TimestampTag.FromDateTime(project.Published, TimestampTagStyles.Relative)} | {TimestampTag.FromDateTime(project.Updated, TimestampTagStyles.Relative)}"  }
             },
             // Choose 'random' picture from gallery through TickCount
@@ -288,7 +276,7 @@ public static class ModrinthEmbedBuilder
         return sb.ToString();
     }
 
-    public static EmbedBuilder GetUserEmbed(User user, Project[] userProjects)
+    public static EmbedBuilder GetUserEmbed(User user, Project[] userProjects, DateTimeOffset? dataTime = null)
     {
         var mostDownloaded = userProjects.OrderByDescending(x => x.Downloads + x.Followers);
         var embed = new EmbedBuilder()
@@ -336,7 +324,7 @@ public static class ModrinthEmbedBuilder
             {
                 Text = "Information to date"
             },
-            Timestamp = DateTimeOffset.Now
+            Timestamp = dataTime is null ? DateTimeOffset.Now : dataTime
         };
         return embed;
     }

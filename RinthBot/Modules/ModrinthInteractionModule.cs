@@ -5,6 +5,7 @@ using RinthBot.Attributes;
 using Modrinth.RestClient.Models;
 using RinthBot.ComponentBuilders;
 using RinthBot.EmbedBuilders;
+using RinthBot.Extensions;
 using RinthBot.Interfaces;
 using RinthBot.Services.Modrinth;
 
@@ -19,22 +20,25 @@ public class ModrinthInteractionModule : InteractionModuleBase
 
         private const string RequestError = "Sorry, there was an error processing your request, try again later";
 
-        private MessageComponent GetButtons(Project project, bool subEnabled = true)
+        private ComponentBuilder GetButtons(Project project, bool subEnabled = true, IEnumerable<TeamMember>? team = null)
         {
-                var components = ModrinthModule.GetSubscribeButtons(Context.User.Id, Context.Guild.Id, project.Id, subEnabled)
-                        .WithButton(ModrinthComponentBuilder.GetProjectLinkButton(project));
+                var components = ModrinthComponentBuilder
+                        .GetSubscribeButtons(Context.User.Id, project.Id, subEnabled)
+                        .WithButton(ModrinthComponentBuilder.GetProjectLinkButton(project))
+                        .WithButton(ModrinthComponentBuilder.GetUserToViewButton(Context.User.Id,
+                                team.GetOwner()?.User.Id, project.Id));
 
-                return components.Build();
+                return components;
         }
 
         [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
         [DoManageSubsRoleCheck(Group = "ManageSubs")]
-        [ComponentInteraction("sub-project:*;*;*", runMode: RunMode.Async)]
-        public async Task SubProject(string userId, string projectId, ulong guildId)
+        [ComponentInteraction("sub-project:*;*", runMode: RunMode.Async)]
+        public async Task SubProject(string userId, string projectId)
         {
                 await DeferAsync();
 
-                guildId = Context.Guild.Id;
+                var guildId = Context.Guild.Id;
                 var channel = await Context.Guild.GetTextChannelAsync(Context.Channel.Id);
                 
                 var subscribed = await DataService.IsGuildSubscribedToProjectAsync(guildId, projectId);
@@ -46,13 +50,15 @@ public class ModrinthInteractionModule : InteractionModuleBase
                         await FollowupAsync(RequestError, ephemeral: true);
                         return;
                 }
+                
+                var team = await ModrinthService.GetProjectsTeamMembersAsync(project.Id);
 
                 // Already subscribed
                 if (subscribed)
                 {
                         await ModifyOriginalResponseAsync(x =>
                         {
-                                x.Components = GetButtons(project, false);
+                                x.Components = GetButtons(project, false, team).Build();
                         });
                         await FollowupAsync("You're already subscribed to updates for this project", ephemeral: true);
                         return;
@@ -68,7 +74,7 @@ public class ModrinthInteractionModule : InteractionModuleBase
                 
                 await ModifyOriginalResponseAsync(x =>
                 {
-                        x.Components = GetButtons(project, false);
+                        x.Components = GetButtons(project, false, team).Build();
                 });
                 
                 await DataService.AddModrinthProjectToGuildAsync(guildId, project.Id, latestVersion.Id, channel.Id, project.Title);
@@ -143,12 +149,12 @@ public class ModrinthInteractionModule : InteractionModuleBase
 
         [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
         [DoManageSubsRoleCheck(Group = "ManageSubs")]
-        [ComponentInteraction("unsub-project:*;*;*", runMode: RunMode.Async)]
-        public async Task UnsubProject(string userId, string projectId, ulong guildId)
+        [ComponentInteraction("unsub-project:*;*", runMode: RunMode.Async)]
+        public async Task UnsubProject(string userId, string projectId)
         {
                 await DeferAsync();
                 
-                guildId = Context.Guild.Id;
+                var guildId = Context.Guild.Id;
                 
                 var subscribed = await DataService.IsGuildSubscribedToProjectAsync(guildId, projectId);
                 
@@ -160,13 +166,15 @@ public class ModrinthInteractionModule : InteractionModuleBase
                         await FollowupAsync(RequestError, ephemeral: true);
                         return;
                 }
+                
+                var team = await ModrinthService.GetProjectsTeamMembersAsync(project.Id);
 
                 // Already unsubscribed
                 if (subscribed == false)
                 {
                         await ModifyOriginalResponseAsync(x =>
                         {
-                                x.Components = GetButtons(project);
+                                x.Components = GetButtons(project, team: team).Build();
                         });
                         await FollowupAsync("You're already unsubscribed from updates to this project", ephemeral: true);
                         return;
@@ -176,9 +184,85 @@ public class ModrinthInteractionModule : InteractionModuleBase
 
                 await ModifyOriginalResponseAsync(x =>
                 {
-                        x.Components = GetButtons(project);
+                        x.Components = GetButtons(project, team: team).Build();
                 });
                 
                 await FollowupAsync($"Unsubscribed from updates for project ID **{projectId}** :white_check_mark:", ephemeral: true);
+        }
+
+        [ComponentInteraction("show-user:*;*;*", runMode: RunMode.Async)]
+        public async Task ShowUser(ulong discordUserId, string modrinthUserId, string projectId)
+        {
+                await DeferAsync();
+
+                var findUser = await ModrinthService.FindUser(modrinthUserId);
+
+                switch (findUser.SearchStatus)
+                {
+                        case SearchStatus.ApiDown:
+                                await FollowupAsync("Modrinth API is down, please try again later", ephemeral: true);
+                                return;
+                        case SearchStatus.NoResult:
+                                await FollowupAsync("User does not exist", ephemeral: true);
+                                return;
+                        case SearchStatus.UnknownError:
+                                await FollowupAsync("There was an unknown error, please try again later", ephemeral: true);
+                                return;
+                        case SearchStatus.FoundById:
+                                break;
+                        case SearchStatus.FoundBySearch:
+                                break;
+                        default:
+                                throw new ArgumentOutOfRangeException();
+                }
+
+                await ModifyOriginalResponseAsync(x =>
+                {
+                        x.Embed = ModrinthEmbedBuilder.GetUserEmbed(findUser.Payload.User, findUser.Payload.Projects, findUser.SearchTime)
+                                .Build();
+                        x.Components = new ComponentBuilder()
+                                .WithButton(ModrinthComponentBuilder.BackToProjectButton(discordUserId, projectId))
+                                .WithButton(ModrinthComponentBuilder.GetUserLinkButton(findUser.Payload.User))
+                                .Build();
+                });
+        }
+
+        [ComponentInteraction("back-project:*;*", runMode: RunMode.Async)]
+        public async Task ShowUser(ulong discordUserId, string projectId)
+        {
+                await DeferAsync();
+
+                var searchResult = await ModrinthService.FindProject(projectId);
+
+                switch (searchResult.SearchStatus)
+                {
+                        case SearchStatus.ApiDown:
+                                await FollowupAsync("Modrinth API is probably down, please try again later", ephemeral: true);
+                                return;
+                        case SearchStatus.NoResult:
+                                await FollowupAsync("Project does not exist", ephemeral: true);
+                                return;
+                        case SearchStatus.UnknownError:
+                                await FollowupAsync("Unknown error, please try again later", ephemeral: true);
+                                return;
+                        case SearchStatus.FoundById:
+                                break;
+                        case SearchStatus.FoundBySearch:
+                                break;
+                        default:
+                                throw new ArgumentOutOfRangeException();
+                }
+
+                var project = searchResult.Payload!;
+
+                var team = await ModrinthService.GetProjectsTeamMembersAsync(project.Id);
+
+                var subscribedToProject = await DataService.IsGuildSubscribedToProjectAsync(Context.Guild.Id, project.Id);
+                await ModifyOriginalResponseAsync(x =>
+                {
+                        x.Embed = ModrinthEmbedBuilder.GetProjectEmbed(project, team).Build();
+                        x.Components = GetButtons(project, !subscribedToProject, team)
+                                .Build();
+                });
         }
 }

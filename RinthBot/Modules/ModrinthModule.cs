@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Collections.Immutable;
+using System.Text;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
@@ -9,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using RinthBot.AutocompleteHandlers;
 using RinthBot.ComponentBuilders;
 using RinthBot.Database.Models;
+using RinthBot.Extensions;
 using RinthBot.Interfaces;
 using RinthBot.Services.Modrinth;
 
@@ -27,25 +29,12 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         public DiscordSocketClient Client { get; set; } = null!;
         public ILogger<ModrinthModule> Logger { get; set; } = null!;
 
-        public ComponentBuilder GetSubscribeButtons(string projectId,
-                bool subEnabled = true)
+        public ComponentBuilder GetSubscribeButtons(string projectId, bool subEnabled = true)
         {
-                return GetSubscribeButtons(Context.User.Id, Context.Guild.Id, projectId, subEnabled);
+                return ModrinthComponentBuilder.GetSubscribeButtons(Context.User.Id, projectId, subEnabled);
         }
 
-        public static ComponentBuilder GetSubscribeButtons(ulong userId, ulong guildId, string projectId,
-                bool subEnabled = true)
-        {
-                var buttons = new ComponentBuilder()
-                        .WithButton(
-                                subEnabled ? "Subscribe" : "Unsubscribe",
-                                // Write unsub when the subEnabled is false
-                                customId: $"{(subEnabled ? null : "un")}sub-project:{userId};{projectId};{guildId}",
-                                style: subEnabled ? ButtonStyle.Success : ButtonStyle.Danger,
-                                emote: subEnabled ? Emoji.Parse(":bell:") : Emoji.Parse(":no_bell:"));
 
-                return buttons;
-        }
 
         [SlashCommand("user", "Finds information about user, search by ID or username")]
         public async Task FindUser([Summary("Query", "ID or username")][MaxLength(60)] string query)
@@ -76,7 +65,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
 
                 var userDto = searchResult.Payload;
 
-                var embed = ModrinthEmbedBuilder.GetUserEmbed(userDto.User, userDto.Projects);
+                var embed = ModrinthEmbedBuilder.GetUserEmbed(userDto.User, userDto.Projects, searchResult.SearchTime);
 
                 var components =
                         new ComponentBuilder().WithButton(ModrinthComponentBuilder.GetUserLinkButton(userDto.User));
@@ -122,13 +111,14 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                 var project = searchResult.Payload!;
 
                 var team = await ModrinthService.GetProjectsTeamMembersAsync(project.Id);
-                
+
                 var subscribedToProject = await DataService.IsGuildSubscribedToProjectAsync(Context.Guild.Id, project.Id);
                 await ModifyOriginalResponseAsync(x =>
                 {
                         x.Embed = ModrinthEmbedBuilder.GetProjectEmbed(project, team).Build();
                         x.Components = GetSubscribeButtons(project.Id, !subscribedToProject)
                                 .WithButton(ModrinthComponentBuilder.GetProjectLinkButton(project))
+                                .WithButton(ModrinthComponentBuilder.GetUserToViewButton(Context.User.Id, team.GetOwner()?.User.Id, project.Id))
                                 .Build();
                 });
         }

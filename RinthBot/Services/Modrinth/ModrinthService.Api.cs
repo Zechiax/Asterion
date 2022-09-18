@@ -72,9 +72,21 @@ public partial class ModrinthService
 
     public async Task<TeamMember[]?> GetProjectsTeamMembersAsync(string projectId)
     {
+        if (_cache.TryGetValue($"project-team-members:{projectId}", out var value) &&
+            value is TeamMember[] teamMembers)
+        {
+            _logger.LogDebug("Team members for project ID {ProjectId} are in cache", projectId);
+            return teamMembers;
+        }
+        
+        
         try
         {
+            _logger.LogDebug("Team members for project ID {ProjectId} are not in cache", projectId);
             var team = await _api.GetProjectTeamMembersByProjectAsync(projectId);
+
+            _cache.Set($"project-team-members:{projectId}", team, absoluteExpirationRelativeToNow: TimeSpan.FromMinutes(30));
+            _logger.LogDebug("Saving team members for project ID {ProjectId} to cache", projectId);
             return team;
         }
         catch (Exception e)

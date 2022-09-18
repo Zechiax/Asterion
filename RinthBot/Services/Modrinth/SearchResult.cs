@@ -8,8 +8,10 @@ public class SearchResult<T>
     {
         Payload = payload;
         SearchStatus = searchStatus;
+        SearchTime = DateTime.UtcNow;
     }
 
+    public DateTime SearchTime { get; private set; }
     public SearchStatus SearchStatus { get; private set; }
     public T? Payload { get; private set; }
 }

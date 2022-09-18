@@ -25,7 +25,7 @@ namespace RinthBot.Database.Models
         /// <summary>
         /// Whether the channel selection should be hidden after subscribe
         /// </summary>
-        public bool? HideChannelSelection { get; set; } = false;
+        public bool? ShowChannelSelection { get; set; } = true;
         public ulong? PingRole { get; set; }
         public ulong? ManageRole { get; set; }
         

@@ -40,7 +40,7 @@ namespace RinthBot.Database
         {
             modelBuilder.Entity<Guild>().Property(p => p.Active).HasDefaultValue(true);
             modelBuilder.Entity<Guild>().Property(p => p.RemoveOnLeave).HasDefaultValue(true);
-            modelBuilder.Entity<Guild>().Property(p => p.HideChannelSelection).HasDefaultValue(false);
+            modelBuilder.Entity<Guild>().Property(p => p.ShowChannelSelection).HasDefaultValue(true);
         }
     }
 }

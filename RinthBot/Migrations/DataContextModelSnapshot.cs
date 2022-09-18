@@ -47,11 +47,6 @@ namespace RinthBot.Migrations
                     b.Property<DateTime>("Created")
                         .HasColumnType("TEXT");
 
-                    b.Property<bool?>("HideChannelSelection")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
-                        .HasDefaultValue(false);
-
                     b.Property<ulong?>("ManageRole")
                         .HasColumnType("INTEGER");
 
@@ -65,6 +60,11 @@ namespace RinthBot.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<bool?>("RemoveOnLeave")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(true);
+
+                    b.Property<bool?>("ShowChannelSelection")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER")
                         .HasDefaultValue(true);

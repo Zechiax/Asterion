@@ -1,4 +1,5 @@
-﻿using Modrinth.RestClient.Models;
+﻿using System.Drawing;
+using Modrinth.RestClient.Models;
 
 namespace RinthBot.Services.Modrinth;
 
@@ -20,6 +21,7 @@ public struct UserDto
 {
     public User User;
     public Project[] Projects;
+    public Discord.Color MajorColor;
 }
 
 public enum SearchStatus

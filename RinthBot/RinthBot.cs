@@ -114,6 +114,7 @@ public class RinthBot
             .AddSingleton<InteractiveService>()
             .AddSingleton<ClientService>()
             .AddSingleton<DatabaseMigrationService>()
+            .AddHttpClient()
             .AddDbContext<DataContext>()
             .AddMemoryCache()
             .AddLogging(configure => configure.AddSerilog(dispose: true));

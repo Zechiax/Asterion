@@ -6,6 +6,7 @@ using Modrinth.RestClient.Models;
 using Modrinth.RestClient.Models.Enums;
 using RinthBot.Database.Models;
 using RinthBot.Extensions;
+using RinthBot.Services.Modrinth;
 using Array = System.Array;
 using Version = Modrinth.RestClient.Models.Version;
 
@@ -276,7 +277,13 @@ public static class ModrinthEmbedBuilder
         return sb.ToString();
     }
 
-    public static EmbedBuilder GetUserEmbed(User user, Project[] userProjects, DateTimeOffset? dataTime = null)
+    public static EmbedBuilder GetUserEmbed(SearchResult<UserDto> searchResult)
+    {
+        return GetUserEmbed(searchResult.Payload.User, searchResult.Payload.Projects, searchResult.Payload.MajorColor,
+            searchResult.SearchTime);
+    }
+
+    public static EmbedBuilder GetUserEmbed(User user, Project[] userProjects, Color? majorColor = null, DateTimeOffset? dataTime = null)
     {
         var mostDownloaded = userProjects.OrderByDescending(x => x.Downloads + x.Followers);
         var embed = new EmbedBuilder()
@@ -285,6 +292,7 @@ public static class ModrinthEmbedBuilder
             Title = $"{Format.Bold(user.Username)}",
             Url = GetUserUrl(user),
             ThumbnailUrl = user.AvatarUrl,
+            Color = majorColor,
             Description = string.IsNullOrEmpty(user.Bio) ? Format.Italics("No bio set") : user.Bio.Truncate(DescriptionLimit),
             Fields = new List<EmbedFieldBuilder>
             {

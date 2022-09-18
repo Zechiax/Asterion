@@ -12,6 +12,7 @@ using RestEase;
 using RinthBot.ComponentBuilders;
 using RinthBot.Database.Models;
 using RinthBot.EmbedBuilders;
+using RinthBot.Extensions;
 using RinthBot.Interfaces;
 using Version = Modrinth.RestClient.Models.Version;
 using Timer = System.Timers.Timer;
@@ -27,9 +28,11 @@ public partial class ModrinthService
     private readonly MemoryCacheEntryOptions _cacheEntryOptions;
     private readonly IDataService _dataService;
     private readonly DiscordSocketClient _client;
+    private readonly HttpClient _httpClient;
 
-    public ModrinthService(IServiceProvider serviceProvider)
+    public ModrinthService(IServiceProvider serviceProvider, HttpClient httpClient)
     {
+        _httpClient = httpClient;
         _api = ModrinthApi.NewClient(userAgent: "RinthBot");
         _logger = serviceProvider.GetRequiredService<ILogger<ModrinthService>>();
         _cache = serviceProvider.GetRequiredService<IMemoryCache>();
@@ -337,7 +340,8 @@ public partial class ModrinthService
             var searchResult = new SearchResult<UserDto>(new UserDto()
             {
                 User = user,
-                Projects = projects
+                Projects = projects,
+                MajorColor = (await _httpClient.GetMajorColorFromImageUrl(user.AvatarUrl)).ToColor()
             }, SearchStatus.FoundBySearch);
 
             _cache.Set($"user-query:{user.Id}", searchResult, absoluteExpirationRelativeToNow: TimeSpan.FromMinutes(30));

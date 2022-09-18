@@ -218,7 +218,7 @@ public class ModrinthInteractionModule : InteractionModuleBase
 
                 await ModifyOriginalResponseAsync(x =>
                 {
-                        x.Embed = ModrinthEmbedBuilder.GetUserEmbed(findUser.Payload.User, findUser.Payload.Projects, findUser.SearchTime)
+                        x.Embed = ModrinthEmbedBuilder.GetUserEmbed(findUser)
                                 .Build();
                         x.Components = new ComponentBuilder()
                                 .WithButton(ModrinthComponentBuilder.BackToProjectButton(discordUserId, projectId))

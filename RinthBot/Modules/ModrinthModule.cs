@@ -1,5 +1,4 @@
-﻿using System.Collections.Immutable;
-using System.Text;
+﻿using System.Text;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
@@ -65,7 +64,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
 
                 var userDto = searchResult.Payload;
 
-                var embed = ModrinthEmbedBuilder.GetUserEmbed(userDto.User, userDto.Projects, searchResult.SearchTime);
+                var embed = ModrinthEmbedBuilder.GetUserEmbed(searchResult);
 
                 var components =
                         new ComponentBuilder().WithButton(ModrinthComponentBuilder.GetUserLinkButton(userDto.User));

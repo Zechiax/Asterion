@@ -202,6 +202,7 @@ public class DataService : IDataService
         guild.MessageStyle = updatedGuild.MessageStyle;
         guild.PingRole = updatedGuild.PingRole;
         guild.RemoveOnLeave = updatedGuild.RemoveOnLeave;
+        guild.HideChannelSelection = updatedGuild.HideChannelSelection;
 
         await db.SaveChangesAsync();
 

@@ -11,8 +11,21 @@ namespace RinthBot.Database.Models
         public ulong GuildId { get; set; }
         public ulong? UpdateChannel { get; set; }
         public MessageStyle MessageStyle { get; set; } = MessageStyle.Full;
+
+        /// <summary>
+        /// If all settings should be removed after the bot left the guild
+        /// </summary>
         public bool? RemoveOnLeave { get; set; } = true;
-        public bool? Active { get; set; }
+
+        /// <summary>
+        /// If the guild is active
+        /// </summary>
+        public bool? Active { get; set; } = true;
+
+        /// <summary>
+        /// Whether the channel selection should be hidden after subscribe
+        /// </summary>
+        public bool? HideChannelSelection { get; set; } = false;
         public ulong? PingRole { get; set; }
         public ulong? ManageRole { get; set; }
         

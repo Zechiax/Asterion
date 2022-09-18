@@ -31,7 +31,7 @@ namespace RinthBot.Database
             optionsBuilder.UseSqlite("DataSource=data.sqlite");
             optionsBuilder.LogTo(Log.Logger.Error, LogLevel.Error, null);
             
-            // Disables dbcontext intialized messages
+            // Disables DbContext initialized messages
             optionsBuilder.ConfigureWarnings(warnings => warnings
                 .Ignore(CoreEventId.ContextInitialized));
         }
@@ -40,6 +40,7 @@ namespace RinthBot.Database
         {
             modelBuilder.Entity<Guild>().Property(p => p.Active).HasDefaultValue(true);
             modelBuilder.Entity<Guild>().Property(p => p.RemoveOnLeave).HasDefaultValue(true);
+            modelBuilder.Entity<Guild>().Property(p => p.HideChannelSelection).HasDefaultValue(false);
         }
     }
 }

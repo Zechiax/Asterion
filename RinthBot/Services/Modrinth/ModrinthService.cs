@@ -295,8 +295,9 @@ public partial class ModrinthService
             return new SearchResult<Project>(project, SearchStatus.FoundBySearch);
 
         }
-        catch (Exception)
+        catch (Exception e)
         {
+            _logger.LogWarning("Could not get project information for query '{Query}', exception: {Message}", query, e.Message);
             return new SearchResult<Project>(null, SearchStatus.ApiDown);
         }
     }
@@ -310,38 +311,22 @@ public partial class ModrinthService
         }
 
         _logger.LogDebug("User query '{Query}' not in cache", query);
-        User? user = null;
+        User? user;
 
         try
         {
-            user = await _api.GetUserByUsernameAsync(query);
-            _logger.LogDebug("User query '{Query}' found by username", query);
+            user = await _api.GetUserAsync(query);
+            _logger.LogDebug("User query '{Query}' found", query);
         }
         catch (ApiException e) when (e.StatusCode == HttpStatusCode.NotFound)
         {
             // Project not found by slug or id
-            _logger.LogDebug("User query '{Query}' not found by username, searching by ID", query);
+            _logger.LogDebug("User not found '{Query}'", query);
+            return new SearchResult<UserDto>(new UserDto(), SearchStatus.NoResult);
         }
         catch (Exception)
         {
             return new SearchResult<UserDto>(new UserDto(), SearchStatus.ApiDown);
-        }
-
-        if (user is null)
-        {
-            try
-            {
-                user = await _api.GetUserByIdAsync(query);
-                _logger.LogDebug("User query '{Query}' found by ID", query);
-            }
-            catch (ApiException e) when (e.StatusCode == HttpStatusCode.NotFound)
-            {
-                return new SearchResult<UserDto>(new UserDto(), SearchStatus.NoResult);
-            }
-            catch (Exception)
-            {
-                return new SearchResult<UserDto>(new UserDto(), SearchStatus.ApiDown);
-            }
         }
 
         // User can't be null from here

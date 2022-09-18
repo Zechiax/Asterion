@@ -324,7 +324,7 @@ public static class ModrinthEmbedBuilder
             {
                 Text = "Information to date"
             },
-            Timestamp = dataTime is null ? DateTimeOffset.Now : dataTime
+            Timestamp = dataTime ?? DateTimeOffset.Now
         };
         return embed;
     }

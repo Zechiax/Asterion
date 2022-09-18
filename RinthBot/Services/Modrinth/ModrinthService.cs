@@ -344,8 +344,8 @@ public partial class ModrinthService
                 MajorColor = (await _httpClient.GetMajorColorFromImageUrl(user.AvatarUrl)).ToColor()
             }, SearchStatus.FoundBySearch);
 
-            _cache.Set($"user-query:{user.Id}", searchResult, absoluteExpirationRelativeToNow: TimeSpan.FromMinutes(30));
-            _cache.Set($"user-query:{query}", searchResult, absoluteExpirationRelativeToNow: TimeSpan.FromMinutes(30));
+            _cache.Set($"user-query:{user.Id}", searchResult, absoluteExpirationRelativeToNow: TimeSpan.FromMinutes(60));
+            _cache.Set($"user-query:{query}", searchResult, absoluteExpirationRelativeToNow: TimeSpan.FromMinutes(60));
             
             return searchResult;
         }

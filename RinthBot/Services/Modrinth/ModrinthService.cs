@@ -252,6 +252,13 @@ public partial class ModrinthService
     /// <returns></returns>
     public async Task<SearchResult<ProjectDto>> FindProject(string query)
     {
+        if (_cache.TryGetValue($"project-query:{query}", out var value) && value is SearchResult<ProjectDto> projectDto)
+        {
+            _logger.LogDebug("Project query '{Query}' in cache", query);
+            return projectDto;
+        }
+        
+        _logger.LogDebug("Project query '{Query}' not in cache", query);
         Project? project = null;
 
         // Slug or ID can't contain space
@@ -278,11 +285,17 @@ public partial class ModrinthService
 
             if (projectFoundById && project is not null)
             {
-                return new SearchResult<ProjectDto>(new ProjectDto()
+                var result = new SearchResult<ProjectDto>(new ProjectDto()
                 {
                     Project = project,
                     MajorColor = (await _httpClient.GetMajorColorFromImageUrl(project.IconUrl)).ToDiscordColor()
                 }, SearchStatus.FoundById);
+                
+                _cache.Set($"project-query:{project.Slug}", result, absoluteExpirationRelativeToNow: TimeSpan.FromMinutes(60));
+                _cache.Set($"project-query:{project.Id}", result, absoluteExpirationRelativeToNow: TimeSpan.FromMinutes(60));
+                _cache.Set($"project-query:{query}", result, absoluteExpirationRelativeToNow: TimeSpan.FromMinutes(60));
+
+                return result;
             }
         }
 
@@ -299,11 +312,17 @@ public partial class ModrinthService
             // Return first result
             project = await _api.GetProjectAsync(searchResult.Hits[0].ProjectId);
 
-            return new SearchResult<ProjectDto>(new ProjectDto
+            var result = new SearchResult<ProjectDto>(new ProjectDto
             {
                 Project = project,
                 MajorColor = (await _httpClient.GetMajorColorFromImageUrl(project.IconUrl)).ToDiscordColor()
             }, SearchStatus.FoundBySearch);
+
+            _cache.Set($"project-query:{project.Slug}", result, absoluteExpirationRelativeToNow: TimeSpan.FromMinutes(60));
+            _cache.Set($"project-query:{project.Id}", result, absoluteExpirationRelativeToNow: TimeSpan.FromMinutes(60));
+            _cache.Set($"project-query:{query}", result, absoluteExpirationRelativeToNow: TimeSpan.FromMinutes(60));
+            
+            return result;
 
         }
         catch (Exception e)

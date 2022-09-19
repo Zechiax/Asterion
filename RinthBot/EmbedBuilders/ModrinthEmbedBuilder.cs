@@ -140,7 +140,7 @@ public static class ModrinthEmbedBuilder
     /// <param name="majorColor"></param>
     /// <param name="teamMembers">Members of the team for this project, not required, if not provided, will show generic Modrinth Author</param>
     /// <returns>Embed builder, which can be further edited</returns>
-    public static EmbedBuilder GetProjectEmbed(Project project, Color majorColor, IEnumerable<TeamMember>? teamMembers = null)
+    public static EmbedBuilder GetProjectEmbed(Project project, Color majorColor, IEnumerable<TeamMember>? teamMembers = null, DateTimeOffset? dataTime = null)
     {
         var author = GetEmbedAuthor(project, teamMembers);
         
@@ -170,7 +170,12 @@ public static class ModrinthEmbedBuilder
                 new() { Name = "Created | Last updated", Value = $"{TimestampTag.FromDateTime(project.Published, TimestampTagStyles.Relative)} | {TimestampTag.FromDateTime(project.Updated, TimestampTagStyles.Relative)}"  }
             },
             // Choose 'random' picture from gallery through TickCount
-            ImageUrl = project.Gallery.Length > 0 ? project.Gallery[Math.Abs(Environment.TickCount) % project.Gallery.Length].Url : null
+            ImageUrl = project.Gallery.Length > 0 ? project.Gallery[Math.Abs(Environment.TickCount) % project.Gallery.Length].Url : null,
+            Footer = new EmbedFooterBuilder
+            {
+                Text = "Information to date"
+            },
+            Timestamp = dataTime ?? DateTimeOffset.Now
         };
 
         return embed;

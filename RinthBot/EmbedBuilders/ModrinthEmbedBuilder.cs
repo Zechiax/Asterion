@@ -128,13 +128,19 @@ public static class ModrinthEmbedBuilder
         return author is null ? GetModrinthAuthor(project) : GetProjectAuthor(author);
     }
 
+    public static EmbedBuilder GetProjectEmbed(SearchResult<ProjectDto> searchResult, IEnumerable<TeamMember>? teamMembers = null)
+    {
+        return GetProjectEmbed(searchResult.Payload.Project, searchResult.Payload.MajorColor, teamMembers);
+    }
+
     /// <summary>
     /// Creates embed with basic project info
     /// </summary>
     /// <param name="project">The project from which to get the info</param>
+    /// <param name="majorColor"></param>
     /// <param name="teamMembers">Members of the team for this project, not required, if not provided, will show generic Modrinth Author</param>
     /// <returns>Embed builder, which can be further edited</returns>
-    public static EmbedBuilder GetProjectEmbed(Project project, IEnumerable<TeamMember>? teamMembers = null)
+    public static EmbedBuilder GetProjectEmbed(Project project, Color majorColor, IEnumerable<TeamMember>? teamMembers = null)
     {
         var author = GetEmbedAuthor(project, teamMembers);
         
@@ -145,7 +151,8 @@ public static class ModrinthEmbedBuilder
             Url = GetProjectUrl(project),
             Description = project.Description,
             ThumbnailUrl = project.IconUrl,
-            Color = ModrinthColor,
+            // No icon, no major color, use Modrinth's color
+            Color = string.IsNullOrEmpty(project.IconUrl) ? ModrinthColor : majorColor,
             Fields = new List<EmbedFieldBuilder?>
             {
                 // Format downloads from 319803 to 319,8K 

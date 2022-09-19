@@ -253,14 +253,15 @@ public class ModrinthInteractionModule : InteractionModuleBase
                                 throw new ArgumentOutOfRangeException();
                 }
 
-                var project = searchResult.Payload!;
+                var projectDto = searchResult.Payload;
+                var project = projectDto.Project;
 
                 var team = await ModrinthService.GetProjectsTeamMembersAsync(project.Id);
 
                 var subscribedToProject = await DataService.IsGuildSubscribedToProjectAsync(Context.Guild.Id, project.Id);
                 await ModifyOriginalResponseAsync(x =>
                 {
-                        x.Embed = ModrinthEmbedBuilder.GetProjectEmbed(project, team).Build();
+                        x.Embed = ModrinthEmbedBuilder.GetProjectEmbed(searchResult, team).Build();
                         x.Components = GetButtons(project, !subscribedToProject, team)
                                 .Build();
                 });

@@ -24,6 +24,12 @@ public struct UserDto
     public Discord.Color MajorColor;
 }
 
+public struct ProjectDto
+{
+    public Project Project;
+    public Discord.Color MajorColor;
+}
+
 public enum SearchStatus
 {
     ApiDown,

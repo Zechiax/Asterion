@@ -7,8 +7,13 @@ namespace RinthBot.Services;
 
 public static class ImageService
 {
-    public static async Task<Rgb24> GetMajorColorFromImageUrl(this HttpClient client, string imageUrl)
+    public static async Task<Rgb24> GetMajorColorFromImageUrl(this HttpClient client, string? imageUrl)
     {
+        if (string.IsNullOrEmpty(imageUrl))
+        {
+            return new Rgb24();
+        }
+
         try
         {
             var stream = await client.GetStreamAsync(imageUrl);

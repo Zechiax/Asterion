@@ -250,7 +250,7 @@ public partial class ModrinthService
     /// </summary>
     /// <param name="query">Either project's slug, ID or general query</param>
     /// <returns></returns>
-    public async Task<SearchResult<Project>> FindProject(string query)
+    public async Task<SearchResult<ProjectDto>> FindProject(string query)
     {
         Project? project = null;
 
@@ -273,12 +273,16 @@ public partial class ModrinthService
             }
             catch (Exception)
             {
-                return new SearchResult<Project>(null, SearchStatus.ApiDown);
+                return new SearchResult<ProjectDto>(new ProjectDto(), SearchStatus.ApiDown);
             }
 
             if (projectFoundById && project is not null)
             {
-                return new SearchResult<Project>(project, SearchStatus.FoundById);
+                return new SearchResult<ProjectDto>(new ProjectDto()
+                {
+                    Project = project,
+                    MajorColor = (await _httpClient.GetMajorColorFromImageUrl(project.IconUrl)).ToDiscordColor()
+                }, SearchStatus.FoundById);
             }
         }
 
@@ -289,19 +293,23 @@ public partial class ModrinthService
             // No search results
             if (searchResult.TotalHits <= 0)
             {
-                return new SearchResult<Project>(null, SearchStatus.NoResult);
+                return new SearchResult<ProjectDto>(new ProjectDto(), SearchStatus.NoResult);
             }
             
             // Return first result
             project = await _api.GetProjectAsync(searchResult.Hits[0].ProjectId);
 
-            return new SearchResult<Project>(project, SearchStatus.FoundBySearch);
+            return new SearchResult<ProjectDto>(new ProjectDto
+            {
+                Project = project,
+                MajorColor = (await _httpClient.GetMajorColorFromImageUrl(project.IconUrl)).ToDiscordColor()
+            }, SearchStatus.FoundBySearch);
 
         }
         catch (Exception e)
         {
             _logger.LogWarning("Could not get project information for query '{Query}', exception: {Message}", query, e.Message);
-            return new SearchResult<Project>(null, SearchStatus.ApiDown);
+            return new SearchResult<ProjectDto>(new ProjectDto(), SearchStatus.ApiDown);
         }
     }
 
@@ -314,7 +322,7 @@ public partial class ModrinthService
         }
 
         _logger.LogDebug("User query '{Query}' not in cache", query);
-        User? user;
+        User user;
 
         try
         {
@@ -341,7 +349,7 @@ public partial class ModrinthService
             {
                 User = user,
                 Projects = projects,
-                MajorColor = (await _httpClient.GetMajorColorFromImageUrl(user.AvatarUrl)).ToColor()
+                MajorColor = (await _httpClient.GetMajorColorFromImageUrl(user.AvatarUrl)).ToDiscordColor()
             }, SearchStatus.FoundBySearch);
 
             _cache.Set($"user-query:{user.Id}", searchResult, absoluteExpirationRelativeToNow: TimeSpan.FromMinutes(60));

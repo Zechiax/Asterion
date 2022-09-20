@@ -28,11 +28,11 @@ public partial class ModrinthService
     private readonly MemoryCacheEntryOptions _cacheEntryOptions;
     private readonly IDataService _dataService;
     private readonly DiscordSocketClient _client;
-    private readonly HttpClient _httpClient;
+    private readonly IHttpClientFactory _httpClientFactory;
 
-    public ModrinthService(IServiceProvider serviceProvider, HttpClient httpClient)
+    public ModrinthService(IServiceProvider serviceProvider, IHttpClientFactory httpClientFactory)
     {
-        _httpClient = httpClient;
+        _httpClientFactory = httpClientFactory;
         _api = ModrinthApi.NewClient(userAgent: "RinthBot");
         _logger = serviceProvider.GetRequiredService<ILogger<ModrinthService>>();
         _cache = serviceProvider.GetRequiredService<IMemoryCache>();
@@ -260,7 +260,8 @@ public partial class ModrinthService
         
         _logger.LogDebug("Project query '{Query}' not in cache", query);
         Project? project = null;
-
+        var httpClient = _httpClientFactory.CreateClient();
+        
         // Slug or ID can't contain space
         if (!query.Contains(' '))
         {
@@ -288,7 +289,7 @@ public partial class ModrinthService
                 var result = new SearchResult<ProjectDto>(new ProjectDto()
                 {
                     Project = project,
-                    MajorColor = (await _httpClient.GetMajorColorFromImageUrl(project.IconUrl)).ToDiscordColor()
+                    MajorColor = (await httpClient.GetMajorColorFromImageUrl(project.IconUrl)).ToDiscordColor()
                 }, SearchStatus.FoundById);
                 
                 _cache.Set($"project-query:{project.Slug}", result, absoluteExpirationRelativeToNow: TimeSpan.FromMinutes(60));
@@ -315,7 +316,7 @@ public partial class ModrinthService
             var result = new SearchResult<ProjectDto>(new ProjectDto
             {
                 Project = project,
-                MajorColor = (await _httpClient.GetMajorColorFromImageUrl(project.IconUrl)).ToDiscordColor()
+                MajorColor = (await httpClient.GetMajorColorFromImageUrl(project.IconUrl)).ToDiscordColor()
             }, SearchStatus.FoundBySearch);
 
             _cache.Set($"project-query:{project.Slug}", result, absoluteExpirationRelativeToNow: TimeSpan.FromMinutes(60));
@@ -342,6 +343,7 @@ public partial class ModrinthService
 
         _logger.LogDebug("User query '{Query}' not in cache", query);
         User user;
+        var httpClient = _httpClientFactory.CreateClient();
 
         try
         {
@@ -364,11 +366,11 @@ public partial class ModrinthService
         {
             var projects = await _api.GetUsersProjectsByUserIdAsync(user.Id);
             
-            var searchResult = new SearchResult<UserDto>(new UserDto()
+            var searchResult = new SearchResult<UserDto>(new UserDto
             {
                 User = user,
                 Projects = projects,
-                MajorColor = (await _httpClient.GetMajorColorFromImageUrl(user.AvatarUrl)).ToDiscordColor()
+                MajorColor = (await httpClient.GetMajorColorFromImageUrl(user.AvatarUrl)).ToDiscordColor()
             }, SearchStatus.FoundBySearch);
 
             _cache.Set($"user-query:{user.Id}", searchResult, absoluteExpirationRelativeToNow: TimeSpan.FromMinutes(60));

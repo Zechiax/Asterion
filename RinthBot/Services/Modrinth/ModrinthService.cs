@@ -347,7 +347,7 @@ public partial class ModrinthService
 
         try
         {
-            user = await _api.GetUserAsync(query);
+            user = await _api.GetUserByIdAsync(query);
             _logger.LogDebug("User query '{Query}' found", query);
         }
         catch (ApiException e) when (e.StatusCode == HttpStatusCode.NotFound)

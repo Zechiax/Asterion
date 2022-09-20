@@ -10,14 +10,19 @@ namespace RinthBot.Modules;
 [EnabledInDm(false)]
 public class GuildManagement : InteractionModuleBase<SocketInteractionContext>
 {
-        public IDataService DataService { get; set; } = null!;
-        
+        private readonly IDataService _dataService;
+
+        public GuildManagement(IDataService dataService)
+        {
+                _dataService = dataService;
+        }
+
         [RequireUserPermission(GuildPermission.Administrator)]
         [SlashCommand("set-manage-role", "Set's the role so that users with that role can manage subscription")]
         public async Task SetManageRole(IRole role)
         {
                 await DeferAsync(true);
-                var success = await DataService.SetManageRoleAsync(Context.Guild.Id, role.Id);
+                var success = await _dataService.SetManageRoleAsync(Context.Guild.Id, role.Id);
 
                 if (success)
                 {
@@ -44,7 +49,7 @@ public class GuildManagement : InteractionModuleBase<SocketInteractionContext>
         {
                 await DeferAsync(true);
 
-                var oldRole = await DataService.GetManageRoleIdAsync(Context.Guild.Id);
+                var oldRole = await _dataService.GetManageRoleIdAsync(Context.Guild.Id);
 
                 if (oldRole.HasValue == false)
                 {
@@ -56,7 +61,7 @@ public class GuildManagement : InteractionModuleBase<SocketInteractionContext>
                         return;
                 }
 
-                var success = await DataService.SetManageRoleAsync(Context.Guild.Id, null);
+                var success = await _dataService.SetManageRoleAsync(Context.Guild.Id, null);
 
                 if (success)
                 {
@@ -82,7 +87,7 @@ public class GuildManagement : InteractionModuleBase<SocketInteractionContext>
         public async Task SetPingRole(IRole role)
         {
                 await DeferAsync(true);
-                var success = await DataService.SetPingRoleAsync(Context.Guild.Id, role.Id);
+                var success = await _dataService.SetPingRoleAsync(Context.Guild.Id, role.Id);
 
                 if (success)
                 {
@@ -102,7 +107,7 @@ public class GuildManagement : InteractionModuleBase<SocketInteractionContext>
         {
                 await DeferAsync(ephemeral: true);
 
-                var guild = await DataService.GetGuildByIdAsync(Context.Guild.Id);
+                var guild = await _dataService.GetGuildByIdAsync(Context.Guild.Id);
 
                 if (guild is null)
                 {
@@ -112,7 +117,7 @@ public class GuildManagement : InteractionModuleBase<SocketInteractionContext>
 
                 guild.MessageStyle = style;
 
-                var success = await DataService.UpdateGuildAsync(guild);
+                var success = await _dataService.UpdateGuildAsync(guild);
 
                 if (!success)
                 {
@@ -129,7 +134,7 @@ public class GuildManagement : InteractionModuleBase<SocketInteractionContext>
         public async Task RemovePingRole()
         {
                 await DeferAsync(true);
-                var oldRole = await DataService.GetPingRoleIdAsync(Context.Guild.Id);
+                var oldRole = await _dataService.GetPingRoleIdAsync(Context.Guild.Id);
                 
                 if (oldRole.HasValue == false)
                 {
@@ -137,7 +142,7 @@ public class GuildManagement : InteractionModuleBase<SocketInteractionContext>
                         return;
                 }
                 
-                var success = await DataService.SetPingRoleAsync(Context.Guild.Id, null);
+                var success = await _dataService.SetPingRoleAsync(Context.Guild.Id, null);
 
                 if (success)
                 {
@@ -157,9 +162,9 @@ public class GuildManagement : InteractionModuleBase<SocketInteractionContext>
         {
                 await DeferAsync(ephemeral: true);
 
-                var subscribedProjects = await DataService.GetAllGuildsSubscribedProjectsAsync(Context.Guild.Id);
-                var manageRoleId = await DataService.GetManageRoleIdAsync(Context.Guild.Id);
-                var pingRoleId = await DataService.GetPingRoleIdAsync(Context.Guild.Id);
+                var subscribedProjects = await _dataService.GetAllGuildsSubscribedProjectsAsync(Context.Guild.Id);
+                var manageRoleId = await _dataService.GetManageRoleIdAsync(Context.Guild.Id);
+                var pingRoleId = await _dataService.GetPingRoleIdAsync(Context.Guild.Id);
 
                 var manageRole = manageRoleId is null ? null : Context.Guild.GetRole((ulong)manageRoleId);
                 var pingRole = pingRoleId is null ? null : Context.Guild.GetRole((ulong) pingRoleId);

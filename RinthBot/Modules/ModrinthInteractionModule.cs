@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.Interactions;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using RinthBot.Attributes;
 using Modrinth.RestClient.Models;
@@ -14,11 +15,18 @@ namespace RinthBot.Modules;
 [EnabledInDm(false)]
 public class ModrinthInteractionModule : InteractionModuleBase
 {
-        public IDataService DataService { get; set; } = null!;
-        public ModrinthService ModrinthService { get; set; } = null!;
-        public ILogger<ModrinthInteractionModule> Logger = null!;
+        private readonly IDataService _dataService;
+        private readonly ModrinthService _modrinthService;
+        private readonly ILogger<ModrinthInteractionModule> _logger;
 
         private const string RequestError = "Sorry, there was an error processing your request, try again later";
+
+        public ModrinthInteractionModule(IServiceProvider serviceProvider)
+        {
+                _dataService = serviceProvider.GetRequiredService<IDataService>();
+                _modrinthService = serviceProvider.GetRequiredService<ModrinthService>();
+                _logger = serviceProvider.GetRequiredService<ILogger<ModrinthInteractionModule>>();
+        }
 
         private ComponentBuilder GetButtons(Project project, bool subEnabled = true, IEnumerable<TeamMember>? team = null)
         {
@@ -41,9 +49,9 @@ public class ModrinthInteractionModule : InteractionModuleBase
                 var guildId = Context.Guild.Id;
                 var channel = await Context.Guild.GetTextChannelAsync(Context.Channel.Id);
                 
-                var subscribed = await DataService.IsGuildSubscribedToProjectAsync(guildId, projectId);
+                var subscribed = await _dataService.IsGuildSubscribedToProjectAsync(guildId, projectId);
                 
-                var project = await ModrinthService.GetProject(projectId);
+                var project = await _modrinthService.GetProject(projectId);
 
                 if (project == null)
                 {
@@ -51,7 +59,7 @@ public class ModrinthInteractionModule : InteractionModuleBase
                         return;
                 }
                 
-                var team = await ModrinthService.GetProjectsTeamMembersAsync(project.Id);
+                var team = await _modrinthService.GetProjectsTeamMembersAsync(project.Id);
 
                 // Already subscribed
                 if (subscribed)
@@ -64,7 +72,7 @@ public class ModrinthInteractionModule : InteractionModuleBase
                         return;
                 }
                 
-                var latestVersion = await ModrinthService.GetProjectsLatestVersion(project);
+                var latestVersion = await _modrinthService.GetProjectsLatestVersion(project);
                 
                 if (latestVersion == null)
                 {
@@ -77,11 +85,11 @@ public class ModrinthInteractionModule : InteractionModuleBase
                         x.Components = GetButtons(project, false, team).Build();
                 });
                 
-                await DataService.AddModrinthProjectToGuildAsync(guildId, project.Id, latestVersion.Id, channel.Id, project.Title);
+                await _dataService.AddModrinthProjectToGuildAsync(guildId, project.Id, latestVersion.Id, channel.Id, project.Title);
 
                 await FollowupAsync($"Subscribed to updates for project **{project.Title}** with ID **{project.Id}** :white_check_mark: Updates will be send to this channel {channel.Mention}", ephemeral: true);
 
-                var guild = await DataService.GetGuildByIdAsync(guildId);
+                var guild = await _dataService.GetGuildByIdAsync(guildId);
 
                 var guildChannels = await Context.Guild.GetTextChannelsAsync();
                 
@@ -106,11 +114,11 @@ public class ModrinthInteractionModule : InteractionModuleBase
         {
                 if (ulong.TryParse(selectedChannels.First(), out var channelId) == false)
                 {       
-                        Logger.LogError("Could not convert {Id} to ulong", selectedChannels.First());
+                        _logger.LogError("Could not convert {Id} to ulong", selectedChannels.First());
                         return;
                 }
 
-                await DataService.ChangeModrinthEntryChannel(Context.Guild.Id, projectId, channelId);
+                await _dataService.ChangeModrinthEntryChannel(Context.Guild.Id, projectId, channelId);
 
                 await DeferAsync();
         }
@@ -156,9 +164,9 @@ public class ModrinthInteractionModule : InteractionModuleBase
                 
                 var guildId = Context.Guild.Id;
                 
-                var subscribed = await DataService.IsGuildSubscribedToProjectAsync(guildId, projectId);
+                var subscribed = await _dataService.IsGuildSubscribedToProjectAsync(guildId, projectId);
                 
-                var project = await ModrinthService.GetProject(projectId);
+                var project = await _modrinthService.GetProject(projectId);
 
                 // BUG: If the project does not exists, it will always throw an error
                 if (project == null)
@@ -167,7 +175,7 @@ public class ModrinthInteractionModule : InteractionModuleBase
                         return;
                 }
                 
-                var team = await ModrinthService.GetProjectsTeamMembersAsync(project.Id);
+                var team = await _modrinthService.GetProjectsTeamMembersAsync(project.Id);
 
                 // Already unsubscribed
                 if (subscribed == false)
@@ -180,7 +188,7 @@ public class ModrinthInteractionModule : InteractionModuleBase
                         return;
                 }
                 
-                await DataService.RemoveModrinthProjectFromGuildAsync(guildId, projectId);
+                await _dataService.RemoveModrinthProjectFromGuildAsync(guildId, projectId);
 
                 await ModifyOriginalResponseAsync(x =>
                 {
@@ -195,7 +203,7 @@ public class ModrinthInteractionModule : InteractionModuleBase
         {
                 await DeferAsync();
 
-                var findUser = await ModrinthService.FindUser(modrinthUserId);
+                var findUser = await _modrinthService.FindUser(modrinthUserId);
 
                 switch (findUser.SearchStatus)
                 {
@@ -232,7 +240,7 @@ public class ModrinthInteractionModule : InteractionModuleBase
         {
                 await DeferAsync();
 
-                var searchResult = await ModrinthService.FindProject(projectId);
+                var searchResult = await _modrinthService.FindProject(projectId);
 
                 switch (searchResult.SearchStatus)
                 {
@@ -256,9 +264,9 @@ public class ModrinthInteractionModule : InteractionModuleBase
                 var projectDto = searchResult.Payload;
                 var project = projectDto.Project;
 
-                var team = await ModrinthService.GetProjectsTeamMembersAsync(project.Id);
+                var team = await _modrinthService.GetProjectsTeamMembersAsync(project.Id);
 
-                var subscribedToProject = await DataService.IsGuildSubscribedToProjectAsync(Context.Guild.Id, project.Id);
+                var subscribedToProject = await _dataService.IsGuildSubscribedToProjectAsync(Context.Guild.Id, project.Id);
                 await ModifyOriginalResponseAsync(x =>
                 {
                         x.Embed = ModrinthEmbedBuilder.GetProjectEmbed(searchResult, team).Build();

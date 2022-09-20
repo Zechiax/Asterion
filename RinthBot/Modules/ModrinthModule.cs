@@ -5,6 +5,7 @@ using Discord.WebSocket;
 using RinthBot.Attributes;
 using RinthBot.EmbedBuilders;
 using Fergun.Interactive;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using RinthBot.AutocompleteHandlers;
 using RinthBot.ComponentBuilders;
@@ -22,26 +23,33 @@ namespace RinthBot.Modules;
 // ReSharper disable once ClassNeverInstantiated.Global
 public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
 {
-        public IDataService DataService { get; set; } = null!;
-        public ModrinthService ModrinthService { get; set; } = null!;
-        public InteractiveService Interactive { get; set; } = null!;
-        public DiscordSocketClient Client { get; set; } = null!;
-        public ILogger<ModrinthModule> Logger { get; set; } = null!;
+        private readonly IDataService _dataService;
+        private readonly ModrinthService _modrinthService;
+        private readonly InteractiveService _interactive;
+        private readonly DiscordSocketClient _client;
+        private readonly ILogger<ModrinthModule> _logger;
+
+        public ModrinthModule(IServiceProvider serviceProvider)
+        {
+                _dataService = serviceProvider.GetRequiredService<IDataService>();
+                _modrinthService = serviceProvider.GetRequiredService<ModrinthService>();
+                _interactive = serviceProvider.GetRequiredService<InteractiveService>();
+                _client = serviceProvider.GetRequiredService<DiscordSocketClient>();
+                _logger = serviceProvider.GetRequiredService<ILogger<ModrinthModule>>();
+        }
 
         public ComponentBuilder GetSubscribeButtons(string projectId, bool subEnabled = true)
         {
                 return ModrinthComponentBuilder.GetSubscribeButtons(Context.User.Id, projectId, subEnabled);
         }
 
-
-
         [SlashCommand("user", "Finds information about user, search by ID or username")]
         public async Task FindUser([Summary("Query", "ID or username")][MaxLength(60)] string query)
         {
                 await DeferAsync();
-                Logger.LogDebug("Search for user '{Query}", query);
-                var searchResult = await ModrinthService.FindUser(query);
-                Logger.LogDebug("Search status: {SearchStatus}", searchResult.SearchStatus);
+                _logger.LogDebug("Search for user '{Query}", query);
+                var searchResult = await _modrinthService.FindUser(query);
+                _logger.LogDebug("Search status: {SearchStatus}", searchResult.SearchStatus);
                 
                 switch (searchResult.SearchStatus)
                 {
@@ -76,9 +84,9 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         public async Task SearchProject([Summary("Query", "Query, ID or slug")][MaxLength(60)] string query)
         {
                 await DeferAsync();
-                Logger.LogDebug("Search for query '{Query}'", query);
-                var searchResult = await ModrinthService.FindProject(query);
-                Logger.LogDebug("Search status: {SearchStatus}", searchResult.SearchStatus);
+                _logger.LogDebug("Search for query '{Query}'", query);
+                var searchResult = await _modrinthService.FindProject(query);
+                _logger.LogDebug("Search status: {SearchStatus}", searchResult.SearchStatus);
                 switch (searchResult.SearchStatus)
                 {
                         case SearchStatus.ApiDown:
@@ -110,9 +118,9 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                 var projectDto = searchResult.Payload;
                 var project = projectDto.Project;
 
-                var team = await ModrinthService.GetProjectsTeamMembersAsync(project.Id);
+                var team = await _modrinthService.GetProjectsTeamMembersAsync(project.Id);
 
-                var subscribedToProject = await DataService.IsGuildSubscribedToProjectAsync(Context.Guild.Id, project.Id);
+                var subscribedToProject = await _dataService.IsGuildSubscribedToProjectAsync(Context.Guild.Id, project.Id);
                 await ModifyOriginalResponseAsync(x =>
                 {
                         x.Embed = ModrinthEmbedBuilder.GetProjectEmbed(searchResult, team).Build();
@@ -141,7 +149,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         public async Task Subscribe(string projectId, SocketTextChannel? customChannel = null)
         {
                 await DeferAsync();
-                var project = await ModrinthService.GetProject(projectId);
+                var project = await _modrinthService.GetProject(projectId);
 
                 var channel = customChannel ?? Context.Guild.GetTextChannel(Context.Channel.Id);
                 
@@ -154,7 +162,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                         return;
                 }
                 
-                var versions = await ModrinthService.GetVersionListAsync(project.Id);
+                var versions = await _modrinthService.GetVersionListAsync(project.Id);
                 if (versions == null)
                 {
                         await ModifyOriginalResponseAsync(x =>
@@ -167,7 +175,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                 // Get last version ID
                 var lastVersion = versions.OrderByDescending(x => x.DatePublished).First().Id;
 
-                await DataService.AddModrinthProjectToGuildAsync(Context.Guild.Id, project.Id, lastVersion, channel.Id, project.Title);
+                await _dataService.AddModrinthProjectToGuildAsync(Context.Guild.Id, project.Id, lastVersion, channel.Id, project.Title);
                 
                 await ModifyOriginalResponseAsync(x =>
                 {
@@ -184,7 +192,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         {
                 await DeferAsync();
                 
-                var subscribed = await DataService.IsGuildSubscribedToProjectAsync(Context.Guild.Id, projectId);
+                var subscribed = await _dataService.IsGuildSubscribedToProjectAsync(Context.Guild.Id, projectId);
 
                 if (!subscribed)
                 {
@@ -195,7 +203,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                         return;
                 }
 
-                var success = await DataService.ChangeModrinthEntryChannel(Context.Guild.Id, projectId, newChannel.Id);
+                var success = await _dataService.ChangeModrinthEntryChannel(Context.Guild.Id, projectId, newChannel.Id);
 
                 if (success)
                 {
@@ -219,7 +227,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         public async Task Unsubscribe([Summary("project_id"), Autocomplete(typeof(SubscribedIdAutocompletionHandler))]string projectId)
         {
                 await DeferAsync();
-                var removed = await DataService.RemoveModrinthProjectFromGuildAsync(Context.Guild.Id, projectId);
+                var removed = await _dataService.RemoveModrinthProjectFromGuildAsync(Context.Guild.Id, projectId);
 
                 if (removed == false)
                 {
@@ -247,7 +255,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                 await RespondAsync("**Are you sure you want to remove all projects?** \n\n**Click the button if Yes, if not, just wait**", components: builder.Build());
                 
                 // Wait for a user to press the button
-                var result = await Interactive.NextMessageComponentAsync(x => x.Data.Type == ComponentType.Button 
+                var result = await _interactive.NextMessageComponentAsync(x => x.Data.Type == ComponentType.Button 
                                                                               && x.Data.CustomId == "remove-all-data-yes" 
                                                                               && Context.User.Id == x.User.Id 
                                                                               && x.Message.Interaction.Id == Context.Interaction.Id, 
@@ -259,9 +267,9 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                         // Acknowledge the interaction
                         await result.Value!.DeferAsync();
 
-                        foreach (var versions in (await DataService.GetAllGuildsSubscribedProjectsAsync(Context.Guild.Id))!)
+                        foreach (var versions in (await _dataService.GetAllGuildsSubscribedProjectsAsync(Context.Guild.Id))!)
                         {
-                                await DataService.RemoveModrinthProjectFromGuildAsync(Context.Guild.Id, versions.ProjectId);
+                                await _dataService.RemoveModrinthProjectFromGuildAsync(Context.Guild.Id, versions.ProjectId);
                         }
                 }
 
@@ -279,7 +287,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         public async Task ListSubscribed()
         {
                 await DeferAsync();
-                var list = (await DataService.GetAllGuildsSubscribedProjectsAsync(Context.Guild.Id))!.OrderBy(x => x.Project.Title).ToList();
+                var list = (await _dataService.GetAllGuildsSubscribedProjectsAsync(Context.Guild.Id))!.OrderBy(x => x.Project.Title).ToList();
 
                 if (list.Count == 0)
                 {
@@ -297,7 +305,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
 
                         // Get update channel for this project
                         var channel = customChannel != null
-                                ? Client.GetGuild(Context.Guild.Id).GetTextChannel((ulong) customChannel)
+                                ? _client.GetGuild(Context.Guild.Id).GetTextChannel((ulong) customChannel)
                                 : null;
 
                         sb.AppendLine($@"> **{project.Project.Title}** | {project.ProjectId} {
@@ -316,7 +324,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         public async Task LatestRelease(string slugOrId, MessageStyle style = MessageStyle.Full)
         {
                 await DeferAsync();
-                var project = await ModrinthService.GetProject(slugOrId);
+                var project = await _modrinthService.GetProject(slugOrId);
 
                 if (project == null)
                 {
@@ -327,7 +335,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                         return;
                 }
 
-                var latestVersion = await ModrinthService.GetProjectsLatestVersion(project);
+                var latestVersion = await _modrinthService.GetProjectsLatestVersion(project);
                 
                 if (latestVersion == null)
                 {
@@ -338,7 +346,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                         return;
                 }
 
-                var team = await ModrinthService.GetProjectsTeamMembersAsync(project.Id);
+                var team = await _modrinthService.GetProjectsTeamMembersAsync(project.Id);
 
                 var embed = ModrinthEmbedBuilder.VersionUpdateEmbed(style, project, latestVersion, team);
                 
@@ -358,7 +366,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         public async Task ForceUpdate()
         {
                 await DeferAsync(true);
-                var ok = ModrinthService.ForceUpdate();
+                var ok = _modrinthService.ForceUpdate();
                 await FollowupAsync($"Forced Update request: {ok}");
         }
 }

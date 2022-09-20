@@ -1,5 +1,6 @@
-﻿using Discord;
+﻿using System.Drawing;
 using SixLabors.ImageSharp.PixelFormats;
+using Color = Discord.Color;
 
 namespace RinthBot.Extensions;
 

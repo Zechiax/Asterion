@@ -23,6 +23,7 @@ namespace RinthBot.Database
         public virtual DbSet<ModrinthProject> ModrinthProjects { get; set; } = null!;
         public virtual DbSet<Array> Arrays { get; set; } = null!;
         public virtual DbSet<ModrinthEntry> ModrinthEntries { get; set; } = null!;
+        public virtual DbSet<GuildSettings> GuildSettings { get; set; } = null!;
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -39,8 +40,8 @@ namespace RinthBot.Database
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Guild>().Property(p => p.Active).HasDefaultValue(true);
-            modelBuilder.Entity<Guild>().Property(p => p.RemoveOnLeave).HasDefaultValue(true);
-            modelBuilder.Entity<Guild>().Property(p => p.ShowChannelSelection).HasDefaultValue(true);
+            modelBuilder.Entity<GuildSettings>().Property(p => p.RemoveOnLeave).HasDefaultValue(true);
+            modelBuilder.Entity<GuildSettings>().Property(p => p.ShowChannelSelection).HasDefaultValue(true);
         }
     }
 }

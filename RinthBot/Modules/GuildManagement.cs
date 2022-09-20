@@ -115,7 +115,7 @@ public class GuildManagement : InteractionModuleBase<SocketInteractionContext>
                         return;
                 }
 
-                guild.MessageStyle = style;
+                guild.GuildSettings.MessageStyle = style;
 
                 var success = await _dataService.UpdateGuildAsync(guild);
 

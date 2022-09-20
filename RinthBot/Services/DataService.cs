@@ -28,6 +28,7 @@ public class DataService : IDataService
     
     public async Task InitializeAsync()
     {
+        await CreateMissingGuildSettingEntries();
         await RegisterNewGuilds();
         await RemoveLeftGuilds();
         // Clean entries with no project
@@ -42,6 +43,33 @@ public class DataService : IDataService
     private async Task LeaveGuild(SocketGuild guild)
     {
         await RemoveGuildAsync(guild.Id);
+    }
+
+    private async Task CreateMissingGuildSettingEntries()
+    {
+        _logger.LogDebug("Creating missing guild setting entries");
+        using var scope = _services.CreateScope();
+        await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
+
+        foreach (var guild in db.Guilds)
+        {
+            var settings = await db.GuildSettings.FirstOrDefaultAsync(x => x.Guild == guild);
+
+            // Setting exists
+            if (settings is not null)
+            {
+                continue;
+            }
+
+            var newSettings = db.GuildSettings.Add(new GuildSettings()
+            {
+                Guild = guild
+            });
+
+            guild.GuildSettings = newSettings.Entity;
+
+            await db.SaveChangesAsync();
+        }
     }
 
     /// <summary>
@@ -140,8 +168,6 @@ public class DataService : IDataService
         
         // Remove all subscribed items
         db.ModrinthEntries.RemoveRange(db.ModrinthEntries.Where(x => x.ArrayId == array.ArrayId));
-        // Remove the array
-        db.Arrays.Remove(array);
         // Remove the guild
         db.Guilds.Remove(guild);
 
@@ -180,7 +206,10 @@ public class DataService : IDataService
         using var scope = _services.CreateScope();
         await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
 
-        var guild = await db.Guilds.Include(o => o.ModrinthArray).FirstOrDefaultAsync(g => g.GuildId == guildId);
+        var guild = await db.Guilds
+            .Include(o => o.ModrinthArray)
+            .Include(o => o.GuildSettings)
+            .FirstOrDefaultAsync(g => g.GuildId == guildId);
 
         return guild;
     }
@@ -190,7 +219,7 @@ public class DataService : IDataService
         using var scope = _services.CreateScope();
         await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
 
-        var guild = await db.Guilds.FirstOrDefaultAsync(g => g.GuildId == updatedGuild.GuildId);
+        var guild = await db.Guilds.Include(o => o.GuildSettings).FirstOrDefaultAsync(g => g.GuildId == updatedGuild.GuildId);
 
         if (guild is null)
         {
@@ -199,10 +228,11 @@ public class DataService : IDataService
 
         guild.Active = updatedGuild.Active;
         guild.ManageRole = updatedGuild.ManageRole;
-        guild.MessageStyle = updatedGuild.MessageStyle;
         guild.PingRole = updatedGuild.PingRole;
-        guild.RemoveOnLeave = updatedGuild.RemoveOnLeave;
-        guild.ShowChannelSelection = updatedGuild.ShowChannelSelection;
+        
+        guild.GuildSettings.MessageStyle = updatedGuild.GuildSettings.MessageStyle;
+        guild.GuildSettings.RemoveOnLeave = updatedGuild.GuildSettings.RemoveOnLeave;
+        guild.GuildSettings.ShowChannelSelection = updatedGuild.GuildSettings.ShowChannelSelection;
 
         await db.SaveChangesAsync();
 
@@ -229,13 +259,17 @@ public class DataService : IDataService
             }
         );
 
+        var guildSettingsEntry = db.GuildSettings.Add(new GuildSettings());
+
         var guildEntry = db.Guilds.Add(new Guild()
         {
             GuildId = guildId,
             ModrinthArray = arrayEntry.Entity,
+            GuildSettings = guildSettingsEntry.Entity,
             Created = DateTime.Now
         });
 
+        guildSettingsEntry.Entity.Guild = guildEntry.Entity;
         arrayEntry.Entity.Guild = guildEntry.Entity;
 
         await db.SaveChangesAsync();

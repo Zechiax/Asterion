@@ -31,7 +31,7 @@ namespace RinthBot.Migrations
 
                     b.HasKey("ArrayId");
 
-                    b.ToTable("Arrays");
+                    b.ToTable("Arrays", (string)null);
                 });
 
             modelBuilder.Entity("RinthBot.Database.Models.Guild", b =>
@@ -47,16 +47,36 @@ namespace RinthBot.Migrations
                     b.Property<DateTime>("Created")
                         .HasColumnType("TEXT");
 
-                    b.Property<ulong?>("ManageRole")
+                    b.Property<ulong>("GuildSettingsId")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("MessageStyle")
+                    b.Property<ulong?>("ManageRole")
                         .HasColumnType("INTEGER");
 
                     b.Property<ulong>("ModrinthArrayId")
                         .HasColumnType("INTEGER");
 
                     b.Property<ulong?>("PingRole")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("GuildId");
+
+                    b.HasIndex("ModrinthArrayId")
+                        .IsUnique();
+
+                    b.ToTable("Guilds", (string)null);
+                });
+
+            modelBuilder.Entity("RinthBot.Database.Models.GuildSettings", b =>
+                {
+                    b.Property<ulong>("GuildSettingsId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<ulong>("GuildId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("MessageStyle")
                         .HasColumnType("INTEGER");
 
                     b.Property<bool?>("RemoveOnLeave")
@@ -69,15 +89,12 @@ namespace RinthBot.Migrations
                         .HasColumnType("INTEGER")
                         .HasDefaultValue(true);
 
-                    b.Property<ulong?>("UpdateChannel")
-                        .HasColumnType("INTEGER");
+                    b.HasKey("GuildSettingsId");
 
-                    b.HasKey("GuildId");
-
-                    b.HasIndex("ModrinthArrayId")
+                    b.HasIndex("GuildId")
                         .IsUnique();
 
-                    b.ToTable("Guilds");
+                    b.ToTable("GuildSettings", (string)null);
                 });
 
             modelBuilder.Entity("RinthBot.Database.Models.ModrinthEntry", b =>
@@ -110,7 +127,7 @@ namespace RinthBot.Migrations
 
                     b.HasIndex("ProjectId");
 
-                    b.ToTable("ModrinthEntries");
+                    b.ToTable("ModrinthEntries", (string)null);
                 });
 
             modelBuilder.Entity("RinthBot.Database.Models.ModrinthProject", b =>
@@ -133,7 +150,7 @@ namespace RinthBot.Migrations
 
                     b.HasKey("ProjectId");
 
-                    b.ToTable("ModrinthProjects");
+                    b.ToTable("ModrinthProjects", (string)null);
                 });
 
             modelBuilder.Entity("RinthBot.Database.Models.Guild", b =>
@@ -145,6 +162,17 @@ namespace RinthBot.Migrations
                         .IsRequired();
 
                     b.Navigation("ModrinthArray");
+                });
+
+            modelBuilder.Entity("RinthBot.Database.Models.GuildSettings", b =>
+                {
+                    b.HasOne("RinthBot.Database.Models.Guild", "Guild")
+                        .WithOne("GuildSettings")
+                        .HasForeignKey("RinthBot.Database.Models.GuildSettings", "GuildId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Guild");
                 });
 
             modelBuilder.Entity("RinthBot.Database.Models.ModrinthEntry", b =>
@@ -177,6 +205,12 @@ namespace RinthBot.Migrations
             modelBuilder.Entity("RinthBot.Database.Models.Array", b =>
                 {
                     b.Navigation("Guild")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("RinthBot.Database.Models.Guild", b =>
+                {
+                    b.Navigation("GuildSettings")
                         .IsRequired();
                 });
 #pragma warning restore 612, 618

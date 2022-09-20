@@ -454,7 +454,10 @@ public class DataService : IDataService
         using var scope = _services.CreateScope();
         await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
 
-        var guilds = db.ModrinthEntries.Include(o => o.Guild).Where(x => x.ProjectId == projectId)
+        var guilds = db.ModrinthEntries
+            .Include(o => o.Guild)
+            .ThenInclude(o => o.GuildSettings)
+            .Where(x => x.ProjectId == projectId)
             .Select(x => x.Guild).ToList();
 
         return guilds;

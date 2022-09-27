@@ -201,7 +201,7 @@ public class ModrinthInteractionModule : InteractionModuleBase
         [ComponentInteraction("show-user:*;*;*", runMode: RunMode.Async)]
         public async Task ShowUser(ulong discordUserId, string modrinthUserId, string projectId)
         {
-                await DeferAsync();
+                await DeferAsync(ephemeral: true);
 
                 var findUser = await _modrinthService.FindUser(modrinthUserId);
 
@@ -224,15 +224,12 @@ public class ModrinthInteractionModule : InteractionModuleBase
                                 throw new ArgumentOutOfRangeException();
                 }
 
-                await ModifyOriginalResponseAsync(x =>
-                {
-                        x.Embed = ModrinthEmbedBuilder.GetUserEmbed(findUser)
-                                .Build();
-                        x.Components = new ComponentBuilder()
-                                .WithButton(ModrinthComponentBuilder.BackToProjectButton(discordUserId, projectId))
+                await FollowupAsync(embed: ModrinthEmbedBuilder.GetUserEmbed(findUser).Build(),
+                        components: new ComponentBuilder()
+                                //.WithButton(ModrinthComponentBuilder.BackToProjectButton(discordUserId, projectId))
                                 .WithButton(ModrinthComponentBuilder.GetUserLinkButton(findUser.Payload.User))
-                                .Build();
-                });
+                                .Build(),
+                        ephemeral: true);
         }
 
         [ComponentInteraction("back-project:*;*", runMode: RunMode.Async)]

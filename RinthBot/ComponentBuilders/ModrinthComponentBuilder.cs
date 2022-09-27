@@ -1,4 +1,5 @@
 ﻿using Discord;
+using Modrinth.RestClient.Extensions;
 using Modrinth.RestClient.Models;
 using RinthBot.EmbedBuilders;
 using Version = Modrinth.RestClient.Models.Version;
@@ -19,7 +20,7 @@ public static class ModrinthComponentBuilder
         {
             Label = "View on Modrinth",
             Style = ButtonStyle.Link,
-            Url = ModrinthEmbedBuilder.GetVersionUrl(project, version)
+            Url = project.GetVersionUrl(version)
         };
     }
     
@@ -33,7 +34,7 @@ public static class ModrinthComponentBuilder
         var linkBtn = new ButtonBuilder()
         {
             Style = ButtonStyle.Link,
-            Url = ModrinthEmbedBuilder.GetProjectUrl(project),
+            Url = project.Url,
             Label = "Project's site"
         };
 
@@ -45,7 +46,7 @@ public static class ModrinthComponentBuilder
         return new ButtonBuilder
         {
             Style = ButtonStyle.Link,
-            Url = ModrinthEmbedBuilder.GetUserUrl(user),
+            Url = user.Url,
             Label = "User on Modrinth"
         };
     }

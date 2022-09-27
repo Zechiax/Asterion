@@ -2,6 +2,7 @@
 using Discord;
 using Humanizer;
 using Humanizer.Bytes;
+using Modrinth.RestClient.Extensions;
 using Modrinth.RestClient.Models;
 using Modrinth.RestClient.Models.Enums;
 using RinthBot.Database.Models;
@@ -29,55 +30,13 @@ public static class ModrinthEmbedBuilder
     /// </summary>
     private const int DescriptionLimit = 2000;
 
-    /// <summary>
-    /// Creates direct URL string to the specific project 
-    /// </summary>
-    /// <param name="project"></param>
-    /// <returns></returns>
-    public static string GetProjectUrl(Project project)
-    {
-        return $"https://modrinth.com/{GetProjectUrlType(project)}/{project.Id}";
-    }
-
-    /// <summary>
-    /// Returns formatted type used in Modrinth url to specific project
-    /// </summary>
-    /// <param name="project"></param>
-    /// <returns></returns>
-    public static string GetProjectUrlType(Project project)
-    {
-        return project.ProjectType switch
-        {
-            ProjectType.Mod => "mod",
-            ProjectType.Modpack => "modpack",
-            ProjectType.Resourcepack => "resourcepack",
-            _ => string.Empty
-        };
-    }
-
-    /// <summary>
-    /// Creates direct URL string to the specific version details of the project 
-    /// </summary>
-    /// <param name="project"></param>
-    /// <param name="version"></param>
-    /// <returns></returns>
-    public static string GetVersionUrl(Project project, Version version)
-    {
-        return $"{GetProjectUrl(project)}/version/{version.Id}";
-    }
-
-    public static string GetUserUrl(User user)
-    {
-        return $"https://modrinth.com/user/{user.Id}";
-    }
-
     public static EmbedAuthorBuilder GetUserAuthor(User user)
     {
         var embedAuthor = new EmbedAuthorBuilder
         {
             Name = user.Username,
             IconUrl = user.AvatarUrl,
-            Url = GetUserUrl(user)
+            Url = user.Url
         };
 
         return embedAuthor;
@@ -89,7 +48,7 @@ public static class ModrinthEmbedBuilder
         {
             Name = owner.User.Username,
             IconUrl = owner.User.AvatarUrl,
-            Url = GetUserUrl(owner.User)
+            Url = owner.User.Url
         };
 
         return embedAuthor;
@@ -148,7 +107,7 @@ public static class ModrinthEmbedBuilder
         {
             Author = author,
             Title = project.Title,
-            Url = GetProjectUrl(project),
+            Url = project.Url,
             Description = project.Description,
             ThumbnailUrl = project.IconUrl,
             // No icon, no major color, use Modrinth's color
@@ -199,7 +158,7 @@ public static class ModrinthEmbedBuilder
         {
             Title = $"{Format.Bold(project.Title)} {version.VersionNumber}",
             Description = $"{version.Name}",
-            Url = GetVersionUrl(project, version),
+            Url = project.GetVersionUrl(version),
             Timestamp = version.DatePublished,
             Color = version.ProjectVersionType.ToColor(),
             Footer = new EmbedFooterBuilder
@@ -224,8 +183,6 @@ public static class ModrinthEmbedBuilder
         var changelog = string.IsNullOrEmpty(version.Changelog) ? "\n\n*No changelog provided*" : $"\n\n{Format.Underline(Format.Bold("Changelog:"))}\n" +
             $"{version.Changelog}".Truncate(DescriptionLimit);
 
-        var projectUrl = GetProjectUrl(project);
-        
         var embedAuthor = GetEmbedAuthor(project, teamMembers, version);
         
         var embed = new EmbedBuilder
@@ -238,7 +195,7 @@ public static class ModrinthEmbedBuilder
             Title = $"{Format.Bold(project.Title)} | New Version Found",
             Description = $"Version {Format.Bold(version.VersionNumber)} has been uploaded to Modrinth" +
                           changelog,
-            Url = projectUrl,
+            Url = project.Url,
             ThumbnailUrl = project.IconUrl,
             ImageUrl = null,
             Fields = new List<EmbedFieldBuilder>
@@ -264,8 +221,8 @@ public static class ModrinthEmbedBuilder
                 {
                     Name = "Links",
                     Value = string.Join(" | ", 
-                        $"[Changelog]({projectUrl}/changelog)", 
-                        $"[Version Info]({GetVersionUrl(project, version)})")
+                        $"[Changelog]({project.Url}/changelog)", 
+                        $"[Version Info]({project.GetVersionUrl(version)})")
                 }
             },
             Timestamp = version.DatePublished,
@@ -281,7 +238,7 @@ public static class ModrinthEmbedBuilder
         
         foreach (var p in mostDownloaded.Take(3))
         {
-            sb.Append(Format.Url(p.Title, GetProjectUrl(p)));
+            sb.Append(Format.Url(p.Title, p.Url));
             sb.Append($" | {p.Downloads.ToModrinthFormat()} downloads");
             sb.AppendLine();
         }
@@ -302,7 +259,7 @@ public static class ModrinthEmbedBuilder
         {
             Author = GetModrinthAuthor(user: user),
             Title = $"{Format.Bold(user.Username)}",
-            Url = GetUserUrl(user),
+            Url = user.Url,
             ThumbnailUrl = user.AvatarUrl,
             Color = majorColor,
             Description = string.IsNullOrEmpty(user.Bio) ? Format.Italics("No bio set") : user.Bio.Truncate(DescriptionLimit),

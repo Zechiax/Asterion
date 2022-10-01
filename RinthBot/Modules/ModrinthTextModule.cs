@@ -19,6 +19,7 @@ public class ModrinthTextModule: ModuleBase<SocketCommandContext>
         _data = data;
     }
 
+    [RequireBotPermission(ChannelPermission.SendMessages)]
     [Command("project", RunMode = RunMode.Async)]
     public async Task FindProject(string slugOrId)
     {

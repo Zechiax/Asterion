@@ -38,7 +38,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                 _logger = serviceProvider.GetRequiredService<ILogger<ModrinthModule>>();
         }
 
-        public ComponentBuilder GetSubscribeButtons(string projectId, bool subEnabled = true)
+        public ButtonBuilder GetSubscribeButtons(string projectId, bool subEnabled = true)
         {
                 return ModrinthComponentBuilder.GetSubscribeButtons(Context.User.Id, projectId, subEnabled);
         }
@@ -124,7 +124,8 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                 await ModifyOriginalResponseAsync(x =>
                 {
                         x.Embed = ModrinthEmbedBuilder.GetProjectEmbed(searchResult, team).Build();
-                        x.Components = GetSubscribeButtons(project.Id, !subscribedToProject)
+                        x.Components = new ComponentBuilder()
+                                .WithButton( GetSubscribeButtons(project.Id, !subscribedToProject))
                                 .WithButton(ModrinthComponentBuilder.GetProjectLinkButton(project))
                                 .WithButton(ModrinthComponentBuilder.GetUserToViewButton(Context.User.Id, team.GetOwner()?.User.Id, project.Id))
                                 .WithButton(ModrinthComponentBuilder.ViewMoreSearchResults(projectDto.SearchResponse, query), 1)

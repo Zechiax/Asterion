@@ -46,6 +46,8 @@ public class RinthBot
         // Setup interaction command handler
         await services.GetRequiredService<InteractionCommandHandler>().InitializeAsync();
 
+        await services.GetRequiredService<MessageHandler>().InitializeAsync();
+
         // Initialize data service after client has been connected
         client.Ready += services.GetRequiredService<IDataService>().InitializeAsync;
         services.GetRequiredService<ClientService>().Initialize();
@@ -94,7 +96,8 @@ public class RinthBot
         var config = new DiscordSocketConfig
         {
             AlwaysDownloadUsers = true,
-            MessageCacheSize = 100
+            MessageCacheSize = 100,
+            GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.MessageContent
         };
 
         var commandConfig = new CommandServiceConfig()
@@ -108,6 +111,7 @@ public class RinthBot
             .AddSingleton(new CommandService(commandConfig))
             .AddSingleton<InteractionService>()
             .AddSingleton<InteractionCommandHandler>()
+            .AddSingleton<MessageHandler>()
             .AddSingleton<LoggingService>()
             .AddSingleton<IDataService, DataService>()
             .AddSingleton<ModrinthService>()

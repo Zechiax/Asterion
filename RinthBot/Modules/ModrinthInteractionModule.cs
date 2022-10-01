@@ -30,8 +30,8 @@ public class ModrinthInteractionModule : InteractionModuleBase
 
         private ComponentBuilder GetButtons(Project project, bool subEnabled = true, IEnumerable<TeamMember>? team = null)
         {
-                var components = ModrinthComponentBuilder
-                        .GetSubscribeButtons(Context.User.Id, project.Id, subEnabled)
+                var components = new ComponentBuilder()
+                        .WithButton( ModrinthComponentBuilder.GetSubscribeButtons(Context.User.Id, project.Id, subEnabled))
                         .WithButton(ModrinthComponentBuilder.GetProjectLinkButton(project))
                         .WithButton(ModrinthComponentBuilder.GetUserToViewButton(Context.User.Id,
                                 team.GetOwner()?.User.Id, project.Id));

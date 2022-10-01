@@ -52,18 +52,18 @@ public static class ModrinthComponentBuilder
         };
     }
     
-    public static ComponentBuilder GetSubscribeButtons(ulong userId, string projectId,
+    public static ButtonBuilder GetSubscribeButtons(ulong userId, string projectId,
         bool subEnabled = true)
     {
-        var buttons = new ComponentBuilder()
-            .WithButton(
-                subEnabled ? "Subscribe" : "Unsubscribe",
-                // Write unsub when the subEnabled is false
-                customId: $"{(subEnabled ? null : "un")}sub-project:{userId};{projectId}",
-                style: subEnabled ? ButtonStyle.Success : ButtonStyle.Danger,
-                emote: subEnabled ? Emoji.Parse(":bell:") : Emoji.Parse(":no_bell:"));
+        var button = new ButtonBuilder(
+            label: subEnabled ? "Subscribe" : "Unsubscribe",
+            // Write unsub when the subEnabled is false
+            customId: $"{(subEnabled ? null : "un")}sub-project:{userId};{projectId}",
+            style: subEnabled ? ButtonStyle.Success : ButtonStyle.Danger,
+            emote: subEnabled ? Emoji.Parse(":bell:") : Emoji.Parse(":no_bell:"));
+        
 
-        return buttons;
+        return button;
     }
 
     /// <summary>

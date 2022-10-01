@@ -66,6 +66,7 @@ public class MessageHandler
             _logger.LogDebug("Found Modrinth link, message id: {MessageId}; parsed ID: {ProjectId}", rawMessage.Id, slugOrId);
             
             await _commands.ExecuteAsync(context, $"project {slugOrId}", _services);
+            return;
         }
         
         _logger.LogDebug("Not Modrinth link");

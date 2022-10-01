@@ -1,4 +1,5 @@
-﻿using Discord;
+﻿using System.ComponentModel;
+using Discord;
 using Modrinth.RestClient.Extensions;
 using Modrinth.RestClient.Models;
 using RinthBot.EmbedBuilders;
@@ -82,12 +83,11 @@ public static class ModrinthComponentBuilder
 
         return button;
     }
-    
+
     /// <summary>
     /// Creates button to view user details from a project view
     /// </summary>
     /// <param name="discordUserId"></param>
-    /// <param name="modrinthUserId">Id of the Modrinth user to show, if null, button will be disabled</param>
     /// <param name="projectId"></param>
     /// <returns></returns>
     public static ButtonBuilder BackToProjectButton(ulong discordUserId, string projectId)
@@ -99,5 +99,37 @@ public static class ModrinthComponentBuilder
             emote: Emoji.Parse(":back:"));
 
         return button;
+    }
+
+    public static ButtonBuilder ViewMoreSearchResults(SearchResponse? results, string query, int maxResults = 10)
+    {
+        var button = new ButtonBuilder(
+            customId: $"more-results:|{query}|".Replace(' ', '_'),
+            style: ButtonStyle.Primary,
+            label: $"View more results ({(results is not null ? Math.Min(results.Hits.Length, maxResults) : '0')})",
+            emote: Emoji.Parse(":mag_right:"),
+            isDisabled: results is null || results.Hits.Length <= 1
+        );
+
+        return button;
+    }
+
+    public static ComponentBuilder GetResultSearchButton(SearchResult[] projects)
+    {
+        var components = new ComponentBuilder();
+
+        var rowCounter = 0;
+        for (var i = 0; i < projects.Length; i++)
+        {
+            var p = projects[i];
+            components.WithButton(new ButtonBuilder(label: (i + 1).ToString(), customId: $"view-project-from-search:{p.ProjectId}"), rowCounter);
+
+            if (i % 5 == 0 && i != 0)
+            {
+                rowCounter++;
+            }
+        }
+
+        return components;
     }
 }

@@ -127,6 +127,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                         x.Components = GetSubscribeButtons(project.Id, !subscribedToProject)
                                 .WithButton(ModrinthComponentBuilder.GetProjectLinkButton(project))
                                 .WithButton(ModrinthComponentBuilder.GetUserToViewButton(Context.User.Id, team.GetOwner()?.User.Id, project.Id))
+                                .WithButton(ModrinthComponentBuilder.ViewMoreSearchResults(projectDto.SearchResponse, query), 1)
                                 .Build();
                 });
         }

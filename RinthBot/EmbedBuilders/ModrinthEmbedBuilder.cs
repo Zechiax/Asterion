@@ -306,6 +306,31 @@ public static class ModrinthEmbedBuilder
         return embed;
     }
 
+    public static EmbedBuilder GetMoreResultsEmbed(IEnumerable<SearchResult> projects, string query)
+    {
+        var embed = new EmbedBuilder()
+        {
+            Title = "More results"
+        };
+
+        var limitProjects = projects.Take(10);
+
+        var description = new StringBuilder();
+        description.AppendLine($"For query: {Format.Italics(query)}");
+        description.AppendLine();
+        
+        var counter = 1;
+        foreach (var p in limitProjects)
+        {
+            description.AppendLine($"{Format.Bold($"{counter}.")} {Format.Url(p.Title, p.Url)} | {p.Downloads.ToModrinthFormat()}");
+            counter++;
+        }
+
+        embed.Description = description.ToString();
+        
+        return embed;
+    }
+
     /// <summary>
     /// Chooses color based on the version type
     /// </summary>

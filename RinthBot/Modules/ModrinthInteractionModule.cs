@@ -233,9 +233,9 @@ public class ModrinthInteractionModule : InteractionModuleBase
         }
 
         [ComponentInteraction("back-project:*;*", runMode: RunMode.Async)]
-        public async Task ShowUser(ulong discordUserId, string projectId)
+        public async Task BackToProject(ulong discordUserId, string projectId)
         {
-                await DeferAsync();
+                //await DeferAsync();
 
                 var searchResult = await _modrinthService.FindProject(projectId);
 
@@ -270,5 +270,40 @@ public class ModrinthInteractionModule : InteractionModuleBase
                         x.Components = GetButtons(project, !subscribedToProject, team)
                                 .Build();
                 });
+        }
+
+        [ComponentInteraction("view-project-from-search:*", runMode: RunMode.Async)]
+        public async Task ViewProjectFromSearch(string projectId)
+        {
+                await DeferAsync();
+
+                var search = await _modrinthService.FindProject(projectId);
+
+                if (search.Success == false)
+                {
+                        await FollowupAsync("Couldn't find this project", ephemeral: true);
+                        return; 
+                }
+
+                await BackToProject(Context.User.Id, projectId);
+        }
+
+        [ComponentInteraction("more-results:|*|", runMode: RunMode.Async)]
+        public async Task MoreResults(string query)
+        {
+                await DeferAsync();
+                query = query.Replace('_', ' ');
+                
+                var search = await _modrinthService.FindProject(query);
+
+                if (search.Payload.SearchResponse is null)
+                {
+                        await FollowupAsync("Could not find any more projects", ephemeral: true);
+                        return;
+                }
+
+                var embed = ModrinthEmbedBuilder.GetMoreResultsEmbed(search.Payload.SearchResponse.Hits, query);
+
+                await FollowupAsync(embed: embed.Build(), components: ModrinthComponentBuilder.GetResultSearchButton(search.Payload.SearchResponse.Hits).Build());
         }
 }

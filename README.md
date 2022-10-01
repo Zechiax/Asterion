@@ -1,6 +1,6 @@
 # RinthBot
 
--  Discord bot with which you can track project updates from the [Modrinth](https://modrinth.com/) platform 
+-  Access all of [Modrinth](https://modrinth.com/) platform within Discord 
 
 ## Images
 ### Search for projects:
@@ -12,6 +12,7 @@
 ## Features
 - Search for Modrinth projects
 - Find user on Modrinth
+- Auto embed when message contains URL to a Modrinth project (opt-in feature)
 - Subscribe for project updates and send them to custom channel
 
 ## Wiki
@@ -28,4 +29,4 @@ On wiki there are guides and documentation for all commands: https://zechiax.git
     - Date the bot joined your guild
     - IDs of channels where you want to send updates
     - List of subscribed projects
-    - Additional settings
+    - Bot preferences

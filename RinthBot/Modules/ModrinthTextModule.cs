@@ -32,7 +32,7 @@ public class ModrinthTextModule: ModuleBase<SocketCommandContext>
         }
         
         var guildSubscribed = await _data.IsGuildSubscribedToProjectAsync(Context.Guild.Id, searchResult.Payload.Project.Id);
-        var embed = ModrinthEmbedBuilder.GetProjectEmbed(searchResult);
+        var embed = ModrinthEmbedBuilder.GetProjectEmbed(searchResult, team);
         var components = new ComponentBuilder()
             .WithButton(ModrinthComponentBuilder.GetSubscribeButtons(Context.User.Id, searchResult.Payload.Project.Id,
                 !guildSubscribed))
@@ -40,6 +40,14 @@ public class ModrinthTextModule: ModuleBase<SocketCommandContext>
             .WithButton(ModrinthComponentBuilder.GetUserToViewButton(Context.User.Id, team.GetOwner()?.User.Id,
                 searchResult.Payload.Project.Id));
 
-        await Context.Message.ReplyAsync(embed: embed.Build(), components: components.Build(), allowedMentions: AllowedMentions.None);
+        try
+        {
+            await Context.Message.ReplyAsync(embed: embed.Build(), components: components.Build(),
+                allowedMentions: AllowedMentions.None);
+        }
+        catch (Exception)
+        {
+            // ignored
+        }
     }
 }

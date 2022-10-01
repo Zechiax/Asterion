@@ -10,7 +10,9 @@ public static class SettingsEmbedBuilder
         var embed = new EmbedBuilder
         {
             Title = "Settings",
-            Description = "*placeholder text*"
+            Description = "Hi!" +
+                          "\n\n" +
+                          "Here you'll find all the settings to setup the bot for your server needs. Use the buttons to navigate sections and changing the settings."
         };
 
         return embed;

@@ -11,7 +11,10 @@ public class SearchResult<T>
         SearchStatus = searchStatus;
         SearchTime = DateTime.UtcNow;
     }
-
+    /// <summary>
+    /// Success in getting results
+    /// </summary>
+    public bool Success => SearchStatus is SearchStatus.FoundById or SearchStatus.FoundBySearch;
     public DateTime SearchTime { get; private set; }
     public SearchStatus SearchStatus { get; private set; }
     public T? Payload { get; private set; }
@@ -28,6 +31,7 @@ public struct ProjectDto
 {
     public Project Project;
     public Discord.Color MajorColor;
+    public SearchResponse? SearchResponse;
 }
 
 public enum SearchStatus

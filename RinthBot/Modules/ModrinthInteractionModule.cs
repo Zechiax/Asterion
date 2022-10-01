@@ -30,8 +30,8 @@ public class ModrinthInteractionModule : InteractionModuleBase
 
         private ComponentBuilder GetButtons(Project project, bool subEnabled = true, IEnumerable<TeamMember>? team = null)
         {
-                var components = ModrinthComponentBuilder
-                        .GetSubscribeButtons(Context.User.Id, project.Id, subEnabled)
+                var components = new ComponentBuilder()
+                        .WithButton( ModrinthComponentBuilder.GetSubscribeButtons(Context.User.Id, project.Id, subEnabled))
                         .WithButton(ModrinthComponentBuilder.GetProjectLinkButton(project))
                         .WithButton(ModrinthComponentBuilder.GetUserToViewButton(Context.User.Id,
                                 team.GetOwner()?.User.Id, project.Id));
@@ -201,7 +201,7 @@ public class ModrinthInteractionModule : InteractionModuleBase
         [ComponentInteraction("show-user:*;*;*", runMode: RunMode.Async)]
         public async Task ShowUser(ulong discordUserId, string modrinthUserId, string projectId)
         {
-                await DeferAsync();
+                await DeferAsync(ephemeral: true);
 
                 var findUser = await _modrinthService.FindUser(modrinthUserId);
 
@@ -224,21 +224,18 @@ public class ModrinthInteractionModule : InteractionModuleBase
                                 throw new ArgumentOutOfRangeException();
                 }
 
-                await ModifyOriginalResponseAsync(x =>
-                {
-                        x.Embed = ModrinthEmbedBuilder.GetUserEmbed(findUser)
-                                .Build();
-                        x.Components = new ComponentBuilder()
-                                .WithButton(ModrinthComponentBuilder.BackToProjectButton(discordUserId, projectId))
+                await FollowupAsync(embed: ModrinthEmbedBuilder.GetUserEmbed(findUser).Build(),
+                        components: new ComponentBuilder()
+                                //.WithButton(ModrinthComponentBuilder.BackToProjectButton(discordUserId, projectId))
                                 .WithButton(ModrinthComponentBuilder.GetUserLinkButton(findUser.Payload.User))
-                                .Build();
-                });
+                                .Build(),
+                        ephemeral: true);
         }
 
         [ComponentInteraction("back-project:*;*", runMode: RunMode.Async)]
-        public async Task ShowUser(ulong discordUserId, string projectId)
+        public async Task BackToProject(ulong discordUserId, string projectId)
         {
-                await DeferAsync();
+                //await DeferAsync();
 
                 var searchResult = await _modrinthService.FindProject(projectId);
 
@@ -273,5 +270,40 @@ public class ModrinthInteractionModule : InteractionModuleBase
                         x.Components = GetButtons(project, !subscribedToProject, team)
                                 .Build();
                 });
+        }
+
+        [ComponentInteraction("view-project-from-search:*", runMode: RunMode.Async)]
+        public async Task ViewProjectFromSearch(string projectId)
+        {
+                await DeferAsync();
+
+                var search = await _modrinthService.FindProject(projectId);
+
+                if (search.Success == false)
+                {
+                        await FollowupAsync("Couldn't find this project", ephemeral: true);
+                        return; 
+                }
+
+                await BackToProject(Context.User.Id, projectId);
+        }
+
+        [ComponentInteraction("more-results:|*|", runMode: RunMode.Async)]
+        public async Task MoreResults(string query)
+        {
+                await DeferAsync();
+                query = query.Replace('_', ' ');
+                
+                var search = await _modrinthService.FindProject(query);
+
+                if (search.Payload.SearchResponse is null)
+                {
+                        await FollowupAsync("Could not find any more projects", ephemeral: true);
+                        return;
+                }
+
+                var embed = ModrinthEmbedBuilder.GetMoreResultsEmbed(search.Payload.SearchResponse.Hits, query);
+
+                await FollowupAsync(embed: embed.Build(), components: ModrinthComponentBuilder.GetResultSearchButton(search.Payload.SearchResponse.Hits).Build());
         }
 }

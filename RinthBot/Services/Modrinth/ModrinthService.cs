@@ -261,6 +261,8 @@ public partial class ModrinthService
         _logger.LogDebug("Project query '{Query}' not in cache", query);
         Project? project = null;
         var httpClient = _httpClientFactory.CreateClient();
+
+        SearchResponse? searchResponse = null;
         
         // Slug or ID can't contain space
         if (!query.Contains(' '))
@@ -270,6 +272,7 @@ public partial class ModrinthService
             {
                 project = await _api.GetProjectAsync(query);
 
+                searchResponse = await _api.SearchProjectsAsync(query);
                 // Won't be set if exception is thrown
                 projectFoundById = true;
             }
@@ -289,12 +292,11 @@ public partial class ModrinthService
                 var result = new SearchResult<ProjectDto>(new ProjectDto()
                 {
                     Project = project,
-                    MajorColor = (await httpClient.GetMajorColorFromImageUrl(project.IconUrl)).ToDiscordColor()
+                    MajorColor = (await httpClient.GetMajorColorFromImageUrl(project.IconUrl)).ToDiscordColor(),
+                    SearchResponse = searchResponse
                 }, SearchStatus.FoundById);
                 
-                _cache.Set($"project-query:{project.Slug}", result, absoluteExpirationRelativeToNow: TimeSpan.FromMinutes(60));
-                _cache.Set($"project-query:{project.Id}", result, absoluteExpirationRelativeToNow: TimeSpan.FromMinutes(60));
-                _cache.Set($"project-query:{query}", result, absoluteExpirationRelativeToNow: TimeSpan.FromMinutes(60));
+                SetSearchResultToCache(result, query);
 
                 return result;
             }
@@ -302,35 +304,40 @@ public partial class ModrinthService
 
         try
         {
-            var searchResult = await _api.SearchProjectsAsync(query);
+            searchResponse = await _api.SearchProjectsAsync(query);
 
             // No search results
-            if (searchResult.TotalHits <= 0)
+            if (searchResponse.TotalHits <= 0)
             {
                 return new SearchResult<ProjectDto>(new ProjectDto(), SearchStatus.NoResult);
             }
             
             // Return first result
-            project = await _api.GetProjectAsync(searchResult.Hits[0].ProjectId);
+            project = await _api.GetProjectAsync(searchResponse.Hits[0].ProjectId);
 
             var result = new SearchResult<ProjectDto>(new ProjectDto
             {
                 Project = project,
-                MajorColor = (await httpClient.GetMajorColorFromImageUrl(project.IconUrl)).ToDiscordColor()
+                MajorColor = (await httpClient.GetMajorColorFromImageUrl(project.IconUrl)).ToDiscordColor(),
+                SearchResponse = searchResponse
             }, SearchStatus.FoundBySearch);
 
-            _cache.Set($"project-query:{project.Slug}", result, absoluteExpirationRelativeToNow: TimeSpan.FromMinutes(60));
-            _cache.Set($"project-query:{project.Id}", result, absoluteExpirationRelativeToNow: TimeSpan.FromMinutes(60));
-            _cache.Set($"project-query:{query}", result, absoluteExpirationRelativeToNow: TimeSpan.FromMinutes(60));
+            SetSearchResultToCache(result, query);
             
             return result;
-
         }
         catch (Exception e)
         {
             _logger.LogWarning("Could not get project information for query '{Query}', exception: {Message}", query, e.Message);
             return new SearchResult<ProjectDto>(new ProjectDto(), SearchStatus.ApiDown);
         }
+    }
+
+    private void SetSearchResultToCache(SearchResult<ProjectDto> searchResult, string query)
+    {
+        _cache.Set($"project-query:{searchResult.Payload.Project.Slug}", searchResult, absoluteExpirationRelativeToNow: TimeSpan.FromMinutes(60));
+        _cache.Set($"project-query:{searchResult.Payload.Project.Id}", searchResult, absoluteExpirationRelativeToNow: TimeSpan.FromMinutes(60));
+        _cache.Set($"project-query:{query}", searchResult, absoluteExpirationRelativeToNow: TimeSpan.FromMinutes(60));
     }
 
     public async Task<SearchResult<UserDto>> FindUser(string query)

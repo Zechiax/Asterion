@@ -22,6 +22,7 @@ public class GuildSettings
     /// If all settings should be removed after the bot left the guild
     /// </summary>
     public bool? RemoveOnLeave { get; set; } = true;
-    
+
+    public bool? CheckMessagesForModrinthLink { get; set; } = false;
     public MessageStyle MessageStyle { get; set; } = MessageStyle.Full;
 }

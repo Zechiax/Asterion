@@ -17,4 +17,15 @@ public static class SettingsEmbedBuilder
 
         return embed;
     }
+
+    public static EmbedBuilder GetMoreSettingsEmbedBuilder(Guild guild)
+    {
+        var embed = new EmbedBuilder()
+        {
+            Title = "Settings | More",
+            Description = "TBD overview of active settings"
+        };
+
+        return embed;
+    }
 }

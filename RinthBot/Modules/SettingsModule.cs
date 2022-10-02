@@ -105,6 +105,7 @@ public class SettingsInteractionModule : InteractionModuleBase
     [ComponentInteraction(SettingsComponentBuilder.NotificationButtonId, runMode: RunMode.Async)]
     public async Task ChangeViewSettings()
     {
+        await DeferAsync();
         await FollowupAsync("TBD, in the meantime, please use **/message-style** command'", ephemeral: true);
     }
 }

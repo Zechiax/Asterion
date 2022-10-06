@@ -25,10 +25,8 @@ public class SettingsModule : InteractionModuleBase<SocketInteractionContext>
     [SlashCommand("settings", "Change settings for RinthBot")]
     public async Task SettingsCommand()
     {
-        var embed = SettingsEmbedBuilder.GetIntroEmbedBuilder();
-        var components = SettingsComponentBuilder.GetIntroButtons(Context.User.Id.ToString());
-
-        await RespondAsync(embed: embed.Build(), components: components.Build());
+        await RespondAsync(embed: SettingsEmbedBuilder.GetIntroEmbedBuilder().Build(),
+            components: SettingsComponentBuilder.GetIntroButtons(Context.User.Id.ToString()).Build());
     }
 }
 
@@ -48,13 +46,12 @@ public class SettingsInteractionModule : InteractionModuleBase
     [ComponentInteraction(SettingsComponentBuilder.MainScreenButtonId)]
     public async Task MainSettingsScreen(ulong userId)
     {
-        var embed = SettingsEmbedBuilder.GetIntroEmbedBuilder();
-        var components = SettingsComponentBuilder.GetIntroButtons(Context.User.Id.ToString());
-
+        await DeferAsync();
+        
         await ModifyOriginalResponseAsync(x =>
         {
-            x.Embed = embed.Build();
-            x.Components = components.Build();
+            x.Embed = SettingsEmbedBuilder.GetIntroEmbedBuilder().Build();
+            x.Components = SettingsComponentBuilder.GetIntroButtons(Context.User.Id.ToString()).Build();
         });
     }
 

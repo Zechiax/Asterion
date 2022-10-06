@@ -10,6 +10,7 @@ using RinthBot.Interfaces;
 
 namespace RinthBot.Modules;
 
+[RequireContext(ContextType.Guild)]
 public class SettingsModule : InteractionModuleBase<SocketInteractionContext>
 {
     private readonly ILogger<SettingsModule> _logger;
@@ -31,6 +32,8 @@ public class SettingsModule : InteractionModuleBase<SocketInteractionContext>
     }
 }
 
+[RequireUserPermission(GuildPermission.Administrator)]
+[RequireContext(ContextType.Guild)]
 public class SettingsInteractionModule : InteractionModuleBase
 {
     private readonly ILogger<SettingsInteractionModule> _logger;
@@ -42,7 +45,20 @@ public class SettingsInteractionModule : InteractionModuleBase
     }
 
     [DoUserCheck]
-    [RequireUserPermission(GuildPermission.Administrator)]
+    [ComponentInteraction(SettingsComponentBuilder.MainScreenButtonId)]
+    public async Task MainSettingsScreen(ulong userId)
+    {
+        var embed = SettingsEmbedBuilder.GetIntroEmbedBuilder();
+        var components = SettingsComponentBuilder.GetIntroButtons(Context.User.Id.ToString());
+
+        await ModifyOriginalResponseAsync(x =>
+        {
+            x.Embed = embed.Build();
+            x.Components = components.Build();
+        });
+    }
+
+    [DoUserCheck]
     [ComponentInteraction(SettingsComponentBuilder.MoreButtonId, runMode: RunMode.Async)]
     public async Task SettingsMore()
     {
@@ -68,7 +84,6 @@ public class SettingsInteractionModule : InteractionModuleBase
     }
 
     [DoUserCheck]
-    [RequireUserPermission(GuildPermission.Administrator)]
     [ComponentInteraction("settings-message-scan:*;*", runMode: RunMode.Async)]
     public async Task ScanMessageSet(string userId, bool scanMessageStatus)
     {
@@ -93,15 +108,11 @@ public class SettingsInteractionModule : InteractionModuleBase
             await ModifyOriginalResponseAsync(x => x.Components = component.Build());
             return;
         }
-        else
-        {
-            await FollowupAsync("Something went wrong, please try again later", ephemeral: true);
-            return;
-        }
+
+        await FollowupAsync("Something went wrong, please try again later", ephemeral: true);
     }
 
     [DoUserCheck]
-    [RequireUserPermission(GuildPermission.Administrator)]
     [ComponentInteraction(SettingsComponentBuilder.NotificationButtonId, runMode: RunMode.Async)]
     public async Task ChangeViewSettings()
     {

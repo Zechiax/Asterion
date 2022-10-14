@@ -1,4 +1,5 @@
-﻿using Discord;
+﻿using System.Text;
+using Discord;
 using Modrinth.RestClient.Models;
 using RinthBot.Database.Models;
 using File = Modrinth.RestClient.Models.File;
@@ -21,12 +22,25 @@ public static class SettingsEmbedBuilder
         return embed;
     }
 
+    private static Emoji GetEmojiByBool(bool success)
+    {
+        return success ? Emoji.Parse(":white_check_mark:") : Emoji.Parse(":no_entry_sign:");
+    }
+
     public static EmbedBuilder GetMoreSettingsEmbedBuilder(Guild guild)
     {
+        var description = new StringBuilder();
+
+        description.AppendLine(Format.Bold(Format.Underline("Overview of settings")));
+        description.AppendLine();
+        description.AppendLine($"**1. Check messages for Modrinth links:** {GetEmojiByBool((bool)guild.GuildSettings.CheckMessagesForModrinthLink!)}");
+        description.AppendLine(
+            $"**2. Show channel selection after subscribe:** {GetEmojiByBool((bool) guild.GuildSettings.ShowChannelSelection!)}");
+        
         var embed = new EmbedBuilder()
         {
             Title = "Settings | More",
-            Description = "TBD overview of active settings"
+            Description = description.ToString()
         };
 
         return embed;

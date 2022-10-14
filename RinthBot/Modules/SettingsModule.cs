@@ -104,7 +104,11 @@ public class SettingsInteractionModule : InteractionModuleBase
         {
             var component =
                 SettingsComponentBuilder.GetMoreSettingsComponents(Context.User.Id.ToString(), guild.GuildSettings);
-            await ModifyOriginalResponseAsync(x => x.Components = component.Build());
+            await ModifyOriginalResponseAsync(x =>
+            {
+                x.Embed = SettingsEmbedBuilder.GetMoreSettingsEmbedBuilder(guild).Build();
+                x.Components = component.Build();   
+            });
             return;
         }
 
@@ -137,7 +141,7 @@ public class SettingsInteractionModule : InteractionModuleBase
 
     [DoUserCheck]
     [ComponentInteraction(SettingsComponentBuilder.ChangeMessageStyleSelectionId)]
-    public async Task ChangeSMessageStyle(string userId, string[] selectedStyle)
+    public async Task ChangeMessageStyle(string userId, string[] selectedStyle)
     {
         await DeferAsync();
         var style = (MessageStyle) Enum.Parse(typeof(MessageStyle), selectedStyle.First());

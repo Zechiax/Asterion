@@ -58,26 +58,23 @@ public static class SettingsComponentBuilder
             {
                 // First row
                 new ActionRowBuilder()
-                    .WithButton(GetBackButton(userId))
-                ,
-                // Second row
-                new ActionRowBuilder()
                     .WithButton(new ButtonBuilder
                     {
-                        Label = "Channel selection after subscribe",
-                        CustomId = $"settings-channel-selection:{userId};{guildSettings.ShowChannelSelection}",
-                        Style = guildSettings.ShowChannelSelection == true ? ButtonStyle.Danger : ButtonStyle.Success
-                    })
-                    .WithButton(new ButtonBuilder
-                    {
-                        Label = "[Experimental] Scan messages for Modrinth link",
+                        Label = "1. [Experimental] Scan messages",
                         CustomId = $"settings-message-scan:{userId};{guildSettings.CheckMessagesForModrinthLink}",
                         Emote = Emoji.Parse(":warning:"),
-                        Style = guildSettings.CheckMessagesForModrinthLink == true
-                            ? ButtonStyle.Danger
-                            : ButtonStyle.Success
+                        Style = ButtonStyle.Primary
                     })
-                
+                    .WithButton(new ButtonBuilder
+                    {
+                        Label = "2. Channel selection after subscribe",
+                        CustomId = $"settings-channel-selection:{userId};{guildSettings.ShowChannelSelection}",
+                        Style = ButtonStyle.Primary,
+                        IsDisabled = true
+                    }),
+                // Second row
+                new ActionRowBuilder()
+                    .WithButton(GetBackButton(userId))
             });
     }
 

@@ -9,6 +9,7 @@ public static class SettingsComponentBuilder
     public const string NotificationButtonId = "settings-module-notification-style:*";
     public const string MoreButtonId = "settings-module-more:*";
     public const string MainScreenButtonId = "settings-main:*";
+    public const string ChangeMessageStyleSelectionId = "change-message-style:*";
     public static ComponentBuilder GetIntroButtons(string userId)
     {
         var components = 
@@ -39,6 +40,17 @@ public static class SettingsComponentBuilder
         };
     }
 
+    public static ButtonBuilder GetBackButton(string userId)
+    {
+        return new ButtonBuilder
+        {
+            Label = "Back",
+            CustomId = MainScreenButtonId.Replace("*", userId),
+            Emote = Emoji.Parse(":back:"),
+            Style = ButtonStyle.Secondary
+        };
+    }
+
     public static ComponentBuilder GetMoreSettingsComponents(string userId, GuildSettings guildSettings)
     {
         return new ComponentBuilder()
@@ -46,13 +58,7 @@ public static class SettingsComponentBuilder
             {
                 // First row
                 new ActionRowBuilder()
-                    .WithButton(new ButtonBuilder()
-                    {
-                        Label = "Back",
-                        CustomId = MainScreenButtonId.Replace("*", userId),
-                        Emote = Emoji.Parse(":back:"),
-                        Style = ButtonStyle.Secondary
-                    })
+                    .WithButton(GetBackButton(userId))
                 ,
                 // Second row
                 new ActionRowBuilder()
@@ -73,5 +79,36 @@ public static class SettingsComponentBuilder
                     })
                 
             });
+    }
+
+    public static ComponentBuilder GetMessageStyleSelectionComponents(Guild guild, string userId)
+    {
+        return new ComponentBuilder()
+            .WithSelectMenu(GetMessageStyleSelection(guild, userId))
+            .WithButton(GetBackButton(userId), 1);
+    }
+    public static SelectMenuBuilder GetMessageStyleSelection(Guild guild, string userId)
+    {
+        var menu = new SelectMenuBuilder()
+        {
+            MaxValues = 1,
+            MinValues = 1,
+            CustomId = ChangeMessageStyleSelectionId.Replace("*", userId)
+        };
+
+        var options = new List<SelectMenuOptionBuilder>();
+        foreach (var style in Enum.GetValues(typeof(MessageStyle)).Cast<MessageStyle>())
+        {
+            options.Add(new SelectMenuOptionBuilder()
+            {
+                Label = Enum.GetName(typeof(MessageStyle), style),
+                Value = style.ToString(),
+                IsDefault = style == guild.GuildSettings.MessageStyle
+            });
+        }
+
+        menu.Options = options;
+
+        return menu;
     }
 }

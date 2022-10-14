@@ -1,5 +1,8 @@
 ﻿using Discord;
+using Modrinth.RestClient.Models;
 using RinthBot.Database.Models;
+using File = Modrinth.RestClient.Models.File;
+using Version = Modrinth.RestClient.Models.Version;
 
 namespace RinthBot.EmbedBuilders;
 
@@ -25,6 +28,36 @@ public static class SettingsEmbedBuilder
             Title = "Settings | More",
             Description = "TBD overview of active settings"
         };
+
+        return embed;
+    }
+
+    public static EmbedBuilder GetViewSettingsEmbed(Guild guild)
+    {
+        var dummyProject = new Project()
+        {
+            Slug = "dummy-project",
+            Id = "12345678",
+            IconUrl = "https://icon.horse/icon/modrinth.com",
+            Description = "This is project's destription",
+            Title = "Dummy project",
+            Categories = new [] {"dummy"},
+            
+        };
+
+        var dummyVersion = new Version()
+        {
+            Changelog = "This would be the new version's changelog",
+            Id = "12456789",
+            DatePublished = DateTime.Now,
+            GameVersions = new[] {"1.19.2"},
+            Files = new[] {new File() {Size = 1024, Url = "https://modrinth.com/", FileName = "non-existent-file.not.jar"} },
+            Loaders = new[] {"Fabric"},
+            Name = "This version's name",
+            VersionNumber = "Version-3.5"
+        };
+
+        var embed = ModrinthEmbedBuilder.VersionUpdateEmbed(guild.GuildSettings.MessageStyle, dummyProject, dummyVersion);
 
         return embed;
     }

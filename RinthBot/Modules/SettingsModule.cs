@@ -5,8 +5,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using RinthBot.Attributes;
 using RinthBot.ComponentBuilders;
+using RinthBot.Database.Models;
 using RinthBot.EmbedBuilders;
 using RinthBot.Interfaces;
+using RinthBot.Services;
 
 namespace RinthBot.Modules;
 
@@ -114,6 +116,58 @@ public class SettingsInteractionModule : InteractionModuleBase
     public async Task ChangeViewSettings()
     {
         await DeferAsync();
-        await FollowupAsync("TBD, in the meantime, please use **/message-style** command'", ephemeral: true);
+
+        var guild = await _dataService.GetGuildByIdAsync(Context.Guild.Id);
+
+        if (guild is null)
+        {
+            await FollowupAsync("Something went wrong, please try again later", ephemeral: true);
+            return;
+        }
+
+        var embed = SettingsEmbedBuilder.GetViewSettingsEmbed(guild);
+
+        await ModifyOriginalResponseAsync(x =>
+        {
+            x.Embed = embed.Build();
+            x.Components = SettingsComponentBuilder.GetMessageStyleSelectionComponents(guild, Context.User.Id.ToString())
+                .Build();
+        });
+    }
+
+    [DoUserCheck]
+    [ComponentInteraction(SettingsComponentBuilder.ChangeMessageStyleSelectionId)]
+    public async Task ChangeSMessageStyle(string userId, string[] selectedStyle)
+    {
+        await DeferAsync();
+        var style = (MessageStyle) Enum.Parse(typeof(MessageStyle), selectedStyle.First());
+
+        var guild = await _dataService.GetGuildByIdAsync(Context.Guild.Id);
+
+        if (guild is null)
+        {
+            await FollowupAsync("Something went wrong, please try again later", ephemeral: true);
+            return;
+        }
+
+        guild.GuildSettings.MessageStyle = style;
+
+        var success = await _dataService.UpdateGuildAsync(guild);
+
+        if (!success)
+        {
+            await FollowupAsync("Something went wrong, please try again later", ephemeral: true);
+            return;
+        }
+        
+        var embed = SettingsEmbedBuilder.GetViewSettingsEmbed(guild);
+        
+        
+        await ModifyOriginalResponseAsync(x =>
+        {
+            x.Embed = embed.Build();
+            x.Components = SettingsComponentBuilder.GetMessageStyleSelectionComponents(guild, Context.User.Id.ToString())
+                .Build();
+        });
     }
 }

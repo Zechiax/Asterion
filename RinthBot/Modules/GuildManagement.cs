@@ -102,34 +102,6 @@ public class GuildManagement : InteractionModuleBase<SocketInteractionContext>
 
         [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
         [DoManageSubsRoleCheck(Group = "ManageSubs")]
-        [SlashCommand("message-style", "Sets the style of the update message")]
-        public async Task SetMessageStyle(MessageStyle style)
-        {
-                await DeferAsync(ephemeral: true);
-
-                var guild = await _dataService.GetGuildByIdAsync(Context.Guild.Id);
-
-                if (guild is null)
-                {
-                        await FollowupAsync("Something went wrong, please try again later");
-                        return;
-                }
-
-                guild.GuildSettings.MessageStyle = style;
-
-                var success = await _dataService.UpdateGuildAsync(guild);
-
-                if (!success)
-                {
-                        await FollowupAsync("There was an error while settings the message style, please try again later");
-                        return;
-                }
-                
-                await FollowupAsync($"Message style set to '{style}' :white_check_mark:");
-        }
-
-        [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
-        [DoManageSubsRoleCheck(Group = "ManageSubs")]
         [SlashCommand("remove-ping-role", "Removes the ping role")]
         public async Task RemovePingRole()
         {

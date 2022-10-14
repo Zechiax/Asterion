@@ -38,8 +38,8 @@ public static class SettingsEmbedBuilder
         {
             Slug = "dummy-project",
             Id = "12345678",
-            IconUrl = "https://icon.horse/icon/modrinth.com",
-            Description = "This is project's destription",
+            IconUrl = "https://avatars.githubusercontent.com/u/67560307",
+            Description = "This is project's description",
             Title = "Dummy project",
             Categories = new [] {"dummy"},
             

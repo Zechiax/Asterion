@@ -12,6 +12,7 @@ using RinthBot.Services;
 
 namespace RinthBot.Modules;
 
+[RequireUserPermission(GuildPermission.Administrator)]
 [RequireContext(ContextType.Guild)]
 public class SettingsModule : InteractionModuleBase<SocketInteractionContext>
 {

@@ -10,7 +10,7 @@ namespace RinthBot.Database.Models
         [Required]
         public ulong GuildId { get; set; }
         
-        //BUG: Forgot to add this as ForeignKey, in database when adding guild it's value is 0, needs to be added carefuly
+        //BUG: Forgot to add this as ForeignKey, in database when adding guild it's value is 0, needs to be added carefully
         public ulong GuildSettingsId { get; set; }
         public virtual GuildSettings GuildSettings { get; set; } = null!;
 

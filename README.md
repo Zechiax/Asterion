@@ -1,3 +1,5 @@
+![](assets/logo/AsterionLogo.png)
+
 # Asterion
 
 -  Access all of [Modrinth](https://modrinth.com/) platform within Discord

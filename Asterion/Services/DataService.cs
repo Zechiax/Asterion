@@ -234,6 +234,7 @@ public class DataService : IDataService
         guild.GuildSettings.RemoveOnLeave = updatedGuild.GuildSettings.RemoveOnLeave;
         guild.GuildSettings.ShowChannelSelection = updatedGuild.GuildSettings.ShowChannelSelection;
         guild.GuildSettings.CheckMessagesForModrinthLink = updatedGuild.GuildSettings.CheckMessagesForModrinthLink;
+        guild.GuildSettings.ShowSubscribeButton = updatedGuild.GuildSettings.ShowSubscribeButton;
 
         await db.SaveChangesAsync();
 

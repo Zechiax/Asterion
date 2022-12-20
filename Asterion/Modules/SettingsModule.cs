@@ -175,4 +175,37 @@ public class SettingsInteractionModule : InteractionModuleBase
                 .Build();
         });
     }
+    
+    [DoUserCheck]
+    [ComponentInteraction("settings-show-subscribe-button:*;*", runMode: RunMode.Async)]
+    public async Task ShowSubscribeButton(string userId, bool showSubscribeButton)
+    {
+        await DeferAsync();
+        
+        var guild = await _dataService.GetGuildByIdAsync(Context.Guild.Id);
+        
+        if (guild is null)
+        {
+            await FollowupAsync("Something went wrong, please try again later", ephemeral: true);
+            return;
+        }
+
+        guild.GuildSettings.ShowSubscribeButton = !showSubscribeButton;
+
+        var success = await _dataService.UpdateGuildAsync(guild);
+
+        if (success)
+        {
+            var component =
+                SettingsComponentBuilder.GetMoreSettingsComponents(Context.User.Id.ToString(), guild.GuildSettings);
+            await ModifyOriginalResponseAsync(x =>
+            {
+                x.Embed = SettingsEmbedBuilder.GetMoreSettingsEmbedBuilder(guild).Build();
+                x.Components = component.Build();   
+            });
+            return;
+        }
+
+        await FollowupAsync("Something went wrong, please try again later", ephemeral: true);
+    }
 }

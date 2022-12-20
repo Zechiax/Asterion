@@ -5,6 +5,7 @@ using Asterion.Services.Modrinth;
 using Discord;
 using Discord.Commands;
 using Asterion.Extensions;
+using Asterion.Services;
 
 namespace Asterion.Modules;
 
@@ -32,12 +33,25 @@ public class ModrinthTextModule: ModuleBase<SocketCommandContext>
             return;
         }
         
-        var guildSubscribed = await _data.IsGuildSubscribedToProjectAsync(Context.Guild.Id, searchResult.Payload.Project.Id);
         var embed = ModrinthEmbedBuilder.GetProjectEmbed(searchResult, team);
-        var components = new ComponentBuilder()
-            .WithButton(ModrinthComponentBuilder.GetSubscribeButtons(Context.User.Id, searchResult.Payload.Project.Id,
-                !guildSubscribed))
-            .WithButton(ModrinthComponentBuilder.GetProjectLinkButton(searchResult.Payload.Project))
+        var components = new ComponentBuilder();
+
+        var guild = await _data.GetGuildByIdAsync(Context.Guild.Id);
+
+        if (guild is null)
+        {
+            // Won't do anything
+            return;
+        }
+
+        if ((bool)guild.GuildSettings.ShowSubscribeButton!)
+        {
+            var guildSubscribed = await _data.IsGuildSubscribedToProjectAsync(Context.Guild.Id, searchResult.Payload.Project.Id);
+            components.WithButton(ModrinthComponentBuilder.GetSubscribeButtons(Context.User.Id, searchResult.Payload.Project.Id,
+                !guildSubscribed));    
+        }
+
+        components.WithButton(ModrinthComponentBuilder.GetProjectLinkButton(searchResult.Payload.Project))
             .WithButton(ModrinthComponentBuilder.GetUserToViewButton(Context.User.Id, team.GetOwner()?.User.Id,
                 searchResult.Payload.Project.Id));
 

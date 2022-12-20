@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Asterion", "Asterion\Asterion.csproj", "{295E09D1-9611-47F6-9A51-C730D809BEBA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Asterion.Test", "Asterion.Test\Asterion.Test.csproj", "{EE65894E-E153-49C2-840B-D6A84DF0A01D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{295E09D1-9611-47F6-9A51-C730D809BEBA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{295E09D1-9611-47F6-9A51-C730D809BEBA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{295E09D1-9611-47F6-9A51-C730D809BEBA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{295E09D1-9611-47F6-9A51-C730D809BEBA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EE65894E-E153-49C2-840B-D6A84DF0A01D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EE65894E-E153-49C2-840B-D6A84DF0A01D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EE65894E-E153-49C2-840B-D6A84DF0A01D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EE65894E-E153-49C2-840B-D6A84DF0A01D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

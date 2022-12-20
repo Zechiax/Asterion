@@ -4,7 +4,7 @@
 
 <img src="assets/logo/AsterionLogo.png" alt="logo" width="25%"/>
 
-Access all of [Modrinth](https://modrinth.com/) platform within Discord
+Access all of [Modrinth](https://modrinth.com/) within Discord
 
 <div align=left>
 

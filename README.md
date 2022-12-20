@@ -25,6 +25,7 @@ On wiki there are guides and documentation for all commands: https://zechiax.git
     - Date the bot joined your guild
     - IDs of channels where you want to send updates
     - List of subscribed projects
+        - And the date you subscribed to them
     - Bot preferences
 - This data is stored in a database and is not shared with anyone else
 - You can delete all data stored by the bot when you kick the bot from your guild

@@ -1,10 +1,6 @@
 # RinthBot
 
--  Access all of [Modrinth](https://modrinth.com/) platform within Discord 
-
-## Images
-### Search for projects:
-[![Search embed](./assets/search_embed.png)](https://github.com/Zechiax/RinthBot)
+-  Access all of [Modrinth](https://modrinth.com/) platform within Discord
 
 ## Invite
 - You can invite the bot by clicking [here](https://discord.com/api/oauth2/authorize?client_id=986993814671614094&permissions=537316416&scope=bot%20applications.commands)
@@ -30,3 +26,5 @@ On wiki there are guides and documentation for all commands: https://zechiax.git
     - IDs of channels where you want to send updates
     - List of subscribed projects
     - Bot preferences
+- This data is stored in a database and is not shared with anyone else
+- You can delete all data stored by the bot when you kick the bot from your guild

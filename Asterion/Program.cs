@@ -17,7 +17,7 @@ namespace Asterion
             Thread.CurrentThread.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
 
             Log.Logger = new LoggerConfiguration()
-                .WriteTo.File(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs/rinthbot.log"),
+                .WriteTo.File(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs/asterion.log"),
                     rollingInterval: RollingInterval.Day)
 #if DEBUG
                 .MinimumLevel.Debug()

@@ -1,4 +1,4 @@
-# RinthBot
+# Asterion
 
 -  Access all of [Modrinth](https://modrinth.com/) platform within Discord
 

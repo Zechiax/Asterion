@@ -1,5 +1,6 @@
 ﻿using Asterion.Attributes;
 using Asterion.ComponentBuilders;
+using Asterion.Database.Models;
 using Asterion.EmbedBuilders;
 using Asterion.Interfaces;
 using Asterion.Services.Modrinth;
@@ -28,13 +29,18 @@ public class ModrinthInteractionModule : InteractionModuleBase
                 _logger = serviceProvider.GetRequiredService<ILogger<ModrinthInteractionModule>>();
         }
 
-        private ComponentBuilder GetButtons(Project project, bool subEnabled = true, IEnumerable<TeamMember>? team = null)
+        private ComponentBuilder GetButtons(Project project, GuildSettings guildSettings, bool subEnabled = true, IEnumerable<TeamMember>? team = null)
         {
-                var components = new ComponentBuilder()
-                        .WithButton( ModrinthComponentBuilder.GetSubscribeButtons(Context.User.Id, project.Id, subEnabled))
-                        .WithButton(ModrinthComponentBuilder.GetProjectLinkButton(project))
-                        .WithButton(ModrinthComponentBuilder.GetUserToViewButton(Context.User.Id,
-                                team.GetOwner()?.User.Id, project.Id));
+                var components = new ComponentBuilder();
+
+                if ((bool) guildSettings.ShowSubscribeButton!)
+                {
+                        components.WithButton( ModrinthComponentBuilder.GetSubscribeButtons(Context.User.Id, project.Id, subEnabled));
+                }
+                
+                components.WithButton(ModrinthComponentBuilder.GetProjectLinkButton(project))
+                .WithButton(ModrinthComponentBuilder.GetUserToViewButton(Context.User.Id,
+                        team.GetOwner()?.User.Id, project.Id));
 
                 return components;
         }
@@ -50,7 +56,7 @@ public class ModrinthInteractionModule : InteractionModuleBase
                 var channel = await Context.Guild.GetTextChannelAsync(Context.Channel.Id);
                 
                 var subscribed = await _dataService.IsGuildSubscribedToProjectAsync(guildId, projectId);
-                
+
                 var project = await _modrinthService.GetProject(projectId);
 
                 if (project == null)
@@ -60,13 +66,21 @@ public class ModrinthInteractionModule : InteractionModuleBase
                 }
                 
                 var team = await _modrinthService.GetProjectsTeamMembersAsync(project.Id);
+                var guild = await _dataService.GetGuildByIdAsync(guildId);
+
+                if (guild is null)
+                {
+                        // Try again later
+                        await FollowupAsync(RequestError, ephemeral: true);
+                        return;
+                }
 
                 // Already subscribed
                 if (subscribed)
                 {
                         await ModifyOriginalResponseAsync(x =>
                         {
-                                x.Components = GetButtons(project, false, team).Build();
+                                x.Components = GetButtons(project, guild.GuildSettings, false, team).Build();
                         });
                         await FollowupAsync("You're already subscribed to updates for this project", ephemeral: true);
                         return;
@@ -82,14 +96,13 @@ public class ModrinthInteractionModule : InteractionModuleBase
                 
                 await ModifyOriginalResponseAsync(x =>
                 {
-                        x.Components = GetButtons(project, false, team).Build();
+                        x.Components = GetButtons(project, guild.GuildSettings, false, team).Build();
                 });
                 
                 await _dataService.AddModrinthProjectToGuildAsync(guildId, project.Id, latestVersion.Id, channel.Id, project.Title);
 
                 await FollowupAsync($"Subscribed to updates for project **{project.Title}** with ID **{project.Id}** :white_check_mark: Updates will be send to this channel {channel.Mention}", ephemeral: true);
-
-                var guild = await _dataService.GetGuildByIdAsync(guildId);
+                
 
                 var guildChannels = await Context.Guild.GetTextChannelsAsync();
                 
@@ -167,6 +180,14 @@ public class ModrinthInteractionModule : InteractionModuleBase
                 var subscribed = await _dataService.IsGuildSubscribedToProjectAsync(guildId, projectId);
                 
                 var project = await _modrinthService.GetProject(projectId);
+                var guild = await _dataService.GetGuildByIdAsync(guildId);
+                
+                if (guild is null)
+                {
+                        // Try again later
+                        await FollowupAsync(RequestError, ephemeral: true);
+                        return;
+                }
 
                 // BUG: If the project does not exists, it will always throw an error
                 if (project == null)
@@ -182,7 +203,7 @@ public class ModrinthInteractionModule : InteractionModuleBase
                 {
                         await ModifyOriginalResponseAsync(x =>
                         {
-                                x.Components = GetButtons(project, team: team).Build();
+                                x.Components = GetButtons(project, guild.GuildSettings, team: team).Build();
                         });
                         await FollowupAsync("You're already unsubscribed from updates to this project", ephemeral: true);
                         return;
@@ -192,7 +213,7 @@ public class ModrinthInteractionModule : InteractionModuleBase
 
                 await ModifyOriginalResponseAsync(x =>
                 {
-                        x.Components = GetButtons(project, team: team).Build();
+                        x.Components = GetButtons(project, guild.GuildSettings, team: team).Build();
                 });
                 
                 await FollowupAsync($"Unsubscribed from updates for project ID **{projectId}** :white_check_mark:", ephemeral: true);
@@ -231,13 +252,21 @@ public class ModrinthInteractionModule : InteractionModuleBase
                                 .Build(),
                         ephemeral: true);
         }
-
-        [ComponentInteraction("back-project:*;*", runMode: RunMode.Async)]
+        
+                [ComponentInteraction("back-project:*;*", runMode: RunMode.Async)]
         public async Task BackToProject(ulong discordUserId, string projectId)
         {
                 //await DeferAsync();
 
                 var searchResult = await _modrinthService.FindProject(projectId);
+                var guild = await _dataService.GetGuildByIdAsync(Context.Guild.Id);
+
+                if (guild is null)
+                {
+                        // Try again later
+                        await FollowupAsync(RequestError, ephemeral: true);
+                        return;
+                }
 
                 switch (searchResult.SearchStatus)
                 {
@@ -267,7 +296,7 @@ public class ModrinthInteractionModule : InteractionModuleBase
                 await ModifyOriginalResponseAsync(x =>
                 {
                         x.Embed = ModrinthEmbedBuilder.GetProjectEmbed(searchResult, team).Build();
-                        x.Components = GetButtons(project, !subscribedToProject, team)
+                        x.Components = GetButtons(project, guild.GuildSettings, !subscribedToProject, team)
                                 .Build();
                 });
         }

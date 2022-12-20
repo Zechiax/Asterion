@@ -71,7 +71,14 @@ public static class SettingsComponentBuilder
                         CustomId = $"settings-channel-selection:{userId};{guildSettings.ShowChannelSelection}",
                         Style = ButtonStyle.Primary,
                         IsDisabled = true
-                    }),
+                    })
+                    .WithButton(new ButtonBuilder()
+                    {
+                        Label = "3. Show subscribe button",
+                        CustomId = $"settings-show-subscribe-button:{userId};{guildSettings.ShowSubscribeButton}",
+                        Style = ButtonStyle.Primary
+                    })
+                ,
                 // Second row
                 new ActionRowBuilder()
                     .WithButton(GetBackButton(userId))

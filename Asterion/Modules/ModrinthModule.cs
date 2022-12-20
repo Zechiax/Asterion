@@ -120,16 +120,35 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
 
                 var team = await _modrinthService.GetProjectsTeamMembersAsync(project.Id);
 
+                var guild = await _dataService.GetGuildByIdAsync(Context.Guild.Id);
+
+                if (guild is null)
+                {
+                        // Try again later
+                        await ModifyOriginalResponseAsync(x =>
+                        {
+                                x.Content = "Internal error, please try again later";
+                        });
+                        return;
+                }
+
                 var subscribedToProject = await _dataService.IsGuildSubscribedToProjectAsync(Context.Guild.Id, project.Id);
                 await ModifyOriginalResponseAsync(x =>
                 {
                         x.Embed = ModrinthEmbedBuilder.GetProjectEmbed(searchResult, team).Build();
-                        x.Components = new ComponentBuilder()
-                                .WithButton( GetSubscribeButtons(project.Id, !subscribedToProject))
-                                .WithButton(ModrinthComponentBuilder.GetProjectLinkButton(project))
+                        var components = new ComponentBuilder();
+
+                        if ((bool) guild.GuildSettings.ShowSubscribeButton!)
+                        {
+                                components.WithButton(GetSubscribeButtons(project.Id,
+                                        !subscribedToProject));
+                        }
+
+                        components.WithButton(ModrinthComponentBuilder.GetProjectLinkButton(project))
                                 .WithButton(ModrinthComponentBuilder.GetUserToViewButton(Context.User.Id, team.GetOwner()?.User.Id, project.Id))
-                                .WithButton(ModrinthComponentBuilder.ViewMoreSearchResults(projectDto.SearchResponse, query), 1)
-                                .Build();
+                                .WithButton(ModrinthComponentBuilder.ViewMoreSearchResults(projectDto.SearchResponse, query), 1);
+                                
+                        x.Components = components.Build();
                 });
         }
 

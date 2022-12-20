@@ -15,7 +15,7 @@ namespace Asterion.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "6.0.9");
+            modelBuilder.HasAnnotation("ProductVersion", "7.0.1");
 
             modelBuilder.Entity("Asterion.Database.Models.Array", b =>
                 {
@@ -90,6 +90,11 @@ namespace Asterion.Migrations
                         .HasDefaultValue(true);
 
                     b.Property<bool?>("ShowChannelSelection")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(true);
+
+                    b.Property<bool?>("ShowSubscribeButton")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER")
                         .HasDefaultValue(true);

@@ -1,8 +1,12 @@
-![](assets/logo/AsterionLogo.png)
+<div align=center>
 
 # Asterion
 
--  Access all of [Modrinth](https://modrinth.com/) platform within Discord
+<img src="assets/logo/AsterionLogo.png" alt="logo" width="25%"/>
+
+Access all of [Modrinth](https://modrinth.com/) platform within Discord
+
+<div align=left>
 
 ## Invite
 - You can invite the bot by clicking [here](https://discord.com/api/oauth2/authorize?client_id=986993814671614094&permissions=537316416&scope=bot%20applications.commands)

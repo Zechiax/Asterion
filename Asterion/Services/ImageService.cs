@@ -14,6 +14,7 @@ public static class ImageService
             return new Rgb24();
         }
 
+        // CREDIT to James Jackson-South: https://gist.github.com/JimBobSquarePants/12e0ef5d904d03110febea196cf1d6ee
         try
         {
             var stream = await client.GetStreamAsync(imageUrl);

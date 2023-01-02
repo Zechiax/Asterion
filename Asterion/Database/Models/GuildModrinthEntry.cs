@@ -8,8 +8,6 @@ public class GuildModrinthEntry
 {
     [Key]
     public ulong EntryId { get; set; }
-
-    public ProjectType ProjectType { get; set; }
     public ulong? CustomUpdateChannel { get; set; }
 
     [Required]

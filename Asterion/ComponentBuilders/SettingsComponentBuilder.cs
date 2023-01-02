@@ -107,7 +107,7 @@ public static class SettingsComponentBuilder
             {
                 Label = Enum.GetName(typeof(MessageStyle), style),
                 Value = style.ToString(),
-                IsDefault = style == guild.GuildSettings.MessageStyle
+                IsDefault = style == guild.Settings.MessageStyle
             });
         }
 

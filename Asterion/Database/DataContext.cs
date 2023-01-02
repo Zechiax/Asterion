@@ -3,7 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Serilog;
-using Array = Asterion.Database.Models.Array;
 
 namespace Asterion.Database
 {
@@ -21,8 +20,7 @@ namespace Asterion.Database
         
         public virtual DbSet<Guild> Guilds { get; set; } = null!;
         public virtual DbSet<ModrinthProject> ModrinthProjects { get; set; } = null!;
-        public virtual DbSet<Models.Array> Arrays { get; set; } = null!;
-        public virtual DbSet<ModrinthEntry> ModrinthEntries { get; set; } = null!;
+        public virtual DbSet<GuildModrinthEntry> ModrinthEntries { get; set; } = null!;
         public virtual DbSet<GuildSettings> GuildSettings { get; set; } = null!;
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -39,7 +37,6 @@ namespace Asterion.Database
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<Guild>().Property(p => p.Active).HasDefaultValue(true);
             modelBuilder.Entity<GuildSettings>().Property(p => p.RemoveOnLeave).HasDefaultValue(true);
             modelBuilder.Entity<GuildSettings>().Property(p => p.ShowChannelSelection).HasDefaultValue(true);
             modelBuilder.Entity<GuildSettings>().Property(p => p.CheckMessagesForModrinthLink).HasDefaultValue(false);

@@ -74,7 +74,7 @@ public class SettingsInteractionModule : InteractionModuleBase
 
         var embed = SettingsEmbedBuilder.GetMoreSettingsEmbedBuilder(guild);
         var component =
-            SettingsComponentBuilder.GetMoreSettingsComponents(Context.User.Id.ToString(), guild.GuildSettings);
+            SettingsComponentBuilder.GetMoreSettingsComponents(Context.User.Id.ToString(), guild.Settings);
 
         await ModifyOriginalResponseAsync(x =>
         {
@@ -97,14 +97,14 @@ public class SettingsInteractionModule : InteractionModuleBase
             return;
         }
 
-        guild.GuildSettings.CheckMessagesForModrinthLink = !scanMessageStatus;
+        guild.Settings.CheckMessagesForModrinthLink = !scanMessageStatus;
 
         var success = await _dataService.UpdateGuildAsync(guild);
 
         if (success)
         {
             var component =
-                SettingsComponentBuilder.GetMoreSettingsComponents(Context.User.Id.ToString(), guild.GuildSettings);
+                SettingsComponentBuilder.GetMoreSettingsComponents(Context.User.Id.ToString(), guild.Settings);
             await ModifyOriginalResponseAsync(x =>
             {
                 x.Embed = SettingsEmbedBuilder.GetMoreSettingsEmbedBuilder(guild).Build();
@@ -155,7 +155,7 @@ public class SettingsInteractionModule : InteractionModuleBase
             return;
         }
 
-        guild.GuildSettings.MessageStyle = style;
+        guild.Settings.MessageStyle = style;
 
         var success = await _dataService.UpdateGuildAsync(guild);
 
@@ -190,14 +190,14 @@ public class SettingsInteractionModule : InteractionModuleBase
             return;
         }
 
-        guild.GuildSettings.ShowSubscribeButton = !showSubscribeButton;
+        guild.Settings.ShowSubscribeButton = !showSubscribeButton;
 
         var success = await _dataService.UpdateGuildAsync(guild);
 
         if (success)
         {
             var component =
-                SettingsComponentBuilder.GetMoreSettingsComponents(Context.User.Id.ToString(), guild.GuildSettings);
+                SettingsComponentBuilder.GetMoreSettingsComponents(Context.User.Id.ToString(), guild.Settings);
             await ModifyOriginalResponseAsync(x =>
             {
                 x.Embed = SettingsEmbedBuilder.GetMoreSettingsEmbedBuilder(guild).Build();

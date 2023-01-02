@@ -33,11 +33,11 @@ public static class SettingsEmbedBuilder
 
         description.AppendLine(Format.Bold(Format.Underline("Overview of settings")));
         description.AppendLine();
-        description.AppendLine($"**1. Check messages for Modrinth links:** {GetEmojiByBool((bool)guild.GuildSettings.CheckMessagesForModrinthLink!)}");
+        description.AppendLine($"**1. Check messages for Modrinth links:** {GetEmojiByBool((bool)guild.Settings.CheckMessagesForModrinthLink!)}");
         description.AppendLine(
-            $"**2. Show channel selection after subscribe:** {GetEmojiByBool((bool) guild.GuildSettings.ShowChannelSelection!)}");
+            $"**2. Show channel selection after subscribe:** {GetEmojiByBool((bool) guild.Settings.ShowChannelSelection!)}");
         description.AppendLine(
-            $"**3. Show subscribe button in Modrinth project embeds:** {GetEmojiByBool((bool) guild.GuildSettings.ShowSubscribeButton!)}");
+            $"**3. Show subscribe button in Modrinth project embeds:** {GetEmojiByBool((bool) guild.Settings.ShowSubscribeButton!)}");
         ;
         
         var embed = new EmbedBuilder()
@@ -74,7 +74,7 @@ public static class SettingsEmbedBuilder
             VersionNumber = "Version-3.5"
         };
 
-        var embed = ModrinthEmbedBuilder.VersionUpdateEmbed(guild.GuildSettings.MessageStyle, dummyProject, dummyVersion);
+        var embed = ModrinthEmbedBuilder.VersionUpdateEmbed(guild.Settings.MessageStyle, dummyProject, dummyVersion);
 
         return embed;
     }

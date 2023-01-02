@@ -53,7 +53,7 @@ public class MessageHandler
 
         var guild = await _dataService.GetGuildByIdAsync(guildChannel.GuildId);
 
-        if (guild?.GuildSettings.CheckMessagesForModrinthLink == false)
+        if (guild?.Settings.CheckMessagesForModrinthLink == false)
         {
             _logger.LogDebug("Guild ID {GuildId} has disabled checking for Modrinth message", guild.GuildId);
             return;

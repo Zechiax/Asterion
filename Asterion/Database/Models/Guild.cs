@@ -10,20 +10,13 @@ namespace Asterion.Database.Models
         [Required]
         public ulong GuildId { get; set; }
         
-        //BUG: Forgot to add this as ForeignKey, in database when adding guild it's value is 0, needs to be added carefully
+        [ForeignKey("GuildSettings")]
         public ulong GuildSettingsId { get; set; }
-        public virtual GuildSettings GuildSettings { get; set; } = null!;
-
-        /// <summary>
-        /// If the guild is active
-        /// </summary>
-        public bool? Active { get; set; } = true;
+        public virtual GuildSettings Settings { get; set; } = null!;
         public ulong? PingRole { get; set; }
         public ulong? ManageRole { get; set; }
         
-        [ForeignKey("ModrinthArray")]
-        public ulong ModrinthArrayId { get; set; }
-        public virtual Array ModrinthArray { get; set; } = null!;
+        public virtual ICollection<GuildModrinthEntry> GuildModrinthEntries { get; set; } = new List<GuildModrinthEntry>();
         
         [Required]
         public DateTime Created { get; set; }

@@ -60,7 +60,7 @@ public interface IDataService
     /// </summary>
     /// <param name="guildId">The guild's ID</param>
     /// <returns></returns>
-    public Task<IList<ModrinthEntry>?> GetAllGuildsSubscribedProjectsAsync(ulong guildId);
+    public Task<IList<GuildModrinthEntry>?> GetAllGuildsSubscribedProjectsAsync(ulong guildId);
 
     /// <summary>
     /// Updates Modrinth project with new information
@@ -92,7 +92,7 @@ public interface IDataService
     /// <param name="guildId"></param>
     /// <param name="projectId"></param>
     /// <returns></returns>
-    public Task<ModrinthEntry?> GetModrinthEntryAsync(ulong guildId, string projectId);
+    public Task<GuildModrinthEntry?> GetModrinthEntryAsync(ulong guildId, string projectId);
     /// <summary>
     /// Gets all guilds subscribed to specific project
     /// </summary>

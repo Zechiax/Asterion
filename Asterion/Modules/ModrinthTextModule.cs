@@ -44,7 +44,7 @@ public class ModrinthTextModule: ModuleBase<SocketCommandContext>
             return;
         }
 
-        if ((bool)guild.GuildSettings.ShowSubscribeButton!)
+        if ((bool)guild.Settings.ShowSubscribeButton!)
         {
             var guildSubscribed = await _data.IsGuildSubscribedToProjectAsync(Context.Guild.Id, searchResult.Payload.Project.Id);
             components.WithButton(ModrinthComponentBuilder.GetSubscribeButtons(Context.User.Id, searchResult.Payload.Project.Id,

@@ -138,7 +138,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                         x.Embed = ModrinthEmbedBuilder.GetProjectEmbed(searchResult, team).Build();
                         var components = new ComponentBuilder();
 
-                        if ((bool) guild.GuildSettings.ShowSubscribeButton!)
+                        if ((bool) guild.Settings.ShowSubscribeButton!)
                         {
                                 components.WithButton(GetSubscribeButtons(project.Id,
                                         !subscribedToProject));

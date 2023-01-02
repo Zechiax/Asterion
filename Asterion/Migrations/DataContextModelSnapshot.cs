@@ -17,32 +17,10 @@ namespace Asterion.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "7.0.1");
 
-            modelBuilder.Entity("Asterion.Database.Models.Array", b =>
-                {
-                    b.Property<ulong>("ArrayId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<ulong>("GuildId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("ArrayId");
-
-                    b.ToTable("Arrays");
-                });
-
             modelBuilder.Entity("Asterion.Database.Models.Guild", b =>
                 {
                     b.Property<ulong>("GuildId")
                         .HasColumnType("INTEGER");
-
-                    b.Property<bool?>("Active")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
-                        .HasDefaultValue(true);
 
                     b.Property<DateTime>("Created")
                         .HasColumnType("TEXT");
@@ -53,18 +31,43 @@ namespace Asterion.Migrations
                     b.Property<ulong?>("ManageRole")
                         .HasColumnType("INTEGER");
 
-                    b.Property<ulong>("ModrinthArrayId")
-                        .HasColumnType("INTEGER");
-
                     b.Property<ulong?>("PingRole")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("GuildId");
 
-                    b.HasIndex("ModrinthArrayId")
-                        .IsUnique();
-
                     b.ToTable("Guilds");
+                });
+
+            modelBuilder.Entity("Asterion.Database.Models.GuildModrinthEntry", b =>
+                {
+                    b.Property<ulong>("EntryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("Created")
+                        .HasColumnType("TEXT");
+
+                    b.Property<ulong?>("CustomUpdateChannel")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<ulong>("GuildId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ProjectId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ProjectType")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("EntryId");
+
+                    b.HasIndex("GuildId");
+
+                    b.HasIndex("ProjectId");
+
+                    b.ToTable("GuildModrinthEntries");
                 });
 
             modelBuilder.Entity("Asterion.Database.Models.GuildSettings", b =>
@@ -107,39 +110,6 @@ namespace Asterion.Migrations
                     b.ToTable("GuildSettings");
                 });
 
-            modelBuilder.Entity("Asterion.Database.Models.ModrinthEntry", b =>
-                {
-                    b.Property<ulong>("EntryId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<ulong>("ArrayId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime>("Created")
-                        .HasColumnType("TEXT");
-
-                    b.Property<ulong?>("CustomUpdateChannel")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<ulong>("GuildId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("ProjectId")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("EntryId");
-
-                    b.HasIndex("ArrayId");
-
-                    b.HasIndex("GuildId");
-
-                    b.HasIndex("ProjectId");
-
-                    b.ToTable("ModrinthEntries");
-                });
-
             modelBuilder.Entity("Asterion.Database.Models.ModrinthProject", b =>
                 {
                     b.Property<string>("ProjectId")
@@ -163,38 +133,10 @@ namespace Asterion.Migrations
                     b.ToTable("ModrinthProjects");
                 });
 
-            modelBuilder.Entity("Asterion.Database.Models.Guild", b =>
-                {
-                    b.HasOne("Asterion.Database.Models.Array", "ModrinthArray")
-                        .WithOne("Guild")
-                        .HasForeignKey("Asterion.Database.Models.Guild", "ModrinthArrayId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("ModrinthArray");
-                });
-
-            modelBuilder.Entity("Asterion.Database.Models.GuildSettings", b =>
+            modelBuilder.Entity("Asterion.Database.Models.GuildModrinthEntry", b =>
                 {
                     b.HasOne("Asterion.Database.Models.Guild", "Guild")
-                        .WithOne("GuildSettings")
-                        .HasForeignKey("Asterion.Database.Models.GuildSettings", "GuildId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Guild");
-                });
-
-            modelBuilder.Entity("Asterion.Database.Models.ModrinthEntry", b =>
-                {
-                    b.HasOne("Asterion.Database.Models.Array", "Array")
-                        .WithMany()
-                        .HasForeignKey("ArrayId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Asterion.Database.Models.Guild", "Guild")
-                        .WithMany()
+                        .WithMany("GuildModrinthEntries")
                         .HasForeignKey("GuildId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -205,22 +147,27 @@ namespace Asterion.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Array");
-
                     b.Navigation("Guild");
 
                     b.Navigation("Project");
                 });
 
-            modelBuilder.Entity("Asterion.Database.Models.Array", b =>
+            modelBuilder.Entity("Asterion.Database.Models.GuildSettings", b =>
                 {
-                    b.Navigation("Guild")
+                    b.HasOne("Asterion.Database.Models.Guild", "Guild")
+                        .WithOne("Settings")
+                        .HasForeignKey("Asterion.Database.Models.GuildSettings", "GuildId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Guild");
                 });
 
             modelBuilder.Entity("Asterion.Database.Models.Guild", b =>
                 {
-                    b.Navigation("GuildSettings")
+                    b.Navigation("GuildModrinthEntries");
+
+                    b.Navigation("Settings")
                         .IsRequired();
                 });
 #pragma warning restore 612, 618

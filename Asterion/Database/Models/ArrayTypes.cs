@@ -1,6 +1,9 @@
-﻿namespace Asterion.Database.Models;
+﻿using System.ComponentModel;
 
-public enum ArrayType
+namespace Asterion.Database.Models;
+
+public enum ProjectType
 {
+    [Description("Modrinth")]
     Modrinth
 }

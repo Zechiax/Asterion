@@ -183,7 +183,7 @@ public partial class ModrinthService
             _logger.LogInformation("Sending updates to guild ID {Id} and channel ID {Channel}", guild.GuildId, channel.Id);
 
             // None of these can be null, everything is checked beforehand
-            await SendUpdatesToChannel(channel, project, versions, teamMembers, guild.GuildSettings.MessageStyle);
+            await SendUpdatesToChannel(channel, project, versions, teamMembers, guild.Settings.MessageStyle);
         }
     }
 

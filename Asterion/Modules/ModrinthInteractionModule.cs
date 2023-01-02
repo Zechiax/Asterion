@@ -80,7 +80,7 @@ public class ModrinthInteractionModule : InteractionModuleBase
                 {
                         await ModifyOriginalResponseAsync(x =>
                         {
-                                x.Components = GetButtons(project, guild.GuildSettings, false, team).Build();
+                                x.Components = GetButtons(project, guild.Settings, false, team).Build();
                         });
                         await FollowupAsync("You're already subscribed to updates for this project", ephemeral: true);
                         return;
@@ -96,7 +96,7 @@ public class ModrinthInteractionModule : InteractionModuleBase
                 
                 await ModifyOriginalResponseAsync(x =>
                 {
-                        x.Components = GetButtons(project, guild.GuildSettings, false, team).Build();
+                        x.Components = GetButtons(project, guild.Settings, false, team).Build();
                 });
                 
                 await _dataService.AddModrinthProjectToGuildAsync(guildId, project.Id, latestVersion.Id, channel.Id, project.Title);
@@ -203,7 +203,7 @@ public class ModrinthInteractionModule : InteractionModuleBase
                 {
                         await ModifyOriginalResponseAsync(x =>
                         {
-                                x.Components = GetButtons(project, guild.GuildSettings, team: team).Build();
+                                x.Components = GetButtons(project, guild.Settings, team: team).Build();
                         });
                         await FollowupAsync("You're already unsubscribed from updates to this project", ephemeral: true);
                         return;
@@ -213,7 +213,7 @@ public class ModrinthInteractionModule : InteractionModuleBase
 
                 await ModifyOriginalResponseAsync(x =>
                 {
-                        x.Components = GetButtons(project, guild.GuildSettings, team: team).Build();
+                        x.Components = GetButtons(project, guild.Settings, team: team).Build();
                 });
                 
                 await FollowupAsync($"Unsubscribed from updates for project ID **{projectId}** :white_check_mark:", ephemeral: true);
@@ -296,7 +296,7 @@ public class ModrinthInteractionModule : InteractionModuleBase
                 await ModifyOriginalResponseAsync(x =>
                 {
                         x.Embed = ModrinthEmbedBuilder.GetProjectEmbed(searchResult, team).Build();
-                        x.Components = GetButtons(project, guild.GuildSettings, !subscribedToProject, team)
+                        x.Components = GetButtons(project, guild.Settings, !subscribedToProject, team)
                                 .Build();
                 });
         }

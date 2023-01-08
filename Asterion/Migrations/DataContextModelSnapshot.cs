@@ -58,9 +58,6 @@ namespace Asterion.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("ProjectType")
-                        .HasColumnType("INTEGER");
-
                     b.HasKey("EntryId");
 
                     b.HasIndex("GuildId");

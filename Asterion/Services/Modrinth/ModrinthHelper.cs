@@ -7,7 +7,7 @@ public class ModrinthHelper
     private readonly Regex _modrinthProjectRegex;
 
     private string ModrinthRegexUrlPattern { get; } =
-        @"(?:https:\/\/(?:www.)?modrinth.com\/(mod|modpack|resourcepack|plugin|shader)\/([a-zA-Z0-9-]*))";
+        @"(?:https:\/\/(?:www.)?modrinth.com\/(mod|modpack|resourcepack|plugin|shader|datapack)\/([a-zA-Z0-9-]*))";
 
     public ModrinthHelper()
     {

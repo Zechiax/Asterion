@@ -101,7 +101,7 @@ public partial class ModrinthService
 
             foreach (var project in apiProjects)
             {
-                _logger.LogInformation("Checking new versions for project {Title} ID {ProjectId}",project.Title ,project.Id);
+                _logger.LogDebug("Checking new versions for project {Title} ID {ProjectId}",project.Title ,project.Id);
                 var versionList = apiVersions.Where(x => x.ProjectId == project.Id);
 
                 var newVersions = await GetNewVersions(versionList, project.Id);
@@ -114,14 +114,14 @@ public partial class ModrinthService
 
                 if (newVersions.Length == 0)
                 {
-                    _logger.LogInformation("No new versions for project {Title} ID {ID}",project.Title ,project.Id);
+                    _logger.LogDebug("No new versions for project {Title} ID {ID}",project.Title ,project.Id);
                     continue;
                 }
                 
-                _logger.LogInformation("Found {Count} new versions", newVersions.Length);
+                _logger.LogInformation("Found {Count} new versions for project {Title} ID {ID}", newVersions.Length, project.Title, project.Id);
                 
                 // Update data in database
-                _logger.LogInformation("Updating data in database");
+                _logger.LogDebug("Updating data in database");
                 await _dataService.UpdateModrinthProjectAsync(project.Id, newVersions[0].Id);
 
                 var team = await GetProjectsTeamMembersAsync(project.Id);

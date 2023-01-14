@@ -18,6 +18,7 @@ Access all of [Modrinth](https://modrinth.com/) within Discord
 - Subscribe for project updates and send them to custom channel
 
 ## Images
+- Some things shown in these pictures can be changed using the `/settings` command (f.e. the subscribe button can be hidden from search embeds)
 
 <div align="center">
 

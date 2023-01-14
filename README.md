@@ -19,14 +19,18 @@ Access all of [Modrinth](https://modrinth.com/) within Discord
 
 ## Images
 
+<div align="center">
+
 ### Search
-<img style="border-radius: 2%;" src="assets/search.png" alt="image1" width="50%"/>
+<img style="border-radius: 2%;" src="assets/search.png" alt="image1" width="75%"/>
 
 ### User
-<img style="border-radius: 2%;" src="assets/user.png" alt="image2" width="50%"/>
+<img style="border-radius: 2%;" src="assets/user.png" alt="image2" width="75%"/>
 
 ### Latest release
-<img style="border-radius: 2%;" src="assets/release_notes.png" alt="image3" width="50%"/>
+<img style="border-radius: 2%;" src="assets/release_notes.png" alt="image3" width="75%"/>
+
+</div>
 
 ## Wiki
 On wiki there are guides and documentation for all commands: https://zechiax.gitbook.io/rinthbot/

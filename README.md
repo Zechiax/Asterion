@@ -22,13 +22,13 @@ Access all of [Modrinth](https://modrinth.com/) within Discord
 <div align="center">
 
 ### Search
-<img style="border-radius: 2%;" src="assets/search.png" alt="image1" width="75%"/>
+<img style="border-radius: 2%;" src="assets/search.png" alt="image1"/>
 
 ### User
-<img style="border-radius: 2%;" src="assets/user.png" alt="image2" width="75%"/>
+<img style="border-radius: 2%;" src="assets/user.png" alt="image2"/>
 
 ### Latest release
-<img style="border-radius: 2%;" src="assets/release_notes.png" alt="image3" width="75%"/>
+<img style="border-radius: 2%;" src="assets/release_notes.png" alt="image3"/>
 
 </div>
 

@@ -1,4 +1,4 @@
-<div align=center>
+<div style="text-align:center">
 
 # Asterion
 
@@ -6,7 +6,7 @@
 
 Access all of [Modrinth](https://modrinth.com/) within Discord
 
-<div align=left>
+</div>
 
 ## Invite
 - You can invite the bot by clicking [here](https://discord.com/api/oauth2/authorize?client_id=986993814671614094&permissions=537316416&scope=bot%20applications.commands)
@@ -16,6 +16,17 @@ Access all of [Modrinth](https://modrinth.com/) within Discord
 - Find user on Modrinth
 - Auto embed when message contains URL to a Modrinth project (opt-in feature)
 - Subscribe for project updates and send them to custom channel
+
+## Images
+
+### Search
+<img style="border-radius: 2%;" src="assets/search.png" alt="image1" width="50%"/>
+
+### User
+<img style="border-radius: 2%;" src="assets/user.png" alt="image2" width="50%"/>
+
+### Latest release
+<img style="border-radius: 2%;" src="assets/release_notes.png" alt="image3" width="50%"/>
 
 ## Wiki
 On wiki there are guides and documentation for all commands: https://zechiax.gitbook.io/rinthbot/

@@ -15,11 +15,11 @@ using RunMode = Discord.Commands.RunMode;
 
 namespace Asterion;
 
-public class RinthBot
+public class Asterion
 {
     private readonly IConfiguration _config;
 
-    public RinthBot()
+    public Asterion()
     {
         _config = new ConfigurationBuilder()
             .SetBasePath(AppContext.BaseDirectory)

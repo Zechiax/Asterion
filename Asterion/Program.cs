@@ -29,7 +29,7 @@ namespace Asterion
                 .WriteTo.Console()
                 .CreateLogger();
 
-            new RinthBot().MainAsync().GetAwaiter().GetResult();
+            new Asterion().MainAsync().GetAwaiter().GetResult();
         }
     }
 }

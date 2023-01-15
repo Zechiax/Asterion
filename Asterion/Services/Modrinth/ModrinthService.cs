@@ -260,7 +260,7 @@ public partial class ModrinthService
         
         _logger.LogDebug("Project query '{Query}' not in cache", query);
         Project? project = null;
-        var httpClient = _httpClientFactory.CreateClient();
+        using var httpClient = _httpClientFactory.CreateClient();
 
         SearchResponse? searchResponse = null;
         
@@ -350,7 +350,7 @@ public partial class ModrinthService
 
         _logger.LogDebug("User query '{Query}' not in cache", query);
         User user;
-        var httpClient = _httpClientFactory.CreateClient();
+        using var httpClient = _httpClientFactory.CreateClient();
 
         try
         {

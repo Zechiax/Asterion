@@ -6,8 +6,6 @@ using Discord.Commands;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Polly;
-using Asterion.Modules;
 
 namespace Asterion.Services;
 

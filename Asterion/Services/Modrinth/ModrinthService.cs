@@ -12,8 +12,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Modrinth.RestClient;
 using Modrinth.RestClient.Models;
-using RestEase;
 using Asterion.Extensions;
+using Flurl.Http;
 using Version = Modrinth.RestClient.Models.Version;
 using Timer = System.Timers.Timer;
 
@@ -22,7 +22,7 @@ namespace Asterion.Services.Modrinth;
 public partial class ModrinthService
 {
     private readonly BackgroundWorker _updateWorker;
-    private readonly IModrinthApi _api;
+    private readonly IModrinthClient _api;
     private readonly ILogger _logger;
     private readonly IMemoryCache _cache;
     private readonly MemoryCacheEntryOptions _cacheEntryOptions;
@@ -33,7 +33,7 @@ public partial class ModrinthService
     public ModrinthService(IServiceProvider serviceProvider, IHttpClientFactory httpClientFactory)
     {
         _httpClientFactory = httpClientFactory;
-        _api = ModrinthApi.NewClient(userAgent: "Asterion");
+        _api = new ModrinthClient(userAgent: "Zechiax/Asterion");
         _logger = serviceProvider.GetRequiredService<ILogger<ModrinthService>>();
         _cache = serviceProvider.GetRequiredService<IMemoryCache>();
         _dataService = serviceProvider.GetRequiredService<IDataService>();
@@ -87,17 +87,35 @@ public partial class ModrinthService
 
             var versions = apiProjects.SelectMany(p => p.Versions).ToArray();
 
+            
+            const int splitBy = 500;
             _logger.LogDebug("Getting multiple versions ({Count}) from Modrinth", versions.Length);
 
-            var apiVersions = await GetMultipleVersionsAsync(versions);
-
-            if (apiVersions is null)
+            // Make multiple requests to get all versions - we don't want to get 1500+ versions in one request
+            // We make sure to split the requests into chunks of 500 versions
+            var apiVersions = new List<Version>();
+            // Split the array into chunks of 500, we use ArraySegment
+            var versionChunks = System.Array.Empty<ArraySegment<string>>();
+            
+            for (var i = 0; i < versions.Length; i += splitBy)
             {
-                _logger.LogWarning("Could not get information from API, update search interrupted");
-                return;
+                _logger.LogDebug("Appending versions {Start} to {End}", i, Math.Min(splitBy, versions.Length - i));
+                versionChunks = versionChunks.Append(new ArraySegment<string>(versions, i, Math.Min(splitBy, versions.Length - i))).ToArray();
             }
             
-            _logger.LogDebug("Got {Count} versions", apiVersions.Length);
+            foreach (var chunk in versionChunks)
+            {
+                _logger.LogDebug("Getting versions {Start} to {End}", chunk.Offset, chunk.Offset + chunk.Count);
+                var versionsChunk = await GetMultipleVersionsAsync(chunk);
+                if (versionsChunk is null)
+                {
+                    _logger.LogWarning("Could not get information from API, update search interrupted");
+                    return;
+                }
+                apiVersions.AddRange(versionsChunk);
+            }
+            
+            _logger.LogDebug("Got {Count} versions", apiVersions.Count);
 
             foreach (var project in apiProjects)
             {
@@ -270,14 +288,14 @@ public partial class ModrinthService
             var projectFoundById = false;
             try
             {
-                project = await _api.GetProjectAsync(query);
+                project = await _api.Project.GetAsync(query);
 
-                searchResponse = await _api.SearchProjectsAsync(query);
+                searchResponse = await _api.Project.SearchAsync(query);
                 // Won't be set if exception is thrown
                 projectFoundById = true;
             }
             // Not found status code is returned when requested project was not found
-            catch (ApiException e) when (e.StatusCode == HttpStatusCode.NotFound)
+            catch (FlurlHttpException e) when (e.Call.Response.ResponseMessage.StatusCode == HttpStatusCode.NotFound)
             {
                 // Project not found by slug or id
                 _logger.LogDebug("Project query '{Query}' not found with ID or slug", query);
@@ -304,7 +322,7 @@ public partial class ModrinthService
 
         try
         {
-            searchResponse = await _api.SearchProjectsAsync(query);
+            searchResponse = await _api.Project.SearchAsync(query);
 
             // No search results
             if (searchResponse.TotalHits <= 0)
@@ -313,7 +331,7 @@ public partial class ModrinthService
             }
             
             // Return first result
-            project = await _api.GetProjectAsync(searchResponse.Hits[0].ProjectId);
+            project = await _api.Project.GetAsync(searchResponse.Hits[0].ProjectId);
 
             var result = new SearchResult<ProjectDto>(new ProjectDto
             {
@@ -354,10 +372,10 @@ public partial class ModrinthService
 
         try
         {
-            user = await _api.GetUserAsync(query);
+            user = await _api.User.GetAsync(query);
             _logger.LogDebug("User query '{Query}' found", query);
         }
-        catch (ApiException e) when (e.StatusCode == HttpStatusCode.NotFound)
+        catch (FlurlHttpException e) when (e.Call.Response.ResponseMessage.StatusCode == HttpStatusCode.NotFound)
         {
             // Project not found by slug or id
             _logger.LogDebug("User not found '{Query}'", query);
@@ -371,7 +389,7 @@ public partial class ModrinthService
         // User can't be null from here
         try
         {
-            var projects = await _api.GetUsersProjectsByUserIdAsync(user.Id);
+            var projects = await _api.User.GetProjectsAsync(user.Id);
             
             var searchResult = new SearchResult<UserDto>(new UserDto
             {

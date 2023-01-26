@@ -87,17 +87,35 @@ public partial class ModrinthService
 
             var versions = apiProjects.SelectMany(p => p.Versions).ToArray();
 
+            
+            const int splitBy = 500;
             _logger.LogDebug("Getting multiple versions ({Count}) from Modrinth", versions.Length);
 
-            var apiVersions = await GetMultipleVersionsAsync(versions);
-
-            if (apiVersions is null)
+            // Make multiple requests to get all versions - we don't want to get 1500+ versions in one request
+            // We make sure to split the requests into chunks of 500 versions
+            var apiVersions = new List<Version>();
+            // Split the array into chunks of 500, we use ArraySegment
+            var versionChunks = System.Array.Empty<ArraySegment<string>>();
+            
+            for (var i = 0; i < versions.Length; i += splitBy)
             {
-                _logger.LogWarning("Could not get information from API, update search interrupted");
-                return;
+                _logger.LogDebug("Appending versions {Start} to {End}", i, Math.Min(splitBy, versions.Length - i));
+                versionChunks = versionChunks.Append(new ArraySegment<string>(versions, i, Math.Min(splitBy, versions.Length - i))).ToArray();
             }
             
-            _logger.LogDebug("Got {Count} versions", apiVersions.Length);
+            foreach (var chunk in versionChunks)
+            {
+                _logger.LogDebug("Getting versions {Start} to {End}", chunk.Offset, chunk.Offset + chunk.Count);
+                var versionsChunk = await GetMultipleVersionsAsync(chunk);
+                if (versionsChunk is null)
+                {
+                    _logger.LogWarning("Could not get information from API, update search interrupted");
+                    return;
+                }
+                apiVersions.AddRange(versionsChunk);
+            }
+            
+            _logger.LogDebug("Got {Count} versions", apiVersions.Count);
 
             foreach (var project in apiProjects)
             {

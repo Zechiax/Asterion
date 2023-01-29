@@ -1,5 +1,4 @@
-﻿using System.Drawing;
-using Modrinth.RestClient.Models;
+﻿using Modrinth.Models;
 
 namespace Asterion.Services.Modrinth;
 

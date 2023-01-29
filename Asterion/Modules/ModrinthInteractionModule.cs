@@ -8,7 +8,7 @@ using Discord;
 using Discord.Interactions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Modrinth.RestClient.Models;
+using Modrinth.Models;
 using Asterion.Extensions;
 
 namespace Asterion.Modules;

@@ -10,11 +10,11 @@ using Discord.WebSocket;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Modrinth.RestClient;
-using Modrinth.RestClient.Models;
+using Modrinth;
+using Modrinth.Models;
 using Asterion.Extensions;
 using Flurl.Http;
-using Version = Modrinth.RestClient.Models.Version;
+using Version = Modrinth.Models.Version;
 using Timer = System.Timers.Timer;
 
 namespace Asterion.Services.Modrinth;

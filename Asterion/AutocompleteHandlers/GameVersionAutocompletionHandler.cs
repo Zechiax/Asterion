@@ -2,7 +2,7 @@
 using Discord;
 using Discord.Interactions;
 using Microsoft.Extensions.DependencyInjection;
-using Modrinth.RestClient.Models.Enums;
+using Modrinth.Models.Enums;
 
 namespace Asterion.AutocompleteHandlers;
 

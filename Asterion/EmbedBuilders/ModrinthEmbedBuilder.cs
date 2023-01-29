@@ -4,12 +4,12 @@ using Asterion.Services.Modrinth;
 using Discord;
 using Humanizer;
 using Humanizer.Bytes;
-using Modrinth.RestClient.Extensions;
-using Modrinth.RestClient.Models;
-using Modrinth.RestClient.Models.Enums;
+using Modrinth.Extensions;
+using Modrinth.Models;
+using Modrinth.Models.Enums;
 using Asterion.Extensions;
 using Array = System.Array;
-using Version = Modrinth.RestClient.Models.Version;
+using Version = Modrinth.Models.Version;
 
 namespace Asterion.EmbedBuilders;
 

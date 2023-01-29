@@ -1,9 +1,9 @@
 ﻿using System.Text;
 using Asterion.Database.Models;
 using Discord;
-using Modrinth.RestClient.Models;
-using File = Modrinth.RestClient.Models.File;
-using Version = Modrinth.RestClient.Models.Version;
+using Modrinth.Models;
+using File = Modrinth.Models.File;
+using Version = Modrinth.Models.Version;
 
 namespace Asterion.EmbedBuilders;
 

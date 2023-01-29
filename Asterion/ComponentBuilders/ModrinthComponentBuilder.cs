@@ -1,9 +1,9 @@
 ﻿using System.ComponentModel;
 using Discord;
-using Modrinth.RestClient.Extensions;
-using Modrinth.RestClient.Models;
+using Modrinth.Extensions;
+using Modrinth.Models;
 using Asterion.EmbedBuilders;
-using Version = Modrinth.RestClient.Models.Version;
+using Version = Modrinth.Models.Version;
 
 namespace Asterion.ComponentBuilders;
 

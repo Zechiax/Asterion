@@ -1,8 +1,8 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
-using Modrinth.RestClient.Models;
-using Modrinth.RestClient.Models.Tags;
-using Version = Modrinth.RestClient.Models.Version;
+using Modrinth.Models;
+using Modrinth.Models.Tags;
+using Version = Modrinth.Models.Version;
 
 namespace Asterion.Services.Modrinth;
 

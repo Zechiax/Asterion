@@ -1,5 +1,5 @@
 ﻿using Discord;
-using Modrinth.RestClient.Models;
+using Modrinth.Models;
 
 namespace Asterion.EmbedBuilders;
 

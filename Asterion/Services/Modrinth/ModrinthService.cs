@@ -14,6 +14,7 @@ using Modrinth;
 using Modrinth.Models;
 using Asterion.Extensions;
 using Flurl.Http;
+using Modrinth.Exceptions;
 using Version = Modrinth.Models.Version;
 using Timer = System.Timers.Timer;
 
@@ -295,7 +296,7 @@ public partial class ModrinthService
                 projectFoundById = true;
             }
             // Not found status code is returned when requested project was not found
-            catch (FlurlHttpException e) when (e.Call.Response.ResponseMessage.StatusCode == HttpStatusCode.NotFound)
+            catch (ModrinthApiException e) when (e.StatusCode == HttpStatusCode.NotFound)
             {
                 // Project not found by slug or id
                 _logger.LogDebug("Project query '{Query}' not found with ID or slug", query);

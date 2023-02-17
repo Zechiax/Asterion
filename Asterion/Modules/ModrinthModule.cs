@@ -337,9 +337,9 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                 // Split the string into multiple messages as Discord has a limit of 2000 characters per message
                 // We should split by line as we don't want to split a line in half
                 var first = true;
-                for (var i = 0; i < sb.Length; i += 2000)
+                for (var i = 0; i < sb.Length; i += 1500)
                 {
-                        var length = Math.Min(2000, sb.Length - i);
+                        var length = Math.Min(1500, sb.Length - i);
                         var message = sb.ToString(i, length);
                         if (first)
                         {

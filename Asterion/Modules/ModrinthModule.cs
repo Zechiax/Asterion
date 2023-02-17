@@ -334,11 +334,26 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                                         $"| {channel.Mention}" : "| *not set*")}");
                 }
                 
-                
-                await ModifyOriginalResponseAsync(x =>
+                // Split the string into multiple messages as Discord has a limit of 2000 characters per message
+                // We should split by line as we don't want to split a line in half
+                var first = true;
+                for (var i = 0; i < sb.Length; i += 2000)
                 {
-                        x.Content = sb.ToString();
-                });
+                        var length = Math.Min(2000, sb.Length - i);
+                        var message = sb.ToString(i, length);
+                        if (first)
+                        {
+                                await ModifyOriginalResponseAsync(x =>
+                                {
+                                        x.Content = message;
+                                });
+                                first = false;
+                        }
+                        else
+                        {
+                                await FollowupAsync(message);
+                        }
+                }
         }
 
         [SlashCommand("latest-release", "Gets the latest release of project")]

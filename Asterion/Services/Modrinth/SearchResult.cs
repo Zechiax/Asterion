@@ -29,7 +29,6 @@ public struct UserDto
 public struct ProjectDto
 {
     public Project Project;
-    public Discord.Color MajorColor;
     public SearchResponse? SearchResponse;
 }
 

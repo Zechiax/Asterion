@@ -311,7 +311,6 @@ public partial class ModrinthService
                 var result = new SearchResult<ProjectDto>(new ProjectDto()
                 {
                     Project = project,
-                    MajorColor = (await httpClient.GetMajorColorFromImageUrl(project.IconUrl)).ToDiscordColor(),
                     SearchResponse = searchResponse
                 }, SearchStatus.FoundById);
                 
@@ -337,7 +336,6 @@ public partial class ModrinthService
             var result = new SearchResult<ProjectDto>(new ProjectDto
             {
                 Project = project,
-                MajorColor = (await httpClient.GetMajorColorFromImageUrl(project.IconUrl)).ToDiscordColor(),
                 SearchResponse = searchResponse
             }, SearchStatus.FoundBySearch);
 

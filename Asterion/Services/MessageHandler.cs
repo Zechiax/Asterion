@@ -37,8 +37,8 @@ public class MessageHandler
         await _commands.AddModulesAsync(Assembly.GetEntryAssembly(), _services);
     }
 
-    
-    public async Task MessageReceivedAsync(SocketMessage rawMessage)
+
+    private async Task MessageReceivedAsync(SocketMessage rawMessage)
     {
         // Ignore system messages, or messages from other bots
         if (rawMessage is not SocketUserMessage {Source: MessageSource.User} message)

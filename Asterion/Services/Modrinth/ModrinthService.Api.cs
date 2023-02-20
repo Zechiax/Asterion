@@ -26,7 +26,7 @@ public partial class ModrinthService
         Project? p;
         try
         {
-            p = await _api.Project.GetAsync(slugOrId);
+            p = await Api.Project.GetAsync(slugOrId);
         }
         catch (Exception e)
         {
@@ -44,7 +44,7 @@ public partial class ModrinthService
     {
         try
         {
-            var searchResponse = await _api.Version.GetProjectVersionListAsync(slugOrId);
+            var searchResponse = await Api.Version.GetProjectVersionListAsync(slugOrId);
             return searchResponse;
         }
         catch (Exception e)
@@ -59,7 +59,7 @@ public partial class ModrinthService
     {
         try
         {
-            var searchResponse = await _api.Version.GetMultipleAsync(versions);
+            var searchResponse = await Api.Version.GetMultipleAsync(versions);
             return searchResponse;
         }
         catch (Exception e)
@@ -83,7 +83,7 @@ public partial class ModrinthService
         try
         {
             _logger.LogDebug("Team members for project ID {ProjectId} are not in cache", projectId);
-            var team = await _api.Team.GetProjectTeamAsync(projectId);
+            var team = await Api.Team.GetProjectTeamAsync(projectId);
 
             _cache.Set($"project-team-members:{projectId}", team, absoluteExpirationRelativeToNow: TimeSpan.FromMinutes(30));
             _logger.LogDebug("Saving team members for project ID {ProjectId} to cache", projectId);
@@ -102,7 +102,7 @@ public partial class ModrinthService
     {
         try
         {
-            var searchResponse = await _api.Project.SearchAsync(query);
+            var searchResponse = await Api.Project.SearchAsync(query);
             return searchResponse;
         }
         catch (Exception e)
@@ -117,7 +117,7 @@ public partial class ModrinthService
     {
         try
         {
-            var searchResponse = await _api.Project.GetMultipleAsync(projectIds);
+            var searchResponse = await Api.Project.GetMultipleAsync(projectIds);
             return searchResponse;
         }
         catch (Exception e)
@@ -153,7 +153,7 @@ public partial class ModrinthService
         try
         {
             _logger.LogDebug("Game versions not in cache, fetching from api...");
-            var gameVersions = await _api.Tag.GetGameVersionsAsync();
+            var gameVersions = await Api.Tag.GetGameVersionsAsync();
             
             _cache.Set("gameVersions", gameVersions, absoluteExpirationRelativeToNow: TimeSpan.FromHours(12));
             

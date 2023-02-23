@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Asterion.Migrations
 {
     [DbContext(typeof(DataContext))]
-    [Migration("20230223201233_addChangelogSettings")]
+    [Migration("20230223141738_addChangelogSettings")]
     partial class addChangelogSettings
     {
         /// <inheritdoc />

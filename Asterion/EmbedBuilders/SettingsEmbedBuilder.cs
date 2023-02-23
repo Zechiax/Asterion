@@ -64,7 +64,9 @@ public static class SettingsEmbedBuilder
 
         var dummyVersion = new Version()
         {
-            Changelog = "This would be the new version's changelog",
+            Changelog = "This is a changelog \n\n with multiple lines\n and a Markdown link [here](https://modrinth.com/)\n" +
+                        "and a style test: **bold**, *italic*, ~~strikethrough~~, `code`, __underline__\n" +
+                        "So that you can see how it looks like in the embed. 🐱",
             Id = "12456789",
             DatePublished = DateTime.Now,
             GameVersions = new[] {"1.19.2"},
@@ -74,7 +76,7 @@ public static class SettingsEmbedBuilder
             VersionNumber = "Version-3.5"
         };
 
-        var embed = ModrinthEmbedBuilder.VersionUpdateEmbed(guild.GuildSettings.MessageStyle, dummyProject, dummyVersion);
+        var embed = ModrinthEmbedBuilder.VersionUpdateEmbed(guild.GuildSettings, dummyProject, dummyVersion);
 
         return embed;
     }

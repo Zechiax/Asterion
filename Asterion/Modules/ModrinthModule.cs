@@ -386,7 +386,9 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
 
                 var team = await _modrinthService.GetProjectsTeamMembersAsync(project.Id);
 
-                var embed = ModrinthEmbedBuilder.VersionUpdateEmbed(style, project, latestVersion, team);
+                var guild = await _dataService.GetGuildByIdAsync(Context.Guild.Id);
+
+                var embed = ModrinthEmbedBuilder.VersionUpdateEmbed(guild?.GuildSettings, project, latestVersion, team);
                 
                 var buttons =
                         new ComponentBuilder().WithButton(

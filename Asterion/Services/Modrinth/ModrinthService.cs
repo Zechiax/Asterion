@@ -203,7 +203,7 @@ public partial class ModrinthService
             _logger.LogInformation("Sending updates to guild ID {Id} and channel ID {Channel}", guild.GuildId, channel.Id);
 
             // None of these can be null, everything is checked beforehand
-            await SendUpdatesToChannel(channel, project, versions, teamMembers, guild.GuildSettings.MessageStyle);
+            await SendUpdatesToChannel(channel, project, versions, teamMembers, guild.GuildSettings);
         }
     }
 
@@ -214,13 +214,13 @@ public partial class ModrinthService
     /// <param name="currentProject"></param>
     /// <param name="newVersions"></param>
     /// <param name="team"></param>
-    /// <param name="messageStyle"></param>
-    private async Task SendUpdatesToChannel(SocketTextChannel textChannel, Project currentProject, IEnumerable<Version> newVersions, TeamMember[]? team, MessageStyle messageStyle = MessageStyle.Full)
+    /// <param name="guildSettings"></param>
+    private async Task SendUpdatesToChannel(SocketTextChannel textChannel, Project currentProject, IEnumerable<Version> newVersions, TeamMember[]? team, GuildSettings guildSettings)
     {
         // Iterate versions - they are ordered from latest to oldest, we want to sent them chronologically
         foreach (var version in newVersions.Reverse())
         {
-            var embed = ModrinthEmbedBuilder.VersionUpdateEmbed(messageStyle, currentProject, version, team);
+            var embed = ModrinthEmbedBuilder.VersionUpdateEmbed(guildSettings, currentProject, version, team);
             var buttons =
                 new ComponentBuilder().WithButton(
                     ModrinthComponentBuilder.GetVersionUrlButton(currentProject, version));

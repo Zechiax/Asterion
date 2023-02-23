@@ -235,6 +235,8 @@ public class DataService : IDataService
         guild.GuildSettings.ShowChannelSelection = updatedGuild.GuildSettings.ShowChannelSelection;
         guild.GuildSettings.CheckMessagesForModrinthLink = updatedGuild.GuildSettings.CheckMessagesForModrinthLink;
         guild.GuildSettings.ShowSubscribeButton = updatedGuild.GuildSettings.ShowSubscribeButton;
+        guild.GuildSettings.ChangelogStyle = updatedGuild.GuildSettings.ChangelogStyle;
+        guild.GuildSettings.ChangeLogMaxLength = updatedGuild.GuildSettings.ChangeLogMaxLength;
 
         await db.SaveChangesAsync();
 

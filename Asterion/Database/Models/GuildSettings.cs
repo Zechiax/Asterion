@@ -30,4 +30,8 @@ public class GuildSettings
 
     public bool? CheckMessagesForModrinthLink { get; set; } = false;
     public MessageStyle MessageStyle { get; set; } = MessageStyle.Full;
+    
+    public ChangelogStyle ChangelogStyle { get; set; } = ChangelogStyle.PlainText;
+    
+    public long ChangeLogMaxLength { get; set; } = 2000;
 }

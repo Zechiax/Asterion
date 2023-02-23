@@ -13,6 +13,8 @@ using Fergun.Interactive;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Asterion.Extensions;
+using Modrinth.Exceptions;
+using Modrinth.Models;
 
 // ReSharper disable MemberCanBePrivate.Global
 
@@ -384,7 +386,9 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
 
                 var team = await _modrinthService.GetProjectsTeamMembersAsync(project.Id);
 
-                var embed = ModrinthEmbedBuilder.VersionUpdateEmbed(style, project, latestVersion, team);
+                var guild = await _dataService.GetGuildByIdAsync(Context.Guild.Id);
+
+                var embed = ModrinthEmbedBuilder.VersionUpdateEmbed(guild?.GuildSettings, project, latestVersion, team);
                 
                 var buttons =
                         new ComponentBuilder().WithButton(
@@ -396,6 +400,55 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                         x.Components = buttons.Build();
                 });
         }
+
+        [SlashCommand("random", "Gets a random project")]
+        public async Task GetRandomProject()
+        {
+                await DeferAsync();
+                
+                var api = _modrinthService.Api;
+                Project? randomProject;
+                try
+                {
+                        // Count to 70, as Modrinth currently returns less than 70 projects
+                        // If it's set to 1, it will sometimes return 0 projects
+                        randomProject = (await api.Project.GetRandomAsync(70)).FirstOrDefault();
+                }
+                catch (ModrinthApiException e)
+                {
+                        _logger.LogError(e, "Error getting random project");
+                        throw new Exception("Error getting random project");
+                }
+
+                if (randomProject == null)
+                {
+                        throw new Exception("No projects found");
+                }
+                
+                var team = await api.Team.GetAsync(randomProject.Team);
+
+                var embed = ModrinthEmbedBuilder.GetProjectEmbed(randomProject, teamMembers: team);
+                
+                var isSubscribed = await _dataService.IsGuildSubscribedToProjectAsync(Context.Guild.Id, randomProject.Id);
+                
+                var buttons = ModrinthComponentBuilder.GetSubscribeButtons(Context.User.Id, randomProject.Id, !isSubscribed);
+                var ownerButtons =
+                        ModrinthComponentBuilder.GetUserToViewButton(Context.User.Id, team.GetOwner()?.User.Id,
+                                randomProject.Id);
+                var viewButton = ModrinthComponentBuilder.GetProjectLinkButton(randomProject);
+                
+                var componentBuilder = new ComponentBuilder()
+                        .WithButton(buttons)
+                        .WithButton(viewButton)
+                        .WithButton(ownerButtons);
+
+                await ModifyOriginalResponseAsync(x =>
+                {
+                        x.Embed = embed.Build();
+                        x.Components = componentBuilder.Build();
+                });
+        }
+
 
         [RequireOwner]
         [SlashCommand("force-update", "Forces check for updates")]

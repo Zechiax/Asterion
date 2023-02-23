@@ -177,6 +177,42 @@ public class SettingsInteractionModule : InteractionModuleBase
     }
     
     [DoUserCheck]
+    [ComponentInteraction(SettingsComponentBuilder.ChangeChangelogStyleSelectionId)]
+    public async Task ChangeChangelogStyle(string userId, string[] selectedStyle)
+    {
+        await DeferAsync();
+        var style = (ChangelogStyle) Enum.Parse(typeof(ChangelogStyle), selectedStyle.First());
+
+        var guild = await _dataService.GetGuildByIdAsync(Context.Guild.Id);
+
+        if (guild is null)
+        {
+            await FollowupAsync("Something went wrong, please try again later", ephemeral: true);
+            return;
+        }
+
+        guild.GuildSettings.ChangelogStyle = style;
+
+        var success = await _dataService.UpdateGuildAsync(guild);
+
+        if (!success)
+        {
+            await FollowupAsync("Something went wrong, please try again later", ephemeral: true);
+            return;
+        }
+        
+        var embed = SettingsEmbedBuilder.GetViewSettingsEmbed(guild);
+        
+        
+        await ModifyOriginalResponseAsync(x =>
+        {
+            x.Embed = embed.Build();
+            x.Components = SettingsComponentBuilder.GetMessageStyleSelectionComponents(guild, Context.User.Id.ToString())
+                .Build();
+        });
+    }
+    
+    [DoUserCheck]
     [ComponentInteraction("settings-show-subscribe-button:*;*", runMode: RunMode.Async)]
     public async Task ShowSubscribeButton(string userId, bool showSubscribeButton)
     {

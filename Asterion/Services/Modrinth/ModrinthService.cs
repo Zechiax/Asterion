@@ -23,18 +23,19 @@ namespace Asterion.Services.Modrinth;
 public partial class ModrinthService
 {
     private readonly BackgroundWorker _updateWorker;
-    private readonly IModrinthClient _api;
     private readonly ILogger _logger;
     private readonly IMemoryCache _cache;
     private readonly MemoryCacheEntryOptions _cacheEntryOptions;
     private readonly IDataService _dataService;
     private readonly DiscordSocketClient _client;
     private readonly IHttpClientFactory _httpClientFactory;
+    
+    public IModrinthClient Api { get; }
 
     public ModrinthService(IServiceProvider serviceProvider, IHttpClientFactory httpClientFactory)
     {
         _httpClientFactory = httpClientFactory;
-        _api = new ModrinthClient(userAgent: "Zechiax/Asterion");
+        Api = new ModrinthClient(userAgent: "Zechiax/Asterion");
         _logger = serviceProvider.GetRequiredService<ILogger<ModrinthService>>();
         _cache = serviceProvider.GetRequiredService<IMemoryCache>();
         _dataService = serviceProvider.GetRequiredService<IDataService>();
@@ -202,7 +203,7 @@ public partial class ModrinthService
             _logger.LogInformation("Sending updates to guild ID {Id} and channel ID {Channel}", guild.GuildId, channel.Id);
 
             // None of these can be null, everything is checked beforehand
-            await SendUpdatesToChannel(channel, project, versions, teamMembers, guild.GuildSettings.MessageStyle);
+            await SendUpdatesToChannel(channel, project, versions, teamMembers, guild.GuildSettings);
         }
     }
 
@@ -213,13 +214,13 @@ public partial class ModrinthService
     /// <param name="currentProject"></param>
     /// <param name="newVersions"></param>
     /// <param name="team"></param>
-    /// <param name="messageStyle"></param>
-    private async Task SendUpdatesToChannel(SocketTextChannel textChannel, Project currentProject, IEnumerable<Version> newVersions, TeamMember[]? team, MessageStyle messageStyle = MessageStyle.Full)
+    /// <param name="guildSettings"></param>
+    private async Task SendUpdatesToChannel(SocketTextChannel textChannel, Project currentProject, IEnumerable<Version> newVersions, TeamMember[]? team, GuildSettings guildSettings)
     {
         // Iterate versions - they are ordered from latest to oldest, we want to sent them chronologically
         foreach (var version in newVersions.Reverse())
         {
-            var embed = ModrinthEmbedBuilder.VersionUpdateEmbed(messageStyle, currentProject, version, team);
+            var embed = ModrinthEmbedBuilder.VersionUpdateEmbed(guildSettings, currentProject, version, team);
             var buttons =
                 new ComponentBuilder().WithButton(
                     ModrinthComponentBuilder.GetVersionUrlButton(currentProject, version));
@@ -289,9 +290,9 @@ public partial class ModrinthService
             var projectFoundById = false;
             try
             {
-                project = await _api.Project.GetAsync(query);
+                project = await Api.Project.GetAsync(query);
 
-                searchResponse = await _api.Project.SearchAsync(query);
+                searchResponse = await Api.Project.SearchAsync(query);
                 // Won't be set if exception is thrown
                 projectFoundById = true;
             }
@@ -322,7 +323,7 @@ public partial class ModrinthService
 
         try
         {
-            searchResponse = await _api.Project.SearchAsync(query);
+            searchResponse = await Api.Project.SearchAsync(query);
 
             // No search results
             if (searchResponse.TotalHits <= 0)
@@ -331,7 +332,7 @@ public partial class ModrinthService
             }
             
             // Return first result
-            project = await _api.Project.GetAsync(searchResponse.Hits[0].ProjectId);
+            project = await Api.Project.GetAsync(searchResponse.Hits[0].ProjectId);
 
             var result = new SearchResult<ProjectDto>(new ProjectDto
             {
@@ -371,7 +372,7 @@ public partial class ModrinthService
 
         try
         {
-            user = await _api.User.GetAsync(query);
+            user = await Api.User.GetAsync(query);
             _logger.LogDebug("User query '{Query}' found", query);
         }
         catch (FlurlHttpException e) when (e.Call.Response.ResponseMessage.StatusCode == HttpStatusCode.NotFound)
@@ -388,7 +389,7 @@ public partial class ModrinthService
         // User can't be null from here
         try
         {
-            var projects = await _api.User.GetProjectsAsync(user.Id);
+            var projects = await Api.User.GetProjectsAsync(user.Id);
             
             var searchResult = new SearchResult<UserDto>(new UserDto
             {

@@ -10,6 +10,7 @@ public static class SettingsComponentBuilder
     public const string MoreButtonId = "settings-module-more:*";
     public const string MainScreenButtonId = "settings-main:*";
     public const string ChangeMessageStyleSelectionId = "change-message-style:*";
+    public const string ChangeChangelogStyleSelectionId = "change-changelog-style:*";
     public static ComponentBuilder GetIntroButtons(string userId)
     {
         var components = 
@@ -89,6 +90,7 @@ public static class SettingsComponentBuilder
     {
         return new ComponentBuilder()
             .WithSelectMenu(GetMessageStyleSelection(guild, userId))
+            .WithSelectMenu(GetChangelogStyleSelection(guild, userId))
             .WithButton(GetBackButton(userId), 1);
     }
     public static SelectMenuBuilder GetMessageStyleSelection(Guild guild, string userId)
@@ -97,7 +99,8 @@ public static class SettingsComponentBuilder
         {
             MaxValues = 1,
             MinValues = 1,
-            CustomId = ChangeMessageStyleSelectionId.Replace("*", userId)
+            CustomId = ChangeMessageStyleSelectionId.Replace("*", userId),
+            Placeholder = "Select a message style"
         };
 
         var options = new List<SelectMenuOptionBuilder>();
@@ -111,6 +114,32 @@ public static class SettingsComponentBuilder
             });
         }
 
+        menu.Options = options;
+
+        return menu;
+    }
+
+    public static SelectMenuBuilder GetChangelogStyleSelection(Guild guild, string userId)
+    {
+        var menu = new SelectMenuBuilder
+        {
+            MaxValues = 1,
+            MinValues = 1,
+            CustomId = ChangeChangelogStyleSelectionId.Replace("*", userId),
+            Placeholder = "Select a changelog style"
+        };
+        
+        var options = new List<SelectMenuOptionBuilder>();
+        foreach (var style in Enum.GetValues(typeof(ChangelogStyle)).Cast<ChangelogStyle>())
+        {
+            options.Add(new SelectMenuOptionBuilder()
+            {
+                Label = Enum.GetName(typeof(ChangelogStyle), style),
+                Value = style.ToString(),
+                IsDefault = style == guild.GuildSettings.ChangelogStyle
+            });
+        }
+        
         menu.Options = options;
 
         return menu;

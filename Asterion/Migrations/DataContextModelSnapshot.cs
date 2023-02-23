@@ -15,7 +15,7 @@ namespace Asterion.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "7.0.1");
+            modelBuilder.HasAnnotation("ProductVersion", "7.0.3");
 
             modelBuilder.Entity("Asterion.Database.Models.Array", b =>
                 {
@@ -73,6 +73,16 @@ namespace Asterion.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<long>("ChangeLogMaxLength")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(2000L);
+
+                    b.Property<int>("ChangelogStyle")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(0);
+
                     b.Property<bool?>("CheckMessagesForModrinthLink")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER")
@@ -82,7 +92,9 @@ namespace Asterion.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("MessageStyle")
-                        .HasColumnType("INTEGER");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(0);
 
                     b.Property<bool?>("RemoveOnLeave")
                         .ValueGeneratedOnAdd()

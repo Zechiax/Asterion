@@ -88,6 +88,7 @@ public class InteractionCommandHandler
                 break;
             case InteractionCommandError.Exception:
                 _logger.LogError("{CommandType} Command {Arg1Name} for user {UserUsername} failed; Exception: \'{ErrorReason}\'", commandType, commandName, arg2.User.Username, arg3.ErrorReason);
+                await arg2.Interaction.FollowupAsync("An error occurred while executing this command. Please try again later. If the problem persists, please contact the bot owner.", ephemeral: true);
                 break;
             case InteractionCommandError.Unsuccessful:
                 _logger.LogError("{CommandType} Command {Arg1Name} for user {UserUsername} failed; Reason: \'{ErrorReason}\'", commandType, commandName, arg2.User.Username, arg3.ErrorReason);

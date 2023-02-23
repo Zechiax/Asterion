@@ -140,14 +140,14 @@ public static class ModrinthEmbedBuilder
         return embed;
     }
 
-    public static EmbedBuilder VersionUpdateEmbed(MessageStyle style, Project project, Version version,
+    public static EmbedBuilder VersionUpdateEmbed(GuildSettings settings, Project project, Version version,
         IEnumerable<TeamMember>? teamMembers = null)
     {
-        return style switch
+        return settings.MessageStyle switch
         {
-            MessageStyle.Full => GetFullVersionUpdateEmbed(project, version, teamMembers),
+            MessageStyle.Full => GetFullVersionUpdateEmbed(project, version, settings, teamMembers),
             MessageStyle.Compact => GetCompactVersionUpdateEmbed(project, version, teamMembers),
-            _ => throw new ArgumentOutOfRangeException(nameof(style), style, null)
+            _ => throw new ArgumentOutOfRangeException(nameof(settings.MessageStyle), settings.MessageStyle, null)
         };
     }
 
@@ -171,7 +171,25 @@ public static class ModrinthEmbedBuilder
         return embed;
     }
 
-    private static EmbedBuilder GetFullVersionUpdateEmbed(Project project, Version version, IEnumerable<TeamMember>? teamMembers = null)
+    private static string FormatChangelog(string? changelog, GuildSettings settings)
+    {
+        // var changelog = string.IsNullOrEmpty(version.Changelog) ? "\n\n*No changelog provided*" : $"\n\n{Format.Underline(Format.Bold("Changelog:"))}\n" + $"{version.Changelog}".Truncate(DescriptionLimit);
+        switch (settings.ChangelogStyle)
+        {
+            case ChangelogStyle.PlainText:
+                return string.IsNullOrEmpty(changelog) ? "\n\n*No changelog provided*" : $"\n\n{Format.Underline(Format.Bold("Changelog:"))}\n" + $"{changelog}".Truncate((int)settings.ChangeLogMaxLength);
+            
+            case ChangelogStyle.CodeBlock:
+                return string.IsNullOrEmpty(changelog) ? Format.Code("\n\n*No changelog provided*") : $"\n\n{Format.Underline(Format.Bold("Changelog:"))}\n" + Format.Code($"{changelog}".Truncate((int)settings.ChangeLogMaxLength));
+            
+            case ChangelogStyle.NoChangelog:
+                return string.Empty;
+        }
+        
+        throw new ArgumentOutOfRangeException(nameof(settings.ChangelogStyle), settings.ChangelogStyle, null);
+    }
+
+    private static EmbedBuilder GetFullVersionUpdateEmbed(Project project, Version version, GuildSettings guildSettings, IEnumerable<TeamMember>? teamMembers = null)
     {
         var sbFiles = new StringBuilder();
 
@@ -180,8 +198,7 @@ public static class ModrinthEmbedBuilder
             sbFiles.AppendLine($"[{file.FileName}]({file.Url}) | {ByteSize.FromBytes(file.Size).Humanize()}");
         }
 
-        var changelog = string.IsNullOrEmpty(version.Changelog) ? "\n\n*No changelog provided*" : $"\n\n{Format.Underline(Format.Bold("Changelog:"))}\n" +
-            $"{version.Changelog}".Truncate(DescriptionLimit);
+        var changelog = FormatChangelog(version.Changelog, guildSettings);
 
         var embedAuthor = GetEmbedAuthor(project, teamMembers, version);
         

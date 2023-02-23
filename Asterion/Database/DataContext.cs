@@ -44,6 +44,9 @@ namespace Asterion.Database
             modelBuilder.Entity<GuildSettings>().Property(p => p.ShowChannelSelection).HasDefaultValue(true);
             modelBuilder.Entity<GuildSettings>().Property(p => p.CheckMessagesForModrinthLink).HasDefaultValue(false);
             modelBuilder.Entity<GuildSettings>().Property(p => p.ShowSubscribeButton).HasDefaultValue(true);
+            modelBuilder.Entity<GuildSettings>().Property(p => p.MessageStyle).HasDefaultValue(MessageStyle.Full);
+            modelBuilder.Entity<GuildSettings>().Property(p => p.ChangelogStyle).HasDefaultValue(ChangelogStyle.PlainText);
+            modelBuilder.Entity<GuildSettings>().Property(p => p.ChangeLogMaxLength).HasDefaultValue(2000);
         }
     }
 }

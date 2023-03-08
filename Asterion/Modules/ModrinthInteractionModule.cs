@@ -115,11 +115,16 @@ public class ModrinthInteractionModule : InteractionModuleBase
                         MaxValues = 1,
                 };
                 
-                
-                var component = new ComponentBuilder().WithSelectMenu(options);
+                // Check permissions, if the bot can send messages in the channel
+                if (Context.Channel is ITextChannel textChannel && textChannel.Guild.GetUserAsync(Context.Client.CurrentUser.Id).Result.GetPermissions(textChannel).SendMessages == false)
+                {
+                        await FollowupAsync(":warning: I don't have permission to send messages in this channel, please give me the required permissions :warning:", ephemeral: true);
+                }
+
+                /*var component = new ComponentBuilder().WithSelectMenu(options);
                 await FollowupAsync(
                         embed: GeneralEmbedBuilder.GetChangeChannelEmbed(project, guildChannels.Count > 25).Build(),
-                        ephemeral: true, components: component.Build());
+                        ephemeral: true, components: component.Build());*/
         }
         
         [ComponentInteraction("project_channels_*")]

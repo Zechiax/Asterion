@@ -173,7 +173,7 @@ public partial class ModrinthService
         var orderedVersions = versionList.OrderByDescending(x => x.DatePublished);
 
         // Take new versions from the latest to the one we already checked
-        var newVersions = orderedVersions.TakeWhile(version => version.Id != dbProject.LastCheckVersion).ToArray();
+        var newVersions = orderedVersions.TakeWhile(version => version.Id != dbProject.LastCheckVersion && version.DatePublished > dbProject.LastUpdated).ToArray();
 
         return newVersions;
     }

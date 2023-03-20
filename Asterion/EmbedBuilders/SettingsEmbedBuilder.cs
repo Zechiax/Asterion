@@ -66,7 +66,11 @@ public static class SettingsEmbedBuilder
         {
             Changelog = "This is a changelog \n\n with multiple lines\n and a Markdown link [here](https://modrinth.com/)\n" +
                         "and a style test: **bold**, *italic*, ~~strikethrough~~, `code`, __underline__\n" +
-                        "So that you can see how it looks like in the embed. 🐱",
+                        "So that you can see how it looks like in the embed. 🐱\n\n" +
+                        "Although most of the time, the changelog will be a list of changes, like this one:\n" +
+                        "- Added a new feature\n" +
+                        "- Fixed a bug\n" +
+                        "- Changed something else",
             Id = "12456789",
             DatePublished = DateTime.Now,
             GameVersions = new[] {"1.19.2"},

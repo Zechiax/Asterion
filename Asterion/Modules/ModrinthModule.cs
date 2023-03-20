@@ -204,6 +204,12 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
                 {
                         x.Content = $@"Subscribed to updates for project **{project.Title}** with ID **{project.Id}** updates will be send to channel {channel.Mention} :white_check_mark:";
                 });
+                
+                // Check permissions, if the bot can send messages in the channel
+                if (Context.Channel is ITextChannel textChannel && textChannel.Guild.GetUserAsync(Context.Client.CurrentUser.Id).Result.GetPermissions(textChannel).SendMessages == false)
+                {
+                        await FollowupAsync(":warning: I don't have permission to send messages in this channel, please give me the required permissions :warning:", ephemeral: true);
+                }
         }
 
         [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]

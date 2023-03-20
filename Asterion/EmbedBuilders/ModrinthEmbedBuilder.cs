@@ -209,8 +209,8 @@ public static class ModrinthEmbedBuilder
             {
                 Text = "Published"
             },
-            Title = $"{Format.Bold(project.Title)} | New Version Found",
-            Description = $"Version {Format.Bold(version.VersionNumber)} has been uploaded to Modrinth" +
+            Title = $"{Format.Bold(project.Title)} has been updated",
+            Description = $"Version {Format.Bold(version.VersionNumber)} has been published on Modrinth" +
                           changelog,
             Url = project.Url,
             ThumbnailUrl = project.IconUrl,

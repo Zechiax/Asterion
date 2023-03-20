@@ -9,6 +9,7 @@ using Modrinth.Models;
 using Modrinth.Models.Enums;
 using Asterion.Extensions;
 using Array = System.Array;
+using Color = Discord.Color;
 using Version = Modrinth.Models.Version;
 
 namespace Asterion.EmbedBuilders;

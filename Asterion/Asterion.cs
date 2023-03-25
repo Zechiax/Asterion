@@ -10,6 +10,7 @@ using Fergun.Interactive;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Modrinth;
 using Serilog;
 using RunMode = Discord.Commands.RunMode;
 
@@ -104,6 +105,12 @@ public class Asterion
         {
             DefaultRunMode = RunMode.Async
         };
+        
+        var modrinthClientConfig = new ModrinthClientConfig()
+        {
+            UserAgent = "Zechiax/Asterion",
+            RateLimitRetryCount = 3,
+        };
 
         var services = new ServiceCollection()
             .AddSingleton(_config)
@@ -117,6 +124,7 @@ public class Asterion
             .AddSingleton<ModrinthService>()
             .AddSingleton<InteractiveService>()
             .AddSingleton<ClientService>()
+            .AddSingleton<IModrinthClient>(new ModrinthClient(modrinthClientConfig))
             .AddSingleton<DatabaseMigrationService>()
             .AddHttpClient()
             .AddDbContext<DataContext>()

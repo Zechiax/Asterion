@@ -34,7 +34,7 @@ public partial class ModrinthService
     public ModrinthService(IServiceProvider serviceProvider, IHttpClientFactory httpClientFactory)
     {
         _httpClientFactory = httpClientFactory;
-        Api = new ModrinthClient(userAgent: "Zechiax/Asterion");
+        Api = serviceProvider.GetRequiredService<IModrinthClient>();
         _logger = serviceProvider.GetRequiredService<ILogger<ModrinthService>>();
         _cache = serviceProvider.GetRequiredService<IMemoryCache>();
         _dataService = serviceProvider.GetRequiredService<IDataService>();

@@ -8,6 +8,7 @@ using Modrinth.Extensions;
 using Modrinth.Models;
 using Modrinth.Models.Enums;
 using Asterion.Extensions;
+using Modrinth.Models.Enums.Project;
 using Array = System.Array;
 using Color = Discord.Color;
 using Version = Modrinth.Models.Version;
@@ -130,7 +131,7 @@ public static class ModrinthEmbedBuilder
                 new() { Name = "Created | Last updated", Value = $"{TimestampTag.FromDateTime(project.Published, TimestampTagStyles.Relative)} | {TimestampTag.FromDateTime(project.Updated, TimestampTagStyles.Relative)}"  }
             },
             // Choose 'random' picture from gallery through TickCount
-            ImageUrl = project.Gallery.Length > 0 ? project.Gallery[Math.Abs(Environment.TickCount) % project.Gallery.Length].Url : null,
+            ImageUrl = project.Gallery is {Length: > 0} ? project.Gallery[Math.Abs(Environment.TickCount) % project.Gallery.Length].Url : null,
             Footer = new EmbedFooterBuilder
             {
                 Text = "Information to date"
@@ -228,6 +229,12 @@ public static class ModrinthEmbedBuilder
                 {
                     Name = "Loaders",
                     Value = string.Join(", ", version.Loaders).Transform(To.TitleCase).Truncate(EmbedFieldLimit),
+                    IsInline = true
+                },
+                new()
+                {
+                    Name = "Release Type",
+                    Value = version.ProjectVersionType.Humanize().Transform(To.TitleCase),
                     IsInline = true
                 },
                 new()

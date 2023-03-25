@@ -13,7 +13,6 @@ using Microsoft.Extensions.Logging;
 using Modrinth;
 using Modrinth.Models;
 using Asterion.Extensions;
-using Flurl.Http;
 using Modrinth.Exceptions;
 using Version = Modrinth.Models.Version;
 using Timer = System.Timers.Timer;
@@ -302,8 +301,13 @@ public partial class ModrinthService
                 // Project not found by slug or id
                 _logger.LogDebug("Project query '{Query}' not found with ID or slug", query);
             }
-            catch (Exception)
+            catch (ModrinthApiException e)
             {
+                return new SearchResult<ProjectDto>(new ProjectDto(), SearchStatus.ApiDown);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Error while searching for project '{Query}'", query);
                 return new SearchResult<ProjectDto>(new ProjectDto(), SearchStatus.ApiDown);
             }
 
@@ -375,7 +379,7 @@ public partial class ModrinthService
             user = await Api.User.GetAsync(query);
             _logger.LogDebug("User query '{Query}' found", query);
         }
-        catch (FlurlHttpException e) when (e.Call.Response.ResponseMessage.StatusCode == HttpStatusCode.NotFound)
+        catch (ModrinthApiException e) when (e.StatusCode == HttpStatusCode.NotFound)
         {
             // Project not found by slug or id
             _logger.LogDebug("User not found '{Query}'", query);

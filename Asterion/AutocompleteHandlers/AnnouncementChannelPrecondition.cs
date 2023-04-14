@@ -30,6 +30,11 @@ public class AnnouncementChannelPrecondition : ParameterPreconditionAttribute
             return PreconditionResult.FromError("Bot doesn't have permissions to send messages to the channel");
         }
         
+        if (channel.Guild.CurrentUser.GetPermissions(channel).ViewChannel == false)
+        {
+            return PreconditionResult.FromError("Bot doesn't have permissions to view the channel");
+        }
+        
         // All good
         return PreconditionResult.FromSuccess();
     }

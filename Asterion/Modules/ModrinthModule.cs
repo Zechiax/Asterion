@@ -169,12 +169,12 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
         [DoManageSubsRoleCheck(Group = "ManageSubs")]
         [SlashCommand("subscribe", "Add a Modrinth project to your watched list")]
-        public async Task Subscribe(string projectId, SocketTextChannel? customChannel = null)
+        public async Task Subscribe(string projectId, [AnnouncementChannelPrecondition] IGuildChannel? customChannel = null)
         {
                 await DeferAsync();
                 var project = await _modrinthService.GetProject(projectId);
 
-                var channel = customChannel ?? Context.Guild.GetTextChannel(Context.Channel.Id);
+                var channel = customChannel is null ? Context.Guild.GetTextChannel(Context.Channel.Id) : customChannel as ITextChannel;
                 
                 if (project == null)
                 {

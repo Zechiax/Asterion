@@ -217,7 +217,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         [SlashCommand("change-channel", "Change channel for one of your subscribed projects")]
         public async Task ChangeChannel(
                 [Summary("project_id"), Autocomplete(typeof(SubscribedIdAutocompletionHandler))] string projectId,
-                SocketTextChannel newChannel)
+                [AnnouncementChannelPrecondition] IGuildChannel newChannel)
         {
                 await DeferAsync();
                 
@@ -236,9 +236,10 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
 
                 if (success)
                 {
+                        var forMention = Context.Guild.GetTextChannel(newChannel.Id);
                         await ModifyOriginalResponseAsync(x =>
                         {
-                                x.Content = $"New updates for project {projectId} will be send to channel {newChannel.Mention} :white_check_mark:";
+                                x.Content = $"New updates for project {projectId} will be send to channel {forMention.Mention} :white_check_mark:";
                         });
                 }
                 else

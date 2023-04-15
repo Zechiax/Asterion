@@ -1,15 +1,13 @@
 ﻿using System.Text;
 using Asterion.Database.Models;
+using Asterion.Extensions;
 using Asterion.Services.Modrinth;
 using Discord;
 using Humanizer;
 using Humanizer.Bytes;
 using Modrinth.Extensions;
 using Modrinth.Models;
-using Modrinth.Models.Enums;
-using Asterion.Extensions;
 using Modrinth.Models.Enums.Project;
-using Array = System.Array;
 using Color = Discord.Color;
 using Version = Modrinth.Models.Version;
 
@@ -18,19 +16,19 @@ namespace Asterion.EmbedBuilders;
 public static class ModrinthEmbedBuilder
 {
     /// <summary>
-    /// The main color of the Modrinth logo
-    /// </summary>
-    private static readonly Color ModrinthColor = new(27, 217, 106);
-
-    /// <summary>
-    /// Limit for the length of value of fields on embed (Discord limit is 1024)
+    ///     Limit for the length of value of fields on embed (Discord limit is 1024)
     /// </summary>
     private const int EmbedFieldLimit = 512;
 
     /// <summary>
-    /// Limit for the length of description on embed (Discord limit is 4096)
+    ///     Limit for the length of description on embed (Discord limit is 4096)
     /// </summary>
     private const int DescriptionLimit = 2000;
+
+    /// <summary>
+    ///     The main color of the Modrinth logo
+    /// </summary>
+    private static readonly Color ModrinthColor = new(27, 217, 106);
 
     public static EmbedAuthorBuilder GetUserAuthor(User user)
     {
@@ -57,7 +55,7 @@ public static class ModrinthEmbedBuilder
     }
 
     /// <summary>
-    /// Returns generic Modrinth embed author
+    ///     Returns generic Modrinth embed author
     /// </summary>
     /// <param name="project"></param>
     /// <param name="user"></param>
@@ -76,35 +74,41 @@ public static class ModrinthEmbedBuilder
     }
 
     /// <summary>
-    /// Creates EmbedAuthor based on provided information
+    ///     Creates EmbedAuthor based on provided information
     /// </summary>
     /// <param name="project"></param>
     /// <param name="teamMembers"></param>
     /// <param name="version"></param>
     /// <returns></returns>
-    private static EmbedAuthorBuilder GetEmbedAuthor(Project project, IEnumerable<TeamMember>? teamMembers = null, Version? version = null)
+    private static EmbedAuthorBuilder GetEmbedAuthor(Project project, IEnumerable<TeamMember>? teamMembers = null,
+        Version? version = null)
     {
         var author = version is not null ? teamMembers.GetByUserId(version.AuthorId) : teamMembers.GetOwner();
-        
+
         return author is null ? GetModrinthAuthor(project) : GetProjectAuthor(author);
     }
 
-    public static EmbedBuilder GetProjectEmbed(SearchResult<ProjectDto> searchResult, IEnumerable<TeamMember>? teamMembers = null)
+    public static EmbedBuilder GetProjectEmbed(SearchResult<ProjectDto> searchResult,
+        IEnumerable<TeamMember>? teamMembers = null)
     {
         return GetProjectEmbed(searchResult.Payload.Project, teamMembers);
     }
 
     /// <summary>
-    /// Creates embed with basic project info
+    ///     Creates embed with basic project info
     /// </summary>
     /// <param name="project">The project from which to get the info</param>
     /// <param name="majorColor"></param>
-    /// <param name="teamMembers">Members of the team for this project, not required, if not provided, will show generic Modrinth Author</param>
+    /// <param name="teamMembers">
+    ///     Members of the team for this project, not required, if not provided, will show generic
+    ///     Modrinth Author
+    /// </param>
     /// <returns>Embed builder, which can be further edited</returns>
-    public static EmbedBuilder GetProjectEmbed(Project project, IEnumerable<TeamMember>? teamMembers = null, DateTimeOffset? dataTime = null)
+    public static EmbedBuilder GetProjectEmbed(Project project, IEnumerable<TeamMember>? teamMembers = null,
+        DateTimeOffset? dataTime = null)
     {
         var author = GetEmbedAuthor(project, teamMembers);
-        
+
         var embed = new EmbedBuilder
         {
             Author = author,
@@ -117,21 +121,34 @@ public static class ModrinthEmbedBuilder
             Fields = new List<EmbedFieldBuilder?>
             {
                 // Format downloads from 319803 to 319,8K 
-                 new() { Name = "Downloads", Value = project.Downloads.ToMetric(decimals: 1).Transform(To.UpperCase), IsInline = true },
+                new()
+                {
+                    Name = "Downloads", Value = project.Downloads.ToMetric(decimals: 1).Transform(To.UpperCase),
+                    IsInline = true
+                },
                 // Format downloads from 319803 to 319 803
                 // new() { Name = "Downloads", Value = project.Downloads.SeparateThousands(), IsInline = true },
-                new() { Name = "Followers", Value = project.Followers.SeparateThousands(), IsInline = true },
+                new() {Name = "Followers", Value = project.Followers.SeparateThousands(), IsInline = true},
                 new()
                 {
                     Name = "Categories", Value = project.Categories.Length > 0
-                        ? string.Join(", ", project.Categories).Transform(To.TitleCase) 
-                    : Format.Italics("No categories") , IsInline = true },
-                new() { Name = "Type", Value = project.ProjectType.Humanize(), IsInline = true },
-                new() { Name = "ID", Value = project.Id, IsInline = true },
-                new() { Name = "Created | Last updated", Value = $"{TimestampTag.FromDateTime(project.Published, TimestampTagStyles.Relative)} | {TimestampTag.FromDateTime(project.Updated, TimestampTagStyles.Relative)}"  }
+                        ? string.Join(", ", project.Categories).Transform(To.TitleCase)
+                        : Format.Italics("No categories"),
+                    IsInline = true
+                },
+                new() {Name = "Type", Value = project.ProjectType.Humanize(), IsInline = true},
+                new() {Name = "ID", Value = project.Id, IsInline = true},
+                new()
+                {
+                    Name = "Created | Last updated",
+                    Value =
+                        $"{TimestampTag.FromDateTime(project.Published, TimestampTagStyles.Relative)} | {TimestampTag.FromDateTime(project.Updated, TimestampTagStyles.Relative)}"
+                }
             },
             // Choose 'random' picture from gallery through TickCount
-            ImageUrl = project.Gallery is {Length: > 0} ? project.Gallery[Math.Abs(Environment.TickCount) % project.Gallery.Length].Url : null,
+            ImageUrl = project.Gallery is {Length: > 0}
+                ? project.Gallery[Math.Abs(Environment.TickCount) % project.Gallery.Length].Url
+                : null,
             Footer = new EmbedFooterBuilder
             {
                 Text = "Information to date"
@@ -179,31 +196,36 @@ public static class ModrinthEmbedBuilder
         switch (settings.ChangelogStyle)
         {
             case ChangelogStyle.PlainText:
-                return string.IsNullOrEmpty(changelog) ? "\n\n*No changelog provided*" : $"\n\n{Format.Underline(Format.Bold("Changelog:"))}\n" + $"{changelog}".Truncate((int)settings.ChangeLogMaxLength);
-            
+                return string.IsNullOrEmpty(changelog)
+                    ? "\n\n*No changelog provided*"
+                    : $"\n\n{Format.Underline(Format.Bold("Changelog:"))}\n" +
+                      $"{changelog}".Truncate((int) settings.ChangeLogMaxLength);
+
             case ChangelogStyle.CodeBlock:
-                return string.IsNullOrEmpty(changelog) ? Format.Code("\n\n*No changelog provided*") : $"\n\n{Format.Underline(Format.Bold("Changelog:"))}\n" + Format.Code($"{changelog}".Truncate((int)settings.ChangeLogMaxLength));
-            
+                return string.IsNullOrEmpty(changelog)
+                    ? Format.Code("\n\n*No changelog provided*")
+                    : $"\n\n{Format.Underline(Format.Bold("Changelog:"))}\n" +
+                      Format.Code($"{changelog}".Truncate((int) settings.ChangeLogMaxLength));
+
             case ChangelogStyle.NoChangelog:
                 return string.Empty;
         }
-        
+
         throw new ArgumentOutOfRangeException(nameof(settings.ChangelogStyle), settings.ChangelogStyle, null);
     }
 
-    private static EmbedBuilder GetFullVersionUpdateEmbed(Project project, Version version, GuildSettings guildSettings, IEnumerable<TeamMember>? teamMembers = null)
+    private static EmbedBuilder GetFullVersionUpdateEmbed(Project project, Version version, GuildSettings guildSettings,
+        IEnumerable<TeamMember>? teamMembers = null)
     {
         var sbFiles = new StringBuilder();
 
         foreach (var file in version.Files)
-        {
             sbFiles.AppendLine($"[{file.FileName}]({file.Url}) | {ByteSize.FromBytes(file.Size).Humanize()}");
-        }
 
         var changelog = FormatChangelog(version.Changelog, guildSettings);
 
         var embedAuthor = GetEmbedAuthor(project, teamMembers, version);
-        
+
         var embed = new EmbedBuilder
         {
             Author = embedAuthor,
@@ -222,7 +244,7 @@ public static class ModrinthEmbedBuilder
                 new()
                 {
                     Name = "MC Versions",
-                    Value = string.Join(", ",version.GameVersions).Truncate(EmbedFieldLimit),
+                    Value = string.Join(", ", version.GameVersions).Truncate(EmbedFieldLimit),
                     IsInline = true
                 },
                 new()
@@ -240,13 +262,13 @@ public static class ModrinthEmbedBuilder
                 new()
                 {
                     Name = $"Files ({version.Files.Length})",
-                    Value = sbFiles.ToString().Truncate(EmbedFieldLimit),
+                    Value = sbFiles.ToString().Truncate(EmbedFieldLimit)
                 },
                 new()
                 {
                     Name = "Links",
-                    Value = string.Join(" | ", 
-                        $"[Changelog]({project.Url}/changelog)", 
+                    Value = string.Join(" | ",
+                        $"[Changelog]({project.Url}/changelog)",
                         $"[Version Info]({project.GetVersionUrl(version)})")
                 }
             },
@@ -260,7 +282,7 @@ public static class ModrinthEmbedBuilder
     private static string FormatMostDownloaded(IEnumerable<Project> mostDownloaded)
     {
         var sb = new StringBuilder();
-        
+
         foreach (var p in mostDownloaded.Take(3))
         {
             sb.Append(Format.Url(p.Title, p.Url));
@@ -277,17 +299,20 @@ public static class ModrinthEmbedBuilder
             searchResult.SearchTime);
     }
 
-    public static EmbedBuilder GetUserEmbed(User user, Project[] userProjects, Color? majorColor = null, DateTimeOffset? dataTime = null)
+    public static EmbedBuilder GetUserEmbed(User user, Project[] userProjects, Color? majorColor = null,
+        DateTimeOffset? dataTime = null)
     {
         var mostDownloaded = userProjects.OrderByDescending(x => x.Downloads + x.Followers);
-        var embed = new EmbedBuilder()
+        var embed = new EmbedBuilder
         {
             Author = GetModrinthAuthor(user: user),
             Title = $"{Format.Bold(user.Username)}",
             Url = user.Url,
             ThumbnailUrl = user.AvatarUrl,
             Color = majorColor,
-            Description = string.IsNullOrEmpty(user.Bio) ? Format.Italics("No bio set") : user.Bio.Truncate(DescriptionLimit),
+            Description = string.IsNullOrEmpty(user.Bio)
+                ? Format.Italics("No bio set")
+                : user.Bio.Truncate(DescriptionLimit),
             Fields = new List<EmbedFieldBuilder>
             {
                 new()
@@ -300,7 +325,9 @@ public static class ModrinthEmbedBuilder
                 new()
                 {
                     Name = "Most popular projects",
-                    Value = userProjects.Length < 1 ? Format.Italics("No projects") : FormatMostDownloaded(mostDownloaded),
+                    Value = userProjects.Length < 1
+                        ? Format.Italics("No projects")
+                        : FormatMostDownloaded(mostDownloaded),
                     IsInline = false
                 },
                 new()
@@ -322,7 +349,7 @@ public static class ModrinthEmbedBuilder
                     IsInline = true
                 }
             },
-            Footer = new EmbedFooterBuilder()
+            Footer = new EmbedFooterBuilder
             {
                 Text = "Information to date"
             },
@@ -333,7 +360,7 @@ public static class ModrinthEmbedBuilder
 
     public static EmbedBuilder GetMoreResultsEmbed(IEnumerable<SearchResult> projects, string query)
     {
-        var embed = new EmbedBuilder()
+        var embed = new EmbedBuilder
         {
             Title = "More results"
         };
@@ -343,21 +370,22 @@ public static class ModrinthEmbedBuilder
         var description = new StringBuilder();
         description.AppendLine($"For query: {Format.Italics(query)}");
         description.AppendLine();
-        
+
         var counter = 1;
         foreach (var p in limitProjects)
         {
-            description.AppendLine($"{Format.Bold($"{counter}.")} {Format.Url(p.Title, p.Url)} | {p.Downloads.ToModrinthFormat()}");
+            description.AppendLine(
+                $"{Format.Bold($"{counter}.")} {Format.Url(p.Title, p.Url)} | {p.Downloads.ToModrinthFormat()}");
             counter++;
         }
 
         embed.Description = description.ToString();
-        
+
         return embed;
     }
 
     /// <summary>
-    /// Chooses color based on the version type
+    ///     Chooses color based on the version type
     /// </summary>
     /// <param name="versionType"></param>
     /// <returns></returns>

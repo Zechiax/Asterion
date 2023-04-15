@@ -9,8 +9,8 @@ namespace Asterion.Services.Modrinth;
 public partial class ModrinthService
 {
     /// <summary>
-    /// Gets project by it's slug or ID, firstly it tries to retrieve it from cache, if it's not in cache,
-    /// then it will use Modrinth's API and saves the result to cache
+    ///     Gets project by it's slug or ID, firstly it tries to retrieve it from cache, if it's not in cache,
+    ///     then it will use Modrinth's API and saves the result to cache
     /// </summary>
     /// <param name="slugOrId"></param>
     /// <returns></returns>
@@ -33,7 +33,7 @@ public partial class ModrinthService
             _logger.LogWarning("{ExceptionMessage}", e.Message);
             return null;
         }
-        
+
         _logger.LogDebug("Saving {Id} to cache", slugOrId);
         _cache.Set(slugOrId, p, _cacheEntryOptions);
 
@@ -78,14 +78,14 @@ public partial class ModrinthService
             _logger.LogDebug("Team members for project ID {ProjectId} are in cache", projectId);
             return teamMembers;
         }
-        
-        
+
+
         try
         {
             _logger.LogDebug("Team members for project ID {ProjectId} are not in cache", projectId);
             var team = await Api.Team.GetProjectTeamAsync(projectId);
 
-            _cache.Set($"project-team-members:{projectId}", team, absoluteExpirationRelativeToNow: TimeSpan.FromMinutes(30));
+            _cache.Set($"project-team-members:{projectId}", team, TimeSpan.FromMinutes(30));
             _logger.LogDebug("Saving team members for project ID {ProjectId} to cache", projectId);
             return team;
         }
@@ -95,7 +95,6 @@ public partial class ModrinthService
         }
 
         return null;
-        
     }
 
     public async Task<SearchResponse?> SearchProjects(string query)
@@ -137,6 +136,7 @@ public partial class ModrinthService
 
         return lastVersion;
     }
+
     public async Task<Version?> GetProjectsLatestVersion(Project project)
     {
         return await GetProjectsLatestVersion(project.Id);
@@ -154,9 +154,9 @@ public partial class ModrinthService
         {
             _logger.LogDebug("Game versions not in cache, fetching from api...");
             var gameVersions = await Api.Tag.GetGameVersionsAsync();
-            
-            _cache.Set("gameVersions", gameVersions, absoluteExpirationRelativeToNow: TimeSpan.FromHours(12));
-            
+
+            _cache.Set("gameVersions", gameVersions, TimeSpan.FromHours(12));
+
             _logger.LogDebug("Game versions set in cache");
             return gameVersions;
         }

@@ -1,4 +1,5 @@
 ﻿using Modrinth.Models;
+using Color = Discord.Color;
 
 namespace Asterion.Services.Modrinth;
 
@@ -10,12 +11,14 @@ public class SearchResult<T>
         SearchStatus = searchStatus;
         SearchTime = DateTime.UtcNow;
     }
+
     /// <summary>
-    /// Success in getting results
+    ///     Success in getting results
     /// </summary>
     public bool Success => SearchStatus is SearchStatus.FoundById or SearchStatus.FoundBySearch;
+
     public DateTime SearchTime { get; private set; }
-    public SearchStatus SearchStatus { get; private set; }
+    public SearchStatus SearchStatus { get; }
     public T? Payload { get; private set; }
 }
 
@@ -23,7 +26,7 @@ public struct UserDto
 {
     public User User;
     public Project[] Projects;
-    public Discord.Color MajorColor;
+    public Color MajorColor;
 }
 
 public struct ProjectDto

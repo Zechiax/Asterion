@@ -6,7 +6,7 @@ namespace Asterion.Extensions;
 public static class LogExtensions
 {
     /// <summary>
-    /// Converts DiscordNet's LogSeverity to Serilog's LogLevel 
+    ///     Converts DiscordNet's LogSeverity to Serilog's LogLevel
     /// </summary>
     /// <param name="logSeverity"></param>
     /// <returns></returns>

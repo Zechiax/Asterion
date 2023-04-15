@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Asterion.Modules;
 
 [RequireOwner]
-public class BotManagement: InteractionModuleBase<SocketInteractionContext>
+public class BotManagement : InteractionModuleBase<SocketInteractionContext>
 {
     private readonly IDataService _dataService;
 
@@ -23,7 +23,7 @@ public class BotManagement: InteractionModuleBase<SocketInteractionContext>
         await _dataService.AddGuildAsync(Context.Guild.Id);
         await FollowupAsync("Registered", ephemeral: true);
     }
-    
+
     [SlashCommand("unregister", "Un-registers this guild to the bot", runMode: RunMode.Async)]
     public async Task Unregister()
     {
@@ -31,12 +31,11 @@ public class BotManagement: InteractionModuleBase<SocketInteractionContext>
         await _dataService.RemoveGuildAsync(Context.Guild.Id);
         await FollowupAsync("Unregistered", ephemeral: true);
     }
-    
+
     [SlashCommand("test", "general testing command")]
     public async Task Test([Autocomplete(typeof(GameVersionAutocompletionHandler))] string gameVersion)
     {
         await RespondAsync(gameVersion, ephemeral: true);
     }
 #endif
-    
 }

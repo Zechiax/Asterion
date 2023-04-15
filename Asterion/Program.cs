@@ -1,35 +1,29 @@
 ﻿using System.Globalization;
 using Serilog;
-using Serilog.Configuration;
-using Serilog.Events;
 
-namespace Asterion
+namespace Asterion;
+
+public class Program
 {
-    public class Program
+    private static void Main(string[] args)
     {
-        private static void Main(string[] args)
-        {
-            if (args.Length > 0 && args[0] == "migration")
-            {
-                return;
-            }
+        if (args.Length > 0 && args[0] == "migration") return;
 
-            Thread.CurrentThread.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
+        Thread.CurrentThread.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
 
-            Log.Logger = new LoggerConfiguration()
-                .WriteTo.File(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs/asterion.log"),
-                    rollingInterval: RollingInterval.Day)
+        Log.Logger = new LoggerConfiguration()
+            .WriteTo.File(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs/asterion.log"),
+                rollingInterval: RollingInterval.Day)
 #if DEBUG
-                .MinimumLevel.Debug()
+            .MinimumLevel.Debug()
 #else
                 .MinimumLevel.Information()
                 .MinimumLevel.Override("Microsoft.EntityFrameworkCore.Database.Command", Serilog.Events.LogEventLevel.Warning)
 #endif
-                .Enrich.FromLogContext()
-                .WriteTo.Console()
-                .CreateLogger();
+            .Enrich.FromLogContext()
+            .WriteTo.Console()
+            .CreateLogger();
 
-            new Asterion().MainAsync().GetAwaiter().GetResult();
-        }
+        new Asterion().MainAsync().GetAwaiter().GetResult();
     }
 }

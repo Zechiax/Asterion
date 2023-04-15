@@ -11,9 +11,10 @@ public static class SettingsComponentBuilder
     public const string MainScreenButtonId = "settings-main:*";
     public const string ChangeMessageStyleSelectionId = "change-message-style:*";
     public const string ChangeChangelogStyleSelectionId = "change-changelog-style:*";
+
     public static ComponentBuilder GetIntroButtons(string userId)
     {
-        var components = 
+        var components =
             new ComponentBuilder()
                 .WithButton(GetViewButton(userId))
                 .WithButton(GetChangeSettingsButton(userId));
@@ -73,13 +74,12 @@ public static class SettingsComponentBuilder
                         Style = ButtonStyle.Primary,
                         IsDisabled = true
                     })
-                    .WithButton(new ButtonBuilder()
+                    .WithButton(new ButtonBuilder
                     {
                         Label = "3. Show subscribe button",
                         CustomId = $"settings-show-subscribe-button:{userId};{guildSettings.ShowSubscribeButton}",
                         Style = ButtonStyle.Primary
-                    })
-                ,
+                    }),
                 // Second row
                 new ActionRowBuilder()
                     .WithButton(GetBackButton(userId))
@@ -93,9 +93,10 @@ public static class SettingsComponentBuilder
             .WithSelectMenu(GetChangelogStyleSelection(guild, userId))
             .WithButton(GetBackButton(userId), 1);
     }
+
     public static SelectMenuBuilder GetMessageStyleSelection(Guild guild, string userId)
     {
-        var menu = new SelectMenuBuilder()
+        var menu = new SelectMenuBuilder
         {
             MaxValues = 1,
             MinValues = 1,
@@ -105,14 +106,12 @@ public static class SettingsComponentBuilder
 
         var options = new List<SelectMenuOptionBuilder>();
         foreach (var style in Enum.GetValues(typeof(MessageStyle)).Cast<MessageStyle>())
-        {
-            options.Add(new SelectMenuOptionBuilder()
+            options.Add(new SelectMenuOptionBuilder
             {
                 Label = Enum.GetName(typeof(MessageStyle), style),
                 Value = style.ToString(),
                 IsDefault = style == guild.GuildSettings.MessageStyle
             });
-        }
 
         menu.Options = options;
 
@@ -128,18 +127,16 @@ public static class SettingsComponentBuilder
             CustomId = ChangeChangelogStyleSelectionId.Replace("*", userId),
             Placeholder = "Select a changelog style"
         };
-        
+
         var options = new List<SelectMenuOptionBuilder>();
         foreach (var style in Enum.GetValues(typeof(ChangelogStyle)).Cast<ChangelogStyle>())
-        {
-            options.Add(new SelectMenuOptionBuilder()
+            options.Add(new SelectMenuOptionBuilder
             {
                 Label = Enum.GetName(typeof(ChangelogStyle), style),
                 Value = style.ToString(),
                 IsDefault = style == guild.GuildSettings.ChangelogStyle
             });
-        }
-        
+
         menu.Options = options;
 
         return menu;

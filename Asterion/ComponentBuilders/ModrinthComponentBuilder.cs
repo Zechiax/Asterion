@@ -1,8 +1,6 @@
-﻿using System.ComponentModel;
-using Discord;
+﻿using Discord;
 using Modrinth.Extensions;
 using Modrinth.Models;
-using Asterion.EmbedBuilders;
 using Version = Modrinth.Models.Version;
 
 namespace Asterion.ComponentBuilders;
@@ -10,7 +8,7 @@ namespace Asterion.ComponentBuilders;
 public static class ModrinthComponentBuilder
 {
     /// <summary>
-    /// Generates link button to view specific version on Modrinth
+    ///     Generates link button to view specific version on Modrinth
     /// </summary>
     /// <param name="project"></param>
     /// <param name="version"></param>
@@ -24,15 +22,15 @@ public static class ModrinthComponentBuilder
             Url = project.GetVersionUrl(version)
         };
     }
-    
+
     /// <summary>
-    /// Generates link button to view the project on Modrinth
+    ///     Generates link button to view the project on Modrinth
     /// </summary>
     /// <param name="project"></param>
     /// <returns></returns>
     public static ButtonBuilder GetProjectLinkButton(Project project)
     {
-        var linkBtn = new ButtonBuilder()
+        var linkBtn = new ButtonBuilder
         {
             Style = ButtonStyle.Link,
             Url = project.Url,
@@ -51,23 +49,23 @@ public static class ModrinthComponentBuilder
             Label = "User on Modrinth"
         };
     }
-    
+
     public static ButtonBuilder GetSubscribeButtons(ulong userId, string projectId,
         bool subEnabled = true)
     {
         var button = new ButtonBuilder(
-            label: subEnabled ? "Subscribe" : "Unsubscribe",
+            subEnabled ? "Subscribe" : "Unsubscribe",
             // Write unsub when the subEnabled is false
-            customId: $"{(subEnabled ? null : "un")}sub-project:{userId};{projectId}",
-            style: subEnabled ? ButtonStyle.Success : ButtonStyle.Danger,
+            $"{(subEnabled ? null : "un")}sub-project:{userId};{projectId}",
+            subEnabled ? ButtonStyle.Success : ButtonStyle.Danger,
             emote: subEnabled ? Emoji.Parse(":bell:") : Emoji.Parse(":no_bell:"));
-        
+
 
         return button;
     }
 
     /// <summary>
-    /// Creates button to view user details from a project view
+    ///     Creates button to view user details from a project view
     /// </summary>
     /// <param name="discordUserId"></param>
     /// <param name="modrinthUserId">Id of the Modrinth user to show, if null, button will be disabled</param>
@@ -85,7 +83,7 @@ public static class ModrinthComponentBuilder
     }
 
     /// <summary>
-    /// Creates button to view user details from a project view
+    ///     Creates button to view user details from a project view
     /// </summary>
     /// <param name="discordUserId"></param>
     /// <param name="projectId"></param>
@@ -122,12 +120,10 @@ public static class ModrinthComponentBuilder
         for (var i = 0; i < projects.Length; i++)
         {
             var p = projects[i];
-            components.WithButton(new ButtonBuilder(label: (i + 1).ToString(), customId: $"view-project-from-search:{p.ProjectId}"), rowCounter);
+            components.WithButton(new ButtonBuilder((i + 1).ToString(), $"view-project-from-search:{p.ProjectId}"),
+                rowCounter);
 
-            if (i % 5 == 0 && i != 0)
-            {
-                rowCounter++;
-            }
+            if (i % 5 == 0 && i != 0) rowCounter++;
         }
 
         return components;

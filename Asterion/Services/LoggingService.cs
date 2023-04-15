@@ -1,24 +1,25 @@
-﻿using Discord;
+﻿using Asterion.Extensions;
+using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Asterion.Extensions;
 
 namespace Asterion.Services;
 
 public class LoggingService
 {
+    private readonly DiscordSocketClient _discord;
+
     // declare the fields used later in this class
     private readonly ILogger _logger;
-    private readonly DiscordSocketClient _discord;
 
     public LoggingService(IServiceProvider services)
     {
         _discord = services.GetRequiredService<DiscordSocketClient>();
         var commands = services.GetRequiredService<CommandService>();
         _logger = services.GetRequiredService<ILogger<LoggingService>>();
-        
+
         _discord.Ready += OnReadyAsync;
         _discord.JoinedGuild += GuildJoin;
         _discord.LeftGuild += GuildLeft;
@@ -26,7 +27,7 @@ public class LoggingService
         _discord.Log += OnLogAsync;
         commands.Log += OnLogAsync;
     }
-    
+
     private Task OnReadyAsync()
     {
         _logger.LogInformation("Connected as -> [{CurrentUser}] :)", _discord.CurrentUser.Username);
@@ -45,16 +46,16 @@ public class LoggingService
         _logger.LogInformation("Left guild {GuildId}:{GuildName}", guild.Id, guild.Name);
         return Task.CompletedTask;
     }
-    
+
     /// <summary>
-    /// Logging for Discord.Net, switches the severity and logs appropriately
+    ///     Logging for Discord.Net, switches the severity and logs appropriately
     /// </summary>
     /// <param name="msg"></param>
     /// <returns></returns>
     private Task OnLogAsync(LogMessage msg)
     {
         var logLevel = msg.Severity.ToLogLevel();
-        
+
         _logger.Log(logLevel, "[{MsgSource}] {MsgMessage}", msg.Source, msg.Exception?.ToString() ?? msg.Message);
 
         return Task.CompletedTask;

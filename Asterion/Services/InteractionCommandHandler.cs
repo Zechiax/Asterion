@@ -11,11 +11,12 @@ public class InteractionCommandHandler
 {
     private readonly DiscordSocketClient _client;
     private readonly InteractionService _commands;
-    private readonly IServiceProvider _services;
     private readonly ILogger _logger;
+    private readonly IServiceProvider _services;
 
-    private string _manageSubsGroupError =
+    private readonly string _manageSubsGroupError =
         "For this command, you either need to have Administrator permission or have role for managing subs";
+
     public InteractionCommandHandler(DiscordSocketClient client, InteractionService commands, IServiceProvider services)
     {
         _client = client;
@@ -26,7 +27,7 @@ public class InteractionCommandHandler
     }
 
     /// <summary>
-    /// Setups Interaction service and registers interaction and error handling functions 
+    ///     Setups Interaction service and registers interaction and error handling functions
     /// </summary>
     public async Task InitializeAsync()
     {
@@ -45,14 +46,15 @@ public class InteractionCommandHandler
     }
 
     # region Error Handling
+
     private async Task<Task> ApplicationCommandExecuted<T>(T arg1, IInteractionContext arg2, IResult arg3)
     {
         if (arg3.IsSuccess)
             return Task.CompletedTask;
-        
+
         var commandType = "";
         var commandName = "";
-        
+
         switch (arg1)
         {
             case SlashCommandInfo slashCommandInfo:
@@ -77,27 +79,40 @@ public class InteractionCommandHandler
                     await arg2.Interaction.RespondAsync(_manageSubsGroupError, ephemeral: true);
                     break;
                 }
-                
+
                 await arg2.Interaction.RespondAsync(arg3.ErrorReason, ephemeral: true);
                 break;
             case InteractionCommandError.UnknownCommand:
-                _logger.LogError("Unknown {CommandType} Command {Arg1Name} for user {UserUsername}: \'{ErrorReason}\'", commandType, commandName, arg2.User.Username, arg3.ErrorReason);
+                _logger.LogError("Unknown {CommandType} Command {Arg1Name} for user {UserUsername}: \'{ErrorReason}\'",
+                    commandType, commandName, arg2.User.Username, arg3.ErrorReason);
                 break;
             case InteractionCommandError.BadArgs:
-                _logger.LogError("{CommandType} Command {Arg1Name} for user {UserUsername} failed with bad arguments: \'{ErrorReason}\'", commandType, commandName, arg2.User.Username, arg3.ErrorReason);
+                _logger.LogError(
+                    "{CommandType} Command {Arg1Name} for user {UserUsername} failed with bad arguments: \'{ErrorReason}\'",
+                    commandType, commandName, arg2.User.Username, arg3.ErrorReason);
                 break;
             case InteractionCommandError.Exception:
-                _logger.LogError("{CommandType} Command {Arg1Name} for user {UserUsername} failed; Exception: \'{ErrorReason}\'", commandType, commandName, arg2.User.Username, arg3.ErrorReason);
-                await arg2.Interaction.FollowupAsync("An error occurred while executing this command. Please try again later. If the problem persists, please contact the bot owner.", ephemeral: true);
+                _logger.LogError(
+                    "{CommandType} Command {Arg1Name} for user {UserUsername} failed; Exception: \'{ErrorReason}\'",
+                    commandType, commandName, arg2.User.Username, arg3.ErrorReason);
+                await arg2.Interaction.FollowupAsync(
+                    "An error occurred while executing this command. Please try again later. If the problem persists, please contact the bot owner.",
+                    ephemeral: true);
                 break;
             case InteractionCommandError.Unsuccessful:
-                _logger.LogError("{CommandType} Command {Arg1Name} for user {UserUsername} failed; Reason: \'{ErrorReason}\'", commandType, commandName, arg2.User.Username, arg3.ErrorReason);
+                _logger.LogError(
+                    "{CommandType} Command {Arg1Name} for user {UserUsername} failed; Reason: \'{ErrorReason}\'",
+                    commandType, commandName, arg2.User.Username, arg3.ErrorReason);
                 break;
             case InteractionCommandError.ConvertFailed:
-                _logger.LogError("{CommandType} Command {Arg1Name} for user {UserUsername} failed; Reason: \'{ErrorReason}\'", commandType, commandName, arg2.User.Username, arg3.ErrorReason);
+                _logger.LogError(
+                    "{CommandType} Command {Arg1Name} for user {UserUsername} failed; Reason: \'{ErrorReason}\'",
+                    commandType, commandName, arg2.User.Username, arg3.ErrorReason);
                 break;
             case InteractionCommandError.ParseFailed:
-                _logger.LogError("{CommandType} Command {Arg1Name} for user {UserUsername} failed; Reason: \'{ErrorReason}\'", commandType, commandName, arg2.User.Username, arg3.ErrorReason);
+                _logger.LogError(
+                    "{CommandType} Command {Arg1Name} for user {UserUsername} failed; Reason: \'{ErrorReason}\'",
+                    commandType, commandName, arg2.User.Username, arg3.ErrorReason);
                 break;
             case null:
                 break;
@@ -105,6 +120,7 @@ public class InteractionCommandHandler
 
         return Task.CompletedTask;
     }
+
     # endregion
 
     # region Execution
@@ -120,12 +136,13 @@ public class InteractionCommandHandler
         catch (Exception ex)
         {
             _logger.LogError("{ExceptionMessage}", ex.Message);
-            
+
             // If a Slash Command execution fails it is most likely that the original interaction acknowledgement will persist. It is a good idea to delete the original
             // response, or at least let the user know that something went wrong during the command execution.
             if (arg.Type == InteractionType.ApplicationCommand)
-                await arg.GetOriginalResponseAsync().ContinueWith(async (msg) => await msg.Result.DeleteAsync());
+                await arg.GetOriginalResponseAsync().ContinueWith(async msg => await msg.Result.DeleteAsync());
         }
     }
+
     # endregion
 }

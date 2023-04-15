@@ -1,7 +1,4 @@
-﻿using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp.Processing;
-using SixLabors.ImageSharp.Processing.Processors.Quantization;
+﻿using SixLabors.ImageSharp.Processing.Processors.Quantization;
 
 namespace Asterion.Services;
 
@@ -9,10 +6,7 @@ public static class ImageService
 {
     public static async Task<Rgb24> GetMajorColorFromImageUrl(this HttpClient client, string? imageUrl)
     {
-        if (string.IsNullOrEmpty(imageUrl))
-        {
-            return new Rgb24();
-        }
+        if (string.IsNullOrEmpty(imageUrl)) return new Rgb24();
 
         // CREDIT to James Jackson-South: https://gist.github.com/JimBobSquarePants/12e0ef5d904d03110febea196cf1d6ee
         try

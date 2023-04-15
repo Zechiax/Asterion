@@ -24,7 +24,7 @@ public class Asterion
     {
         _config = new ConfigurationBuilder()
             .SetBasePath(AppContext.BaseDirectory)
-            .AddJsonFile(path: "config.json", false, true)
+            .AddJsonFile("config.json", false, true)
             .Build();
     }
 
@@ -34,7 +34,7 @@ public class Asterion
 
         // Setup logging
         services.GetRequiredService<LoggingService>();
-        
+
         // Run database migration
         services.GetRequiredService<DatabaseMigrationService>().MigrateDatabase();
 
@@ -101,15 +101,15 @@ public class Asterion
             GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.MessageContent
         };
 
-        var commandConfig = new CommandServiceConfig()
+        var commandConfig = new CommandServiceConfig
         {
             DefaultRunMode = RunMode.Async
         };
-        
-        var modrinthClientConfig = new ModrinthClientConfig()
+
+        var modrinthClientConfig = new ModrinthClientConfig
         {
             UserAgent = "Zechiax/Asterion",
-            RateLimitRetryCount = 3,
+            RateLimitRetryCount = 3
         };
 
         var services = new ServiceCollection()
@@ -132,18 +132,14 @@ public class Asterion
             .AddLogging(configure => configure.AddSerilog(dispose: true));
 
         if (IsDebug())
-        {
             services.Configure<LoggerFilterOptions>(options => options.MinLevel = LogLevel.Debug);
-        }
         else
-        {
             services.Configure<LoggerFilterOptions>(options => options.MinLevel = LogLevel.Information);
-        }
 
         var serviceProvider = services.BuildServiceProvider();
         return serviceProvider;
     }
-    
+
     private static bool IsDebug()
     {
 #if DEBUG

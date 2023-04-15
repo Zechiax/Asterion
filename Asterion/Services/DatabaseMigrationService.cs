@@ -7,16 +7,16 @@ namespace Asterion.Services;
 
 public class DatabaseMigrationService
 {
-    private readonly IServiceProvider _services;
     private readonly ILogger<DatabaseMigrationService> _logger;
-
-    private bool Migrated { get; set; } = false;
+    private readonly IServiceProvider _services;
 
     public DatabaseMigrationService(IServiceProvider services)
     {
         _services = services;
         _logger = services.GetRequiredService<ILogger<DatabaseMigrationService>>();
     }
+
+    private bool Migrated { get; set; }
 
     public void MigrateDatabase()
     {

@@ -1,5 +1,4 @@
-﻿using System.Runtime.CompilerServices;
-using Asterion.Attributes;
+﻿using Asterion.Attributes;
 using Asterion.ComponentBuilders;
 using Asterion.Database.Models;
 using Asterion.EmbedBuilders;
@@ -8,7 +7,6 @@ using Discord;
 using Discord.Interactions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Asterion.Services;
 
 namespace Asterion.Modules;
 
@@ -16,8 +14,8 @@ namespace Asterion.Modules;
 [RequireContext(ContextType.Guild)]
 public class SettingsModule : InteractionModuleBase<SocketInteractionContext>
 {
-    private readonly ILogger<SettingsModule> _logger;
     private readonly IDataService _dataService;
+    private readonly ILogger<SettingsModule> _logger;
 
     public SettingsModule(IServiceProvider serviceProvider)
     {
@@ -37,8 +35,9 @@ public class SettingsModule : InteractionModuleBase<SocketInteractionContext>
 [RequireContext(ContextType.Guild)]
 public class SettingsInteractionModule : InteractionModuleBase
 {
-    private readonly ILogger<SettingsInteractionModule> _logger;
     private readonly IDataService _dataService;
+    private readonly ILogger<SettingsInteractionModule> _logger;
+
     public SettingsInteractionModule(ILogger<SettingsInteractionModule> logger, IDataService dataService)
     {
         _logger = logger;
@@ -50,7 +49,7 @@ public class SettingsInteractionModule : InteractionModuleBase
     public async Task MainSettingsScreen(ulong userId)
     {
         await DeferAsync();
-        
+
         await ModifyOriginalResponseAsync(x =>
         {
             x.Embed = SettingsEmbedBuilder.GetIntroEmbedBuilder().Build();
@@ -63,7 +62,7 @@ public class SettingsInteractionModule : InteractionModuleBase
     public async Task SettingsMore()
     {
         await DeferAsync();
-        
+
         var guild = await _dataService.GetGuildByIdAsync(Context.Guild.Id);
 
         if (guild is null)
@@ -88,9 +87,9 @@ public class SettingsInteractionModule : InteractionModuleBase
     public async Task ScanMessageSet(string userId, bool scanMessageStatus)
     {
         await DeferAsync();
-        
+
         var guild = await _dataService.GetGuildByIdAsync(Context.Guild.Id);
-        
+
         if (guild is null)
         {
             await FollowupAsync("Something went wrong, please try again later", ephemeral: true);
@@ -108,7 +107,7 @@ public class SettingsInteractionModule : InteractionModuleBase
             await ModifyOriginalResponseAsync(x =>
             {
                 x.Embed = SettingsEmbedBuilder.GetMoreSettingsEmbedBuilder(guild).Build();
-                x.Components = component.Build();   
+                x.Components = component.Build();
             });
             return;
         }
@@ -135,7 +134,8 @@ public class SettingsInteractionModule : InteractionModuleBase
         await ModifyOriginalResponseAsync(x =>
         {
             x.Embed = embed.Build();
-            x.Components = SettingsComponentBuilder.GetMessageStyleSelectionComponents(guild, Context.User.Id.ToString())
+            x.Components = SettingsComponentBuilder
+                .GetMessageStyleSelectionComponents(guild, Context.User.Id.ToString())
                 .Build();
         });
     }
@@ -164,18 +164,19 @@ public class SettingsInteractionModule : InteractionModuleBase
             await FollowupAsync("Something went wrong, please try again later", ephemeral: true);
             return;
         }
-        
+
         var embed = SettingsEmbedBuilder.GetViewSettingsEmbed(guild);
-        
-        
+
+
         await ModifyOriginalResponseAsync(x =>
         {
             x.Embed = embed.Build();
-            x.Components = SettingsComponentBuilder.GetMessageStyleSelectionComponents(guild, Context.User.Id.ToString())
+            x.Components = SettingsComponentBuilder
+                .GetMessageStyleSelectionComponents(guild, Context.User.Id.ToString())
                 .Build();
         });
     }
-    
+
     [DoUserCheck]
     [ComponentInteraction(SettingsComponentBuilder.ChangeChangelogStyleSelectionId)]
     public async Task ChangeChangelogStyle(string userId, string[] selectedStyle)
@@ -200,26 +201,27 @@ public class SettingsInteractionModule : InteractionModuleBase
             await FollowupAsync("Something went wrong, please try again later", ephemeral: true);
             return;
         }
-        
+
         var embed = SettingsEmbedBuilder.GetViewSettingsEmbed(guild);
-        
-        
+
+
         await ModifyOriginalResponseAsync(x =>
         {
             x.Embed = embed.Build();
-            x.Components = SettingsComponentBuilder.GetMessageStyleSelectionComponents(guild, Context.User.Id.ToString())
+            x.Components = SettingsComponentBuilder
+                .GetMessageStyleSelectionComponents(guild, Context.User.Id.ToString())
                 .Build();
         });
     }
-    
+
     [DoUserCheck]
     [ComponentInteraction("settings-show-subscribe-button:*;*", runMode: RunMode.Async)]
     public async Task ShowSubscribeButton(string userId, bool showSubscribeButton)
     {
         await DeferAsync();
-        
+
         var guild = await _dataService.GetGuildByIdAsync(Context.Guild.Id);
-        
+
         if (guild is null)
         {
             await FollowupAsync("Something went wrong, please try again later", ephemeral: true);
@@ -237,7 +239,7 @@ public class SettingsInteractionModule : InteractionModuleBase
             await ModifyOriginalResponseAsync(x =>
             {
                 x.Embed = SettingsEmbedBuilder.GetMoreSettingsEmbedBuilder(guild).Build();
-                x.Components = component.Build();   
+                x.Components = component.Build();
             });
             return;
         }

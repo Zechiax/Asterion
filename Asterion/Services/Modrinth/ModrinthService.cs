@@ -261,7 +261,13 @@ public partial class ModrinthService
 
     private void checkTimer_Elapsed(object? sender, ElapsedEventArgs e)
     {
-        if (!_updateWorker.IsBusy) _updateWorker.RunWorkerAsync();
+        try {
+            if (!_updateWorker.IsBusy) _updateWorker.RunWorkerAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogCritical("Error while checking for updates: {Exception}", ex.Message);
+        }
     }
 
     /// <summary>

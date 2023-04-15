@@ -1,11 +1,11 @@
 ﻿using System.Reflection;
 using Asterion.Interfaces;
-using Asterion.Services.Modrinth;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Modrinth.Helpers;
 
 namespace Asterion.Services;
 
@@ -16,14 +16,12 @@ public class MessageHandler
     private readonly ILogger<MessageHandler> _logger;
     private readonly IServiceProvider _services;
     private readonly DiscordSocketClient _client;
-    private readonly ModrinthHelper _helper;
 
     public MessageHandler(IServiceProvider services, ILogger<MessageHandler> logger)
     {
         _services = services;
         _logger = logger;
-
-        _helper = new ModrinthHelper();
+        
         _dataService = services.GetRequiredService<IDataService>();
         _client = services.GetRequiredService<DiscordSocketClient>();
         _commands = services.GetRequiredService<CommandService>();
@@ -59,7 +57,7 @@ public class MessageHandler
 
         var context = new SocketCommandContext(_client, message);
         
-        if (_helper.TryParseProjectSlugOrId(rawMessage.CleanContent, out var slugOrId))
+        if (UrlParser.TryParseModrinthUrl(rawMessage.CleanContent, out var slugOrId))
         {
             _logger.LogDebug("Found Modrinth link, message id: {MessageId}; parsed ID: {ProjectId}", rawMessage.Id, slugOrId);
             

@@ -132,6 +132,7 @@ public class Asterion
             .AddSingleton<ClientService>()
             .AddSingleton<IModrinthClient>(new ModrinthClient(modrinthClientConfig))
             .AddSingleton<DatabaseMigrationService>()
+            .AddSingleton<DownloadManager>()
             .AddHttpClient()
             .AddDbContext<DataContext>()
             .AddMemoryCache()

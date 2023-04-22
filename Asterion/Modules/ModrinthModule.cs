@@ -440,8 +440,9 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         });
     }
 
-
+#if RELEASE
     [RequireOwner]
+#endif
     [SlashCommand("force-update", "Forces check for updates")]
     public async Task ForceUpdate()
     {

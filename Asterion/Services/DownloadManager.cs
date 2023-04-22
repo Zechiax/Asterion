@@ -46,6 +46,8 @@ public class DownloadManager
         db.TotalDownloads.Add(totalDownloads);
         
         // We create new project downloads for each version
+        List<ProjectDownload> projectDownloads = new();
+        
         foreach (var v in version)
         {
             var projectDownload = new ProjectDownload
@@ -56,8 +58,10 @@ public class DownloadManager
                 Date = timestamp
             };
             
-            db.ProjectDownloads.Add(projectDownload);
+            projectDownloads.Add(projectDownload);
         }
+        
+        db.ProjectDownloads.AddRange(projectDownloads);
         
         await db.SaveChangesAsync();
     }

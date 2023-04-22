@@ -26,6 +26,8 @@ public class DownloadManager
         // Get the project from the database
         var dbProject = await db.ModrinthProjects.FindAsync(project.Id);
         
+        var timestamp = DateTime.UtcNow;
+        
         // If the project doesn't exist, we fail
         if (dbProject == null)
         {
@@ -38,7 +40,7 @@ public class DownloadManager
         {
             ProjectId = dbProject.ProjectId,
             Downloads = project.Downloads,
-            Timestamp = DateTime.UtcNow
+            Timestamp = timestamp
         };
         
         await db.TotalDownloads.AddAsync(totalDownloads);
@@ -51,7 +53,7 @@ public class DownloadManager
                 ProjectId = dbProject.ProjectId,
                 VersionId = v.Id,
                 Downloads = v.Downloads,
-                Date = DateTime.UtcNow
+                Date = timestamp
             };
             
             await db.ProjectDownloads.AddAsync(projectDownload);

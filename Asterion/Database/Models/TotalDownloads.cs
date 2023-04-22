@@ -7,7 +7,7 @@ namespace Asterion.Database.Models;
 public class TotalDownloads
 {
     [Key] public int Id { get; set; }
-    [Required] public string ProjectId { get; set; }
+    [Required] public string ProjectId { get; set; } = null!;
     [Required] public int Downloads { get; set; }
     [Required] public DateTime Timestamp { get; set; }
 

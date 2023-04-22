@@ -52,9 +52,13 @@ public class Asterion
         // Initialize data service after client has been connected
         client.Ready += services.GetRequiredService<IDataService>().InitializeAsync;
         services.GetRequiredService<ClientService>().Initialize();
-
+        
+        var commandsRegistered = false;
         client.Ready += async () =>
         {
+            if (commandsRegistered)
+                return;
+            
             if (IsDebug())
             {
                 var testGuildId = _config.GetValue<ulong>("testGuild");
@@ -67,6 +71,8 @@ public class Asterion
                 logger.LogInformation("Registering commands globally");
                 await commands.RegisterCommandsGloballyAsync();
             }
+            
+            commandsRegistered = true;
         };
 
         await client.LoginAsync(TokenType.Bot, _config.GetValue<string>("token"));

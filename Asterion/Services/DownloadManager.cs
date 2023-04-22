@@ -1,5 +1,6 @@
 using Asterion.Database;
 using Asterion.Database.Models;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Modrinth.Models;
@@ -64,5 +65,25 @@ public class DownloadManager
         db.ProjectDownloads.AddRange(projectDownloads);
         
         await db.SaveChangesAsync();
+    }
+    
+    public async Task<ICollection<ProjectDownload>> GetProjectDownloadsAsync(string projectId)
+    {
+        using var scope = _services.CreateScope();
+        await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
+        
+        return await db.ProjectDownloads
+            .Where(p => p.ProjectId == projectId)
+            .ToListAsync();
+    }
+    
+    public async Task<ICollection<TotalDownloads>> GetTotalDownloadsAsync(string projectId)
+    {
+        using var scope = _services.CreateScope();
+        await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
+        
+        return await db.TotalDownloads
+            .Where(p => p.ProjectId == projectId)
+            .ToListAsync();
     }
 }

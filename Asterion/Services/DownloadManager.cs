@@ -43,7 +43,7 @@ public class DownloadManager
             Timestamp = timestamp
         };
         
-        await db.TotalDownloads.AddAsync(totalDownloads);
+        db.TotalDownloads.Add(totalDownloads);
         
         // We create new project downloads for each version
         foreach (var v in version)
@@ -56,7 +56,7 @@ public class DownloadManager
                 Date = timestamp
             };
             
-            await db.ProjectDownloads.AddAsync(projectDownload);
+            db.ProjectDownloads.Add(projectDownload);
         }
         
         await db.SaveChangesAsync();

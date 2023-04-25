@@ -1,3 +1,4 @@
+using Asterion.AutocompleteHandlers;
 using Asterion.Services;
 using Asterion.Services.Modrinth;
 using Discord.Interactions;
@@ -30,11 +31,11 @@ public class ChartModule : InteractionModuleBase<SocketInteractionContext>
     public class ChartType : ChartModule
     {
         [SlashCommand("24h", "[Experimental] Graphs the downloads of a project over the span of 24 hours", runMode: RunMode.Async)]
-        public async Task Hourly(string projectId)
+        public async Task Hourly([Autocomplete(typeof(SubscribedIdAutocompletionHandler))] string projectSlugOrId)
         {
             await DeferAsync();
     
-            var project = await _modrinthService.FindProject(projectId);
+            var project = await _modrinthService.FindProject(projectSlugOrId);
             if (project.Success == false)
             {
                 await FollowupAsync("Project not found", ephemeral: true);

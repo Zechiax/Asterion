@@ -1,3 +1,4 @@
+using System.Timers;
 using Asterion.Database;
 using Asterion.Database.Models;
 using Microsoft.EntityFrameworkCore;
@@ -5,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Modrinth.Models;
 using Version = Modrinth.Models.Version;
+using Timer = System.Timers.Timer;
 
 namespace Asterion.Services;
 
@@ -12,13 +14,27 @@ public class ProjectStatisticsManager
 {
     private readonly IServiceProvider _services;
     private readonly ILogger<ProjectStatisticsManager> _logger;
+    private readonly Timer _databaseCleanupTimer;
     
     public ProjectStatisticsManager(IServiceProvider services)
     {
         _services = services;
         _logger = services.GetRequiredService<ILogger<ProjectStatisticsManager>>();
+
+        _databaseCleanupTimer = new Timer(TimeSpan.FromHours(24));
+        _databaseCleanupTimer.Elapsed += DatabaseCleanupTimerElapsed;
+        _databaseCleanupTimer.Start();
+        
+        DatabaseCleanupTimerElapsed(null, null);
     }
-    
+
+    private async void DatabaseCleanupTimerElapsed(object? state, ElapsedEventArgs? elapsedEventArgs)
+    {
+        _logger.LogInformation("Running statistics database cleanup");
+        var removedEntries = await FreeSpaceFromUnusedEntries();
+        _logger.LogInformation("Finished statistics database cleanup, removed {RemovedProjects} entries", removedEntries);
+    }
+
     public async Task UpdateDownloadsAsync(Project project, IEnumerable<Version> version)
     {
         using var scope = _services.CreateScope();
@@ -87,11 +103,11 @@ public class ProjectStatisticsManager
             .ToListAsync();
     }
 
-    public async Task FreeSpaceFromUnusedEntries()
+    public async Task<int> FreeSpaceFromUnusedEntries()
     {
         using var scope = _services.CreateScope();
         await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
-        
+
         var currentTime = DateTime.UtcNow;
         
         // For every version stats, we get all that are older than 3 days
@@ -104,10 +120,9 @@ public class ProjectStatisticsManager
             .GroupBy(p => new { p.ProjectId, p.VersionId, p.Date.Year, p.Date.Month, p.Date.Day, p.Date.Hour })
             .Select(g => g.OrderByDescending(p => p.Downloads).First());
         
-        
         // We delete all the entries that are older than 3 days and are not the most recent one in that hour
-        db.ProjectDownloads.RemoveRange(oldVersionStats.Except(oldVersionStatsToKeep));
-        
+        db.ProjectDownloads.RemoveRange(oldVersionStats.Where(p => !oldVersionStatsToKeep.Contains(p)));
+
         // We do the same for total downloads
         var oldTotalDownloads = db.TotalDownloads
             .Where(p => p.Timestamp < currentTime.AddDays(-3));
@@ -115,9 +130,9 @@ public class ProjectStatisticsManager
         var oldTotalDownloadsToKeep = oldTotalDownloads
             .GroupBy(p => new { p.ProjectId, p.Timestamp.Year, p.Timestamp.Month, p.Timestamp.Day, p.Timestamp.Hour })
             .Select(g => g.OrderByDescending(p => p.Downloads).First());
-        
+
         db.TotalDownloads.RemoveRange(oldTotalDownloads.Except(oldTotalDownloadsToKeep));
         
-        await db.SaveChangesAsync();
+        return await db.SaveChangesAsync();
     }
 }

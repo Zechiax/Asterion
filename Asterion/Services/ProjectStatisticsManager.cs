@@ -86,4 +86,38 @@ public class ProjectStatisticsManager
             .Where(p => p.ProjectId == projectId)
             .ToListAsync();
     }
+
+    public async Task FreeSpaceFromUnusedEntries()
+    {
+        using var scope = _services.CreateScope();
+        await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
+        
+        var currentTime = DateTime.UtcNow;
+        
+        // For every version stats, we get all that are older than 3 days
+        var oldVersionStats = db.ProjectDownloads
+            .Where(p => p.Date < currentTime.AddDays(-3));
+        
+        // We keep only 1 entry per hour, as we don't need more, the entry with the highest download count in that hour
+        // is the one we want to keep, as it's the most recent one
+        var oldVersionStatsToKeep = oldVersionStats
+            .GroupBy(p => new { p.ProjectId, p.VersionId, p.Date.Year, p.Date.Month, p.Date.Day, p.Date.Hour })
+            .Select(g => g.OrderByDescending(p => p.Downloads).First());
+        
+        
+        // We delete all the entries that are older than 3 days and are not the most recent one in that hour
+        db.ProjectDownloads.RemoveRange(oldVersionStats.Except(oldVersionStatsToKeep));
+        
+        // We do the same for total downloads
+        var oldTotalDownloads = db.TotalDownloads
+            .Where(p => p.Timestamp < currentTime.AddDays(-3));
+        
+        var oldTotalDownloadsToKeep = oldTotalDownloads
+            .GroupBy(p => new { p.ProjectId, p.Timestamp.Year, p.Timestamp.Month, p.Timestamp.Day, p.Timestamp.Hour })
+            .Select(g => g.OrderByDescending(p => p.Downloads).First());
+        
+        db.TotalDownloads.RemoveRange(oldTotalDownloads.Except(oldTotalDownloadsToKeep));
+        
+        await db.SaveChangesAsync();
+    }
 }

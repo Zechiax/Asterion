@@ -8,15 +8,15 @@ using Version = Modrinth.Models.Version;
 
 namespace Asterion.Services;
 
-public class DownloadManager
+public class ProjectStatisticsManager
 {
     private readonly IServiceProvider _services;
-    private readonly ILogger<DownloadManager> _logger;
+    private readonly ILogger<ProjectStatisticsManager> _logger;
     
-    public DownloadManager(IServiceProvider services)
+    public ProjectStatisticsManager(IServiceProvider services)
     {
         _services = services;
-        _logger = services.GetRequiredService<ILogger<DownloadManager>>();
+        _logger = services.GetRequiredService<ILogger<ProjectStatisticsManager>>();
     }
     
     public async Task UpdateDownloadsAsync(Project project, IEnumerable<Version> version)

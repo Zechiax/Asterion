@@ -15,13 +15,13 @@ namespace Asterion.Modules;
 
 public class ChartModule : InteractionModuleBase<SocketInteractionContext>
 {
-    private readonly DownloadManager _downloadManager;
+    private readonly ProjectStatisticsManager _projectStatisticsManager;
     private readonly ModrinthService _modrinthService;
     private readonly ILogger<ChartModule> _logger;
     
     public ChartModule(IServiceProvider serviceProvider)
     {
-        _downloadManager = serviceProvider.GetRequiredService<DownloadManager>();
+        _projectStatisticsManager = serviceProvider.GetRequiredService<ProjectStatisticsManager>();
         _modrinthService = serviceProvider.GetRequiredService<ModrinthService>();
         _logger = serviceProvider.GetRequiredService<ILogger<ChartModule>>();
     }
@@ -42,7 +42,7 @@ public class ChartModule : InteractionModuleBase<SocketInteractionContext>
                 return;
             }
 
-            var downloadData = (await _downloadManager.GetTotalDownloadsAsync(project.Payload.Project.Id)).OrderBy(x => x.Timestamp).ToList();
+            var downloadData = (await _projectStatisticsManager.GetTotalDownloadsAsync(project.Payload.Project.Id)).OrderBy(x => x.Timestamp).ToList();
             
             if (downloadData.Count == 0)
             {

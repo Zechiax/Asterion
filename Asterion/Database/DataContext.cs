@@ -36,6 +36,10 @@ public class DataContext : DbContext
         // Disables DbContext initialized messages
         optionsBuilder.ConfigureWarnings(warnings => warnings
             .Ignore(CoreEventId.ContextInitialized));
+
+#if DEBUG
+        optionsBuilder.EnableSensitiveDataLogging();
+#endif
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

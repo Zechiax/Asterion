@@ -108,31 +108,42 @@ public class ProjectStatisticsManager
         using var scope = _services.CreateScope();
         await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
 
-        var currentTime = DateTime.UtcNow;
+        var removedEntries = 0;
         
-        // For every version stats, we get all that are older than 3 days
-        var oldVersionStats = db.ProjectDownloads
-            .Where(p => p.Date < currentTime.AddDays(-3));
-        
-        // We keep only 1 entry per hour, as we don't need more, the entry with the highest download count in that hour
-        // is the one we want to keep, as it's the most recent one
-        var oldVersionStatsToKeep = oldVersionStats
-            .GroupBy(p => new { p.ProjectId, p.VersionId, p.Date.Year, p.Date.Month, p.Date.Day, p.Date.Hour })
-            .Select(g => g.OrderByDescending(p => p.Downloads).First());
-        
-        // We delete all the entries that are older than 3 days and are not the most recent one in that hour
-        db.ProjectDownloads.RemoveRange(oldVersionStats.Where(p => !oldVersionStatsToKeep.Contains(p)));
+        var currentTime = DateTime.UtcNow.AddDays(-3);
 
-        // We do the same for total downloads
-        var oldTotalDownloads = db.TotalDownloads
-            .Where(p => p.Timestamp < currentTime.AddDays(-3));
+        var oldVersionStatsToKeep = db.ProjectDownloads
+            .AsNoTracking()
+            .Where(p => p.Date <= currentTime).Select(p => new {p.VersionId, p.Id, p.Date}).ToList();
         
-        var oldTotalDownloadsToKeep = oldTotalDownloads
-            .GroupBy(p => new { p.ProjectId, p.Timestamp.Year, p.Timestamp.Month, p.Timestamp.Day, p.Timestamp.Hour })
-            .Select(g => g.OrderByDescending(p => p.Downloads).First());
+        _logger.LogInformation("Found {OldEntries} entries for version statistics", oldVersionStatsToKeep.Count);
+        
+        // We keep only the latest version in an hour
+        var idsToKeep = oldVersionStatsToKeep
+            .GroupBy(p => new {p.VersionId, p.Date.Year, p.Date.Month, p.Date.Day, p.Date.Hour})
+            .Select(p => p.OrderByDescending(arg => arg.Date).First().Id)
+            .ToList();
+        
+        _logger.LogInformation("Removing old version statistics, keeping {KeptEntries} entries", idsToKeep.Count);
 
-        db.TotalDownloads.RemoveRange(oldTotalDownloads.Except(oldTotalDownloadsToKeep));
-        
-        return await db.SaveChangesAsync();
+        //await using var versionRemovalTransaction = await db.Database.BeginTransactionAsync();
+
+        try
+        {
+            db.ProjectDownloads.RemoveRange(
+                db.ProjectDownloads.Where(p => p.Date < currentTime && !idsToKeep.Contains(p.Id))
+            );
+
+            removedEntries += await db.SaveChangesAsync();
+            //await versionRemovalTransaction.CommitAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to remove old version statistics");
+            //await versionRemovalTransaction.RollbackAsync();
+            throw;
+        }
+
+        return removedEntries;
     }
 }

@@ -223,7 +223,22 @@ public static class ModrinthEmbedBuilder
         var sbFiles = new StringBuilder();
 
         foreach (var file in version.Files)
-            sbFiles.AppendLine($"[{file.FileName}]({file.Url}) | {ByteSize.FromBytes(file.Size).Humanize()}");
+        {
+            var line = $"[{file.FileName}]({file.Url}) | {ByteSize.FromBytes(file.Size).Humanize()}";
+            if (sbFiles.Length + line.Length > EmbedFieldLimit - "...".Length)
+            {
+                sbFiles.AppendLine("...");
+                break;
+            }
+            sbFiles.AppendLine(line);
+        }
+        
+        if (version.Files.Length == 0)
+        {
+            // Version should always have some files, this is just a safety check
+            sbFiles.Append("No files");
+        }
+        
 
         var changelog = FormatChangelog(version.Changelog, guildSettings);
 

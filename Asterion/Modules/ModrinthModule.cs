@@ -321,41 +321,9 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
             return;
         }
 
-        var sb = new StringBuilder();
-
-        sb.AppendLine("Title | Id | Channel");
-        foreach (var project in list)
-        {
-            // Find custom channel for this project
-            var customChannel = list.Find(x => x.ProjectId == project.ProjectId)?.CustomUpdateChannel;
-
-            // Get update channel for this project
-            var channel = customChannel != null
-                ? _client.GetGuild(Context.Guild.Id).GetTextChannel((ulong) customChannel)
-                : null;
-
-            sb.AppendLine($@"> **{project.Project.Title}** | {project.ProjectId} {
-                (channel != null ?
-                    $"| {channel.Mention}" : "| *not set*")}");
-        }
-
-        // Split the string into multiple messages as Discord has a limit of 2000 characters per message
-        // We should split by line as we don't want to split a line in half
-        var first = true;
-        for (var i = 0; i < sb.Length; i += 1500)
-        {
-            var length = Math.Min(1500, sb.Length - i);
-            var message = sb.ToString(i, length);
-            if (first)
-            {
-                await ModifyOriginalResponseAsync(x => { x.Content = message; });
-                first = false;
-            }
-            else
-            {
-                await FollowupAsync(message);
-            }
-        }
+        var embeds = ListEmbedBuilder.CreateListEmbed(list);
+        
+        await FollowupAsync(embeds: embeds.ToArray());
     }
 
     [SlashCommand("latest-release", "Gets the latest release of project")]

@@ -33,6 +33,8 @@ public static class ModrinthEmbedBuilder
     /// </summary>
     private static readonly Color ModrinthColor = new(27, 217, 106);
 
+    private const string TruncationString = "\n\n*...More on Modrinth*";
+
     public static EmbedAuthorBuilder GetUserAuthor(User user)
     {
         var embedAuthor = new EmbedAuthorBuilder
@@ -202,13 +204,13 @@ public static class ModrinthEmbedBuilder
                 return string.IsNullOrEmpty(changelog)
                     ? "\n\n*No changelog provided*"
                     : $"\n\n{Format.Underline(Format.Bold("Changelog:"))}\n" +
-                      $"{Converter.Convert(changelog)}".Truncate((int) settings.ChangeLogMaxLength);
+                      $"{Converter.Convert(changelog)}".Truncate((int) settings.ChangeLogMaxLength, TruncationString);
 
             case ChangelogStyle.CodeBlock:
                 return string.IsNullOrEmpty(changelog)
                     ? Format.Code("\n\n*No changelog provided*")
                     : $"\n\n{Format.Underline(Format.Bold("Changelog:"))}\n" +
-                      Format.Code($"{changelog}".Truncate((int) settings.ChangeLogMaxLength));
+                      Format.Code($"{changelog}".Truncate((int) settings.ChangeLogMaxLength, TruncationString));
 
             case ChangelogStyle.NoChangelog:
                 return string.Empty;

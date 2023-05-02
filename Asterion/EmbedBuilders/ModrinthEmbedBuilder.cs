@@ -3,6 +3,7 @@ using Asterion.Database.Models;
 using Asterion.Extensions;
 using Asterion.Services.Modrinth;
 using Discord;
+using Html2Markdown;
 using Humanizer;
 using Humanizer.Bytes;
 using Modrinth.Extensions;
@@ -19,6 +20,8 @@ public static class ModrinthEmbedBuilder
     ///     Limit for the length of value of fields on embed (Discord limit is 1024)
     /// </summary>
     private const int EmbedFieldLimit = 512;
+    
+    private static readonly Converter Converter = new();
 
     /// <summary>
     ///     Limit for the length of description on embed (Discord limit is 4096)
@@ -199,7 +202,7 @@ public static class ModrinthEmbedBuilder
                 return string.IsNullOrEmpty(changelog)
                     ? "\n\n*No changelog provided*"
                     : $"\n\n{Format.Underline(Format.Bold("Changelog:"))}\n" +
-                      $"{changelog}".Truncate((int) settings.ChangeLogMaxLength);
+                      $"{Converter.Convert(changelog)}".Truncate((int) settings.ChangeLogMaxLength);
 
             case ChangelogStyle.CodeBlock:
                 return string.IsNullOrEmpty(changelog)

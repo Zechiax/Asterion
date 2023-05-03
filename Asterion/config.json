@@ -1,5 +1,6 @@
 ﻿{
   "token": "<insert-bot-token-here>",
   "testGuild": "<insert-test-guild-id>",
-  "testChannel": "<insert-test-channel-id>"
+  "testChannel": "<insert-test-channel-id>",
+  "topGgToken": "<insert-top-gg-token-here>"
 }

@@ -94,6 +94,10 @@ public class Asterion
 
             args.Cancel = false;
         };
+        
+        // We start the stats service after the client has been logged in
+        // so that we can get the correct guild count
+        services.GetRequiredService<IBotStatsService>().Initialize();
 
         await Task.Delay(Timeout.Infinite);
     }
@@ -135,6 +139,7 @@ public class Asterion
             .AddSingleton<ProjectStatisticsManager>()
             .AddHttpClient()
             .AddDbContext<DataContext>()
+            .AddSingleton<IBotStatsService, BotStatsService>()
             .AddMemoryCache()
             .AddLogging(configure => configure.AddSerilog(dispose: true));
 

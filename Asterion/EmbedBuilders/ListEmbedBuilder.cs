@@ -40,7 +40,7 @@ public static class ListEmbedBuilder
                 var entry = entries[currentEntry];
                 
                 field.Name = $"{currentEntry + 1}. {entry.Project.Title} ({entry.Project.ProjectId})";
-                field.Value = $"<#{entry.CustomUpdateChannel}>";
+                field.Value = $"In <#{entry.CustomUpdateChannel}> since {TimestampTag.FromDateTime(entry.Created, TimestampTagStyles.ShortDate)}";
                 
                 embed.AddField(field);
                 

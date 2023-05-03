@@ -47,7 +47,9 @@ public class BotStatsService : IBotStatsService
                 {
                     Content = new StringContent(JsonConvert.SerializeObject(new
                     {
-                        server_count = _discordClient.Guilds.Count
+                        server_count = _discordClient.Guilds.Count,
+                        shard_count = 1,
+                        shards = Array.Empty<string>()
                     }), Encoding.UTF8, "application/json")
                 };
                 
@@ -57,6 +59,8 @@ public class BotStatsService : IBotStatsService
                 
                 if (!response.IsSuccessStatusCode)
                     _logger.LogWarning("Failed to publish bot stats to top.gg: {StatusCode} ({ReasonPhrase})", response.StatusCode, response.ReasonPhrase);
+                else 
+                    _logger.LogInformation("Published bot stats to top.gg");
             }
             catch (Exception e)
             {

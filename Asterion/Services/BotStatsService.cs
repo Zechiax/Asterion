@@ -48,7 +48,7 @@ public class BotStatsService : IBotStatsService
                     Content = new StringContent(JsonConvert.SerializeObject(new
                     {
                         server_count = _discordClient.Guilds.Count,
-                        shard_count = 1,
+                        // shard_count = 1,
                         shards = Array.Empty<string>()
                     }), Encoding.UTF8, "application/json")
                 };

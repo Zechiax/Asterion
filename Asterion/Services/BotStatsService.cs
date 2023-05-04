@@ -36,7 +36,7 @@ public class BotStatsService : IBotStatsService
         if (string.IsNullOrEmpty(_topGgToken))
             return;
 
-        var timer = new PeriodicTimer(TimeSpan.FromMinutes(10));
+        var timer = new PeriodicTimer(TimeSpan.FromHours(1));
 
         while (await timer.WaitForNextTickAsync().ConfigureAwait(false))
         {

@@ -81,6 +81,7 @@ public class ProjectStatisticsManager
             db.TotalDownloads.Add(totalDownloads);
         }
 
+        /*
         // We create new project downloads for each version
         List<ProjectDownload> projectDownloads = new();
         
@@ -117,6 +118,7 @@ public class ProjectStatisticsManager
         }
         
         db.ProjectDownloads.AddRange(projectDownloads);
+        */
         
         await db.SaveChangesAsync();
     }

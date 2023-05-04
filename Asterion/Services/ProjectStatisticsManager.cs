@@ -21,7 +21,7 @@ public class ProjectStatisticsManager
         _services = services;
         _logger = services.GetRequiredService<ILogger<ProjectStatisticsManager>>();
 
-        _databaseCleanupTimer = new Timer(TimeSpan.FromHours(24));
+        _databaseCleanupTimer = new Timer(TimeSpan.FromHours(4));
         _databaseCleanupTimer.Elapsed += DatabaseCleanupTimerElapsed;
         _databaseCleanupTimer.Start();
         

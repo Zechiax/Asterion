@@ -60,8 +60,27 @@ public class ProjectStatisticsManager
             Timestamp = timestamp
         };
         
-        db.TotalDownloads.Add(totalDownloads);
-        
+        // If the total downloads already exists in this hour, we update the existing entry instead of creating a new one
+        var existingTotalDownloads = await db.TotalDownloads
+            .Where(p => p.ProjectId == totalDownloads.ProjectId 
+                        && p.Timestamp.Year == totalDownloads.Timestamp.Year 
+                        && p.Timestamp.Month == totalDownloads.Timestamp.Month 
+                        && p.Timestamp.Day == totalDownloads.Timestamp.Day 
+                        && p.Timestamp.Hour == totalDownloads.Timestamp.Hour)
+            .FirstOrDefaultAsync();
+
+        if (existingTotalDownloads != null)
+        {
+            _logger.LogDebug("Updating existing total downloads for project {ProjectId}", project.Id);
+            existingTotalDownloads.Downloads = totalDownloads.Downloads;
+            db.TotalDownloads.Update(existingTotalDownloads);
+        }
+        else
+        {
+            _logger.LogDebug("Creating new total downloads for project {ProjectId}", project.Id);
+            db.TotalDownloads.Add(totalDownloads);
+        }
+
         // We create new project downloads for each version
         List<ProjectDownload> projectDownloads = new();
         
@@ -75,7 +94,26 @@ public class ProjectStatisticsManager
                 Date = timestamp
             };
             
-            projectDownloads.Add(projectDownload);
+            // Check if a version with the same id in the same hour already exists
+            var existingVersion = await db.ProjectDownloads
+                .Where(p => p.ProjectId == projectDownload.ProjectId 
+                            && p.VersionId == projectDownload.VersionId 
+                                                                 && p.Date.Year == projectDownload.Date.Year 
+                                                                 && p.Date.Month == projectDownload.Date.Month 
+                                                                 && p.Date.Day == projectDownload.Date.Day 
+                                                                 && p.Date.Hour == projectDownload.Date.Hour)
+                .FirstOrDefaultAsync();
+            
+            // If it does, we update the existing entry instead of creating a new one
+            if (existingVersion != null)
+            {
+                existingVersion.Downloads = projectDownload.Downloads;
+                db.ProjectDownloads.Update(existingVersion);
+            }
+            else
+            {
+                projectDownloads.Add(projectDownload);
+            }
         }
         
         db.ProjectDownloads.AddRange(projectDownloads);

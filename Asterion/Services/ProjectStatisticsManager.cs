@@ -30,8 +30,9 @@ public class ProjectStatisticsManager
 
     private async void DatabaseCleanupTimerElapsed(object? state, ElapsedEventArgs? elapsedEventArgs)
     {
+        const int removedEntries = 0;
         _logger.LogInformation("Running statistics database cleanup");
-        var removedEntries = await FreeSpaceFromUnusedEntries();
+        // var removedEntries = await FreeSpaceFromUnusedEntries();}}
         _logger.LogInformation("Finished statistics database cleanup, removed {RemovedProjects} entries", removedEntries);
     }
 
@@ -122,17 +123,7 @@ public class ProjectStatisticsManager
         
         await db.SaveChangesAsync();
     }
-    
-    public async Task<ICollection<ProjectDownload>> GetProjectDownloadsAsync(string projectId)
-    {
-        using var scope = _services.CreateScope();
-        await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
-        
-        return await db.ProjectDownloads
-            .Where(p => p.ProjectId == projectId)
-            .ToListAsync();
-    }
-    
+
     public async Task<ICollection<TotalDownloads>> GetTotalDownloadsAsync(string projectId)
     {
         using var scope = _services.CreateScope();
@@ -143,7 +134,7 @@ public class ProjectStatisticsManager
             .ToListAsync();
     }
 
-    public async Task<int> FreeSpaceFromUnusedEntries()
+    /*public async Task<int> FreeSpaceFromUnusedEntries()
     {
         using var scope = _services.CreateScope();
         await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
@@ -185,5 +176,5 @@ public class ProjectStatisticsManager
         }
 
         return removedEntries;
-    }
+    }*/
 }

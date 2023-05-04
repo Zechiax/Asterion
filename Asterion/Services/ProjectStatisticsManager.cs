@@ -58,7 +58,8 @@ public class ProjectStatisticsManager
         {
             ProjectId = dbProject.ProjectId,
             Downloads = project.Downloads,
-            Timestamp = timestamp
+            Timestamp = timestamp,
+            Followers = project.Followers
         };
         
         // If the total downloads already exists in this hour, we update the existing entry instead of creating a new one
@@ -74,6 +75,7 @@ public class ProjectStatisticsManager
         {
             _logger.LogDebug("Updating existing total downloads for project {ProjectId}", project.Id);
             existingTotalDownloads.Downloads = totalDownloads.Downloads;
+            existingTotalDownloads.Followers = totalDownloads.Followers;
             db.TotalDownloads.Update(existingTotalDownloads);
         }
         else

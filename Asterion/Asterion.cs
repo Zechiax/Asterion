@@ -136,7 +136,7 @@ public class Asterion
             .AddSingleton<ClientService>()
             .AddSingleton<IModrinthClient>(new ModrinthClient(modrinthClientConfig))
             .AddSingleton<DatabaseMigrationService>()
-            .AddSingleton<DownloadManager>()
+            .AddSingleton<ProjectStatisticsManager>()
             .AddHttpClient()
             .AddDbContext<DataContext>()
             .AddSingleton<IBotStatsService, BotStatsService>()

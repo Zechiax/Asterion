@@ -23,8 +23,8 @@ public class DataContext : DbContext
     public virtual DbSet<Array> Arrays { get; set; } = null!;
     public virtual DbSet<ModrinthEntry> ModrinthEntries { get; set; } = null!;
     public virtual DbSet<GuildSettings> GuildSettings { get; set; } = null!;
-    public virtual DbSet<ProjectDownload> ProjectDownloads { get; set; } = null!;
     public virtual DbSet<TotalDownloads> TotalDownloads { get; set; } = null!;
+    public virtual DbSet<ModrinthInstanceStatistics> ModrinthInstanceStatistics { get; set; } = null!;
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -36,6 +36,10 @@ public class DataContext : DbContext
         // Disables DbContext initialized messages
         optionsBuilder.ConfigureWarnings(warnings => warnings
             .Ignore(CoreEventId.ContextInitialized));
+
+#if DEBUG
+        optionsBuilder.EnableSensitiveDataLogging();
+#endif
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

@@ -36,7 +36,7 @@ public class BotStatsService : IBotStatsService
         if (string.IsNullOrEmpty(_topGgToken))
             return;
 
-        var timer = new PeriodicTimer(TimeSpan.FromMinutes(10));
+        var timer = new PeriodicTimer(TimeSpan.FromHours(1));
 
         while (await timer.WaitForNextTickAsync().ConfigureAwait(false))
         {
@@ -48,7 +48,7 @@ public class BotStatsService : IBotStatsService
                     Content = new StringContent(JsonConvert.SerializeObject(new
                     {
                         server_count = _discordClient.Guilds.Count,
-                        shard_count = 1,
+                        // shard_count = 1,
                         shards = Array.Empty<string>()
                     }), Encoding.UTF8, "application/json")
                 };

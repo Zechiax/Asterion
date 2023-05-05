@@ -24,6 +24,7 @@ public class DataContext : DbContext
     public virtual DbSet<ModrinthEntry> ModrinthEntries { get; set; } = null!;
     public virtual DbSet<GuildSettings> GuildSettings { get; set; } = null!;
     public virtual DbSet<TotalDownloads> TotalDownloads { get; set; } = null!;
+    public virtual DbSet<ModrinthInstanceStatistics> ModrinthInstanceStatistics { get; set; } = null!;
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {

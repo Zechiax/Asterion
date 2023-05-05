@@ -121,8 +121,7 @@ public class ChartModule : InteractionModuleBase<SocketInteractionContext>
                         Name = "Hour (UTC)",
                         // We make it so that every hour is displayed
                         ForceStepToMin = true,
-                        MinStep = 1,
-                        ShowSeparatorLines = true
+                        MinStep = 1
                     }
                 },
             };
@@ -225,8 +224,7 @@ public class ChartModule : InteractionModuleBase<SocketInteractionContext>
                         Name = "Day (dd/MM)",
                         // We make it so that every hour is displayed
                         ForceStepToMin = true,
-                        MinStep = 1,
-                        ShowSeparatorLines = true
+                        MinStep = 1
                     }
                 },
             };

@@ -2,7 +2,7 @@
 
 namespace Asterion.Modules;
 
-public class BotCommands : InteractionModuleBase<SocketInteractionContext>
+public class BotCommands : BaseModule
 {
     [SlashCommand("ping", "Pings the bot", runMode: RunMode.Async)]
     public async Task Ping()

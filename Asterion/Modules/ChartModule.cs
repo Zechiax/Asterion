@@ -12,7 +12,7 @@ using SkiaSharp;
 
 namespace Asterion.Modules;
 
-public class ChartModule : InteractionModuleBase<SocketInteractionContext>
+public class ChartModule : BaseModule
 {
     private readonly ILogger<ChartModule> _logger;
     private readonly ModrinthService _modrinthService;

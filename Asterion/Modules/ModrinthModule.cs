@@ -22,7 +22,7 @@ namespace Asterion.Modules;
 [EnabledInDm(false)]
 [RequireContext(ContextType.Guild)]
 // ReSharper disable once ClassNeverInstantiated.Global
-public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
+public class ModrinthModule : BaseModule
 {
     private readonly DiscordSocketClient _client;
     private readonly IDataService _dataService;

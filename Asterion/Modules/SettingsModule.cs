@@ -12,7 +12,7 @@ namespace Asterion.Modules;
 
 [RequireUserPermission(GuildPermission.Administrator)]
 [RequireContext(ContextType.Guild)]
-public class SettingsModule : InteractionModuleBase<SocketInteractionContext>
+public class SettingsModule : BaseModule
 {
     private readonly IDataService _dataService;
     private readonly ILogger<SettingsModule> _logger;

@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Asterion.Modules;
 
 [RequireOwner]
-public class BotManagement : InteractionModuleBase<SocketInteractionContext>
+public class BotManagement : BaseModule
 {
     private readonly IDataService _dataService;
 

@@ -191,6 +191,15 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         // Get last version ID
         var lastVersion = versions.OrderByDescending(x => x.DatePublished).First().Id;
 
+        if (channel is null)
+        {
+            await ModifyOriginalResponseAsync(x =>
+            {
+                x.Content = "There was an error processing your request, check if the channel is correct";
+            });
+            return;
+        }
+
         await _dataService.AddModrinthProjectToGuildAsync(Context.Guild.Id, project.Id, lastVersion, channel.Id,
             project.Title);
 

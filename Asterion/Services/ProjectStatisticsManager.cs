@@ -28,7 +28,7 @@ public class ProjectStatisticsManager
         DatabaseCleanupTimerElapsed(null, null);
     }
 
-    private async void DatabaseCleanupTimerElapsed(object? state, ElapsedEventArgs? elapsedEventArgs)
+    private void DatabaseCleanupTimerElapsed(object? state, ElapsedEventArgs? elapsedEventArgs)
     {
         const int removedEntries = 0;
         _logger.LogInformation("Running statistics database cleanup");

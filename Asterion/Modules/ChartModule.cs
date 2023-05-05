@@ -103,7 +103,7 @@ public class ChartModule : InteractionModuleBase<SocketInteractionContext>
             {
                 Series = new ISeries[]
                 {
-                    new ColumnSeries<int>
+                    new LineSeries<int>
                     {
                         Name = "Downloads per hour",
                         Values = downloads,
@@ -206,7 +206,7 @@ public class ChartModule : InteractionModuleBase<SocketInteractionContext>
             {
                 Series = new ISeries[]
                 {
-                    new ColumnSeries<int>
+                    new LineSeries<int>
                     {
                         Name = "Downloads per day",
                         Values = downloads,

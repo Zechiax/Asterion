@@ -50,7 +50,7 @@ public partial class ModrinthService
         _updateWorker.DoWork += CheckUpdates;
 
 
-        var checkTimer = new Timer(MinutesToMilliseconds(20));
+        var checkTimer = new Timer(MinutesToMilliseconds(10));
         checkTimer.Elapsed += checkTimer_Elapsed;
         checkTimer.Start();
 

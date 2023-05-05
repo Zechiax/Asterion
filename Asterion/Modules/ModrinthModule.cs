@@ -1,5 +1,4 @@
-﻿using System.Text;
-using Asterion.Attributes;
+﻿using Asterion.Attributes;
 using Asterion.AutocompleteHandlers;
 using Asterion.ComponentBuilders;
 using Asterion.Database.Models;
@@ -251,7 +250,8 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
     [DoManageSubsRoleCheck(Group = "ManageSubs")]
     [SlashCommand("unsubscribe", "Remove Modrinth project from your watched list")]
     public async Task Unsubscribe(
-        [Summary("project_id")] [Autocomplete(typeof(SubscribedIdAutocompletionHandler))] string projectId)
+        [Summary("project_id")] [Autocomplete(typeof(SubscribedIdAutocompletionHandler))]
+        string projectId)
     {
         await DeferAsync();
         var removed = await _dataService.RemoveModrinthProjectFromGuildAsync(Context.Guild.Id, projectId);
@@ -322,7 +322,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         }
 
         var embeds = ListEmbedBuilder.CreateListEmbed(list);
-        
+
         await FollowupAsync(embeds: embeds.ToArray());
     }
 

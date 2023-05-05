@@ -13,6 +13,5 @@ public class TotalDownloads
     [Required] public DateTime Timestamp { get; set; }
 
     // Navigation property for the project associated with these total downloads
-    [ForeignKey("ProjectId")]
-    public ModrinthProject Project { get; set; } = null!;
+    [ForeignKey("ProjectId")] public ModrinthProject Project { get; set; } = null!;
 }

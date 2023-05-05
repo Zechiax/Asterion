@@ -20,20 +20,20 @@ public static class ModrinthEmbedBuilder
     ///     Limit for the length of value of fields on embed (Discord limit is 1024)
     /// </summary>
     private const int EmbedFieldLimit = 512;
-    
-    private static readonly Converter Converter = new();
 
     /// <summary>
     ///     Limit for the length of description on embed (Discord limit is 4096)
     /// </summary>
     private const int DescriptionLimit = 2000;
 
+    private const string TruncationString = "\n\n*...More on Modrinth*";
+
+    private static readonly Converter Converter = new();
+
     /// <summary>
     ///     The main color of the Modrinth logo
     /// </summary>
     private static readonly Color ModrinthColor = new(27, 217, 106);
-
-    private const string TruncationString = "\n\n*...More on Modrinth*";
 
     public static EmbedAuthorBuilder GetUserAuthor(User user)
     {
@@ -232,15 +232,14 @@ public static class ModrinthEmbedBuilder
                 sbFiles.AppendLine("...");
                 break;
             }
+
             sbFiles.AppendLine(line);
         }
-        
+
         if (version.Files.Length == 0)
-        {
             // Version should always have some files, this is just a safety check
             sbFiles.Append("No files");
-        }
-        
+
 
         var changelog = FormatChangelog(version.Changelog, guildSettings);
 

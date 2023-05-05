@@ -12,10 +12,11 @@ public class InteractionCommandHandler
     private readonly DiscordSocketClient _client;
     private readonly InteractionService _commands;
     private readonly ILogger _logger;
-    private readonly IServiceProvider _services;
 
     private readonly string _manageSubsGroupError =
         "For this command, you either need to have Administrator permission or have role for managing subs";
+
+    private readonly IServiceProvider _services;
 
     public InteractionCommandHandler(DiscordSocketClient client, InteractionService commands, IServiceProvider services)
     {

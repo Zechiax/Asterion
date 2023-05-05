@@ -1,5 +1,4 @@
-﻿using System.Text;
-using Asterion.Database.Models;
+﻿using Asterion.Database.Models;
 using Discord;
 
 namespace Asterion.EmbedBuilders;
@@ -22,15 +21,12 @@ public static class ListEmbedBuilder
         for (var i = 0; i < numberOfEmbeds; i++)
         {
             // If i is 0, it's already initialized
-            if (i > 0)
-            {
-                embed = new EmbedBuilder();
-            }
+            if (i > 0) embed = new EmbedBuilder();
             embed.Footer = new EmbedFooterBuilder
             {
                 Text = $"Page {i + 1} of {numberOfEmbeds}"
-            };   
-            
+            };
+
             for (var j = 0; j < DiscordEmbedConstants.MaxEmbedFieldCount; j++)
             {
                 if (currentEntry >= entries.Count) break;
@@ -38,15 +34,16 @@ public static class ListEmbedBuilder
                 var field = new EmbedFieldBuilder();
 
                 var entry = entries[currentEntry];
-                
+
                 field.Name = $"{currentEntry + 1}. {entry.Project.Title} ({entry.Project.ProjectId})";
-                field.Value = $"In <#{entry.CustomUpdateChannel}> since {TimestampTag.FromDateTime(entry.Created, TimestampTagStyles.ShortDate)}";
-                
+                field.Value =
+                    $"In <#{entry.CustomUpdateChannel}> since {TimestampTag.FromDateTime(entry.Created, TimestampTagStyles.ShortDate)}";
+
                 embed.AddField(field);
-                
+
                 currentEntry++;
             }
-            
+
             embeds.Add(embed.Build());
         }
 

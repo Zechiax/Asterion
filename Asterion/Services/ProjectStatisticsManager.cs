@@ -5,17 +5,17 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Modrinth.Models;
-using Version = Modrinth.Models.Version;
 using Timer = System.Timers.Timer;
+using Version = Modrinth.Models.Version;
 
 namespace Asterion.Services;
 
 public class ProjectStatisticsManager
 {
-    private readonly IServiceProvider _services;
-    private readonly ILogger<ProjectStatisticsManager> _logger;
     private readonly Timer _databaseCleanupTimer;
-    
+    private readonly ILogger<ProjectStatisticsManager> _logger;
+    private readonly IServiceProvider _services;
+
     public ProjectStatisticsManager(IServiceProvider services)
     {
         _services = services;
@@ -24,7 +24,7 @@ public class ProjectStatisticsManager
         _databaseCleanupTimer = new Timer(TimeSpan.FromHours(4));
         _databaseCleanupTimer.Elapsed += DatabaseCleanupTimerElapsed;
         _databaseCleanupTimer.Start();
-        
+
         DatabaseCleanupTimerElapsed(null, null);
     }
 
@@ -33,26 +33,29 @@ public class ProjectStatisticsManager
         const int removedEntries = 0;
         _logger.LogInformation("Running statistics database cleanup");
         // var removedEntries = await FreeSpaceFromUnusedEntries();}}
-        _logger.LogInformation("Finished statistics database cleanup, removed {RemovedProjects} entries", removedEntries);
+        _logger.LogInformation("Finished statistics database cleanup, removed {RemovedProjects} entries",
+            removedEntries);
     }
 
     public async Task UpdateDownloadsAsync(Project project, IEnumerable<Version> version)
     {
         using var scope = _services.CreateScope();
         await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
-        
+
         // Get the project from the database
         var dbProject = await db.ModrinthProjects.FindAsync(project.Id);
-        
+
         var timestamp = DateTime.UtcNow;
-        
+
         // If the project doesn't exist, we fail
         if (dbProject == null)
         {
-            _logger.LogError("Failed to update downloads for project {ProjectId} because it doesn't exist in the database", project.Id);
+            _logger.LogError(
+                "Failed to update downloads for project {ProjectId} because it doesn't exist in the database",
+                project.Id);
             return;
         }
-        
+
         // We create new total downloads for the project
         var totalDownloads = new TotalDownloads
         {
@@ -61,13 +64,13 @@ public class ProjectStatisticsManager
             Timestamp = timestamp,
             Followers = project.Followers
         };
-        
+
         // If the total downloads already exists in this hour, we update the existing entry instead of creating a new one
         var existingTotalDownloads = await db.TotalDownloads
-            .Where(p => p.ProjectId == totalDownloads.ProjectId 
-                        && p.Timestamp.Year == totalDownloads.Timestamp.Year 
-                        && p.Timestamp.Month == totalDownloads.Timestamp.Month 
-                        && p.Timestamp.Day == totalDownloads.Timestamp.Day 
+            .Where(p => p.ProjectId == totalDownloads.ProjectId
+                        && p.Timestamp.Year == totalDownloads.Timestamp.Year
+                        && p.Timestamp.Month == totalDownloads.Timestamp.Month
+                        && p.Timestamp.Day == totalDownloads.Timestamp.Day
                         && p.Timestamp.Hour == totalDownloads.Timestamp.Hour)
             .FirstOrDefaultAsync();
 
@@ -122,7 +125,7 @@ public class ProjectStatisticsManager
         
         db.ProjectDownloads.AddRange(projectDownloads);
         */
-        
+
         await db.SaveChangesAsync();
     }
 
@@ -130,7 +133,7 @@ public class ProjectStatisticsManager
     {
         using var scope = _services.CreateScope();
         await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
-        
+
         return await db.TotalDownloads
             .Where(p => p.ProjectId == projectId)
             .ToListAsync();

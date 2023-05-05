@@ -28,8 +28,8 @@ public partial class ModrinthService
     private readonly IDataService _dataService;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger _logger;
-    private readonly BackgroundWorker _updateWorker;
     private readonly ProjectStatisticsManager _projectStatisticsManager;
+    private readonly BackgroundWorker _updateWorker;
 
     public ModrinthService(IServiceProvider serviceProvider, IHttpClientFactory httpClientFactory)
     {
@@ -39,7 +39,7 @@ public partial class ModrinthService
         _cache = serviceProvider.GetRequiredService<IMemoryCache>();
         _dataService = serviceProvider.GetRequiredService<IDataService>();
         _client = serviceProvider.GetRequiredService<DiscordSocketClient>();
-        _projectStatisticsManager = serviceProvider.GetRequiredService<ProjectStatisticsManager>(); 
+        _projectStatisticsManager = serviceProvider.GetRequiredService<ProjectStatisticsManager>();
 
         _cacheEntryOptions = new MemoryCacheEntryOptions
         {
@@ -131,7 +131,7 @@ public partial class ModrinthService
                 var versionList = apiVersions.Where(x => x.ProjectId == project.Id).ToList();
 
                 var newVersions = await GetNewVersions(versionList, project.Id);
-                
+
                 // Update data in database
                 _logger.LogDebug("Updating downloads in database");
                 await _projectStatisticsManager.UpdateDownloadsAsync(project, versionList);

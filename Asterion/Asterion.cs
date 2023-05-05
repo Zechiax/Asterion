@@ -52,13 +52,13 @@ public class Asterion
         // Initialize data service after client has been connected
         client.Ready += services.GetRequiredService<IDataService>().InitializeAsync;
         services.GetRequiredService<ClientService>().Initialize();
-        
+
         var commandsRegistered = false;
         client.Ready += async () =>
         {
             if (commandsRegistered)
                 return;
-            
+
             if (IsDebug())
             {
                 var testGuildId = _config.GetValue<ulong>("testGuild");
@@ -71,7 +71,7 @@ public class Asterion
                 logger.LogInformation("Registering commands globally");
                 await commands.RegisterCommandsGloballyAsync();
             }
-            
+
             commandsRegistered = true;
         };
 
@@ -94,7 +94,7 @@ public class Asterion
 
             args.Cancel = false;
         };
-        
+
         // We start the stats service after the client has been logged in
         // so that we can get the correct guild count
         services.GetRequiredService<IBotStatsService>().Initialize();

@@ -223,12 +223,10 @@ public class ChartModule : InteractionModuleBase<SocketInteractionContext>
                 {
                     new Axis
                     {
-                        // We don't need to display minutes
                         Labels = downloadData.Select(x => x.Timestamp.ToString("dd/MM")).ToArray(),
                         Name = "Day (dd/MM)",
-                        // We make it so that every hour is displayed
-                        ForceStepToMin = true,
-                        MinStep = 1
+                        // We rotate the labels so they don't overlap
+                        LabelsRotation = 45
                     }
                 }
             };

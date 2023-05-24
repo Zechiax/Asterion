@@ -154,7 +154,8 @@ public partial class ModrinthService
 
                 // Update data in database
                 _logger.LogDebug("Updating data in database");
-                await _dataService.UpdateModrinthProjectAsync(project.Id, newVersions[0].Id);
+                await _dataService.UpdateModrinthProjectAsync(project.Id, newVersions[0].Id, project.Title,
+                    project.Updated);
 
                 var team = await GetProjectsTeamMembersAsync(project.Id);
 

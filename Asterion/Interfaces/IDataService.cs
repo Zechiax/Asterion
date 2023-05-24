@@ -44,7 +44,7 @@ public interface IDataService
     /// </param>
     /// <param name="projectTitle">Title of the project, not required</param>
     /// <returns>If the operation was successful</returns>
-    public Task<bool> AddModrinthProjectToGuildAsync(ulong guildId, string projectId, string lastCheckVersion,
+    public Task<bool> AddModrinthProjectToGuildAsync(ulong guildId, string projectId, string lastCheckVersion, DateTime lastUpdate,
         ulong customChannelId, string? projectTitle = null);
 
     /// <summary>

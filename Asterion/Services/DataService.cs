@@ -142,7 +142,7 @@ public class DataService : IDataService
         return true;
     }
 
-    public async Task<bool> AddModrinthProjectToGuildAsync(ulong guildId, string projectId, string lastCheckVersion,
+    public async Task<bool> AddModrinthProjectToGuildAsync(ulong guildId, string projectId, string lastCheckVersion, DateTime lastUpdated,
         ulong customChannelId, string? projectTitle = null)
     {
         using var scope = _services.CreateScope();
@@ -165,7 +165,7 @@ public class DataService : IDataService
             {
                 ProjectId = projectId,
                 Created = DateTime.Now,
-                LastUpdated = DateTime.Now,
+                LastUpdated = lastUpdated,
                 LastCheckVersion = lastCheckVersion,
                 Title = projectTitle
             }).Entity;

@@ -200,7 +200,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
             return;
         }
 
-        await _dataService.AddModrinthProjectToGuildAsync(Context.Guild.Id, project.Id, lastVersion, channel.Id,
+        await _dataService.AddModrinthProjectToGuildAsync(Context.Guild.Id, project.Id, lastVersion, project.Updated, channel.Id,
             project.Title);
 
         await ModifyOriginalResponseAsync(x =>

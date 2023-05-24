@@ -96,7 +96,7 @@ public partial class ModrinthService
             var versions = apiProjects.SelectMany(p => p.Versions).ToArray();
 
 
-            const int splitBy = 500;
+            const int splitBy = 100;
             _logger.LogDebug("Getting multiple versions ({Count}) from Modrinth", versions.Length);
 
             // Make multiple requests to get all versions - we don't want to get 1500+ versions in one request

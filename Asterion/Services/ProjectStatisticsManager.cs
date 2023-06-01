@@ -37,7 +37,7 @@ public class ProjectStatisticsManager
             removedEntries);
     }
 
-    public async Task UpdateDownloadsAsync(Project project, IEnumerable<Version> version)
+    public async Task UpdateDownloadsAsync(Project project, IEnumerable<Version>? version = null)
     {
         using var scope = _services.CreateScope();
         await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();

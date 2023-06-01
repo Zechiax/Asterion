@@ -88,6 +88,13 @@ public partial class ModrinthService
                 return;
             }
             
+            // Update downloads data in database - before we remove projects which are not updated
+            _logger.LogDebug("Updating downloads in database");
+            foreach (var project in apiProjects)
+            {
+                await _projectStatisticsManager.UpdateDownloadsAsync(project);
+            }
+            
             // Remove projects which are not updated (last update timestamp is less or equal to the last update timestamp in database)
             apiProjects = apiProjects.Where(x => databaseProjects.Any(y => y.ProjectId == x.Id && y.LastUpdated < x.Updated)).ToArray();
 
@@ -133,10 +140,6 @@ public partial class ModrinthService
                 var versionList = apiVersions.Where(x => x.ProjectId == project.Id).ToList();
 
                 var newVersions = await GetNewVersions(versionList, project.Id);
-
-                // Update data in database
-                _logger.LogDebug("Updating downloads in database");
-                await _projectStatisticsManager.UpdateDownloadsAsync(project, versionList);
 
                 if (newVersions is null)
                 {

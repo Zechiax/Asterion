@@ -98,7 +98,7 @@ public class ModrinthInteractionModule : InteractionModuleBase
             x.Components = GetButtons(project, guild.GuildSettings, false, team).Build();
         });
 
-        await _dataService.AddModrinthProjectToGuildAsync(guildId, project.Id, latestVersion.Id, channel.Id,
+        await _dataService.AddModrinthProjectToGuildAsync(guildId, project.Id, latestVersion.Id, project.Updated, channel.Id,
             project.Title);
 
         await FollowupAsync(

@@ -79,7 +79,6 @@ public partial class ModrinthService
             var databaseProjects = await _dataService.GetAllModrinthProjectsAsync();
 
             var projectIds = databaseProjects.Select(x => x.ProjectId);
-
             _logger.LogDebug("Getting multiple projects ({Count}) from Modrinth", databaseProjects.Count);
             var apiProjects = await GetMultipleProjects(projectIds);
 
@@ -88,13 +87,16 @@ public partial class ModrinthService
                 _logger.LogWarning("Could not get information from API, update search interrupted");
                 return;
             }
+            
+            // Remove projects which are not updated (last update timestamp is less or equal to the last update timestamp in database)
+            apiProjects = apiProjects.Where(x => databaseProjects.Any(y => y.ProjectId == x.Id && y.LastUpdated < x.Updated)).ToArray();
 
             _logger.LogDebug("Got {Count} projects", apiProjects.Length);
 
             var versions = apiProjects.SelectMany(p => p.Versions).ToArray();
 
 
-            const int splitBy = 500;
+            const int splitBy = 100;
             _logger.LogDebug("Getting multiple versions ({Count}) from Modrinth", versions.Length);
 
             // Make multiple requests to get all versions - we don't want to get 1500+ versions in one request

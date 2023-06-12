@@ -1,8 +1,9 @@
 ﻿using System.Globalization;
+using Asterion.Interfaces;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
 
-namespace Asterion.Interfaces;
+namespace Asterion.Services;
 
 public class LocalizationService : ILocalizationService
 {
@@ -17,14 +18,29 @@ public class LocalizationService : ILocalizationService
     
     public string Get(string key)
     {
-        _logger.LogDebug("Getting localized string for key {Key}", key);
         var localizedString = _localizer[key];
-        _logger.LogDebug("Localized string for key {Key} is {LocalizedString}", key, localizedString);
+     
+        if (localizedString.ResourceNotFound)
+        {
+            _logger.LogWarning("Missing localization for key: {Key}, report this to the developers!", key);
+            return key;
+        }
+        
         return localizedString;
     }
 
     public string Get(string key, CultureInfo cultureInfo)
     {
         return _localizer[key, cultureInfo];
+    }
+
+    public string Get(string key, object[] parameters)
+    {
+        return _localizer[key, parameters];
+    }
+
+    public string Get(string key, CultureInfo cultureInfo, object[] parameters)
+    {
+        return _localizer[key, cultureInfo, parameters];
     }
 }

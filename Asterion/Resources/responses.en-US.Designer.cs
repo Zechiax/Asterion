@@ -60,11 +60,38 @@ namespace Asterion.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Hello World!.
+        ///   Looks up a localized string similar to The Modrinth API is currently unavailable..
         /// </summary>
-        internal static string HelloWorld {
+        internal static string Error_ModrinthApiUnavailable {
             get {
-                return ResourceManager.GetString("HelloWorld", resourceCulture);
+                return ResourceManager.GetString("Error_ModrinthApiUnavailable", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Please try again later..
+        /// </summary>
+        internal static string Error_TryAgainLater {
+            get {
+                return ResourceManager.GetString("Error_TryAgainLater", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Unknown error.
+        /// </summary>
+        internal static string Error_Unknown {
+            get {
+                return ResourceManager.GetString("Error_Unknown", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to No results for query &apos;{0}&apos;.
+        /// </summary>
+        internal static string Modrinth_Search_NoResult {
+            get {
+                return ResourceManager.GetString("Modrinth_Search_NoResult", resourceCulture);
             }
         }
     }

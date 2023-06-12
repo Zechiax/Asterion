@@ -30,9 +30,11 @@ public class ModrinthModule : AsterionInteractionModuleBase
     private readonly InteractiveService _interactive;
     private readonly ILogger<ModrinthModule> _logger;
     private readonly ModrinthService _modrinthService;
+    private readonly ILocalizationService _localizationService;
 
     public ModrinthModule(IServiceProvider serviceProvider)
     {
+        _localizationService = serviceProvider.GetRequiredService<ILocalizationService>();
         _dataService = serviceProvider.GetRequiredService<IDataService>();
         _modrinthService = serviceProvider.GetRequiredService<ModrinthService>();
         _interactive = serviceProvider.GetRequiredService<InteractiveService>();
@@ -98,7 +100,7 @@ public class ModrinthModule : AsterionInteractionModuleBase
                 });
                 return;
             case SearchStatus.NoResult:
-                await ModifyOriginalResponseAsync(x => { x.Content = $"No result for query '{query}'"; });
+                await ModifyOriginalResponseAsync(x => { x.Content = _localizationService.Get("Modrinth_Search_NoResult", new object[]{query}); });
                 return;
             case SearchStatus.UnknownError:
                 await ModifyOriginalResponseAsync(x => { x.Content = "Unknown error, please try again later"; });

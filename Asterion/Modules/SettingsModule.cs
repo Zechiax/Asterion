@@ -1,4 +1,5 @@
 ﻿using Asterion.Attributes;
+using Asterion.Common;
 using Asterion.ComponentBuilders;
 using Asterion.Database.Models;
 using Asterion.EmbedBuilders;
@@ -12,7 +13,7 @@ namespace Asterion.Modules;
 
 [RequireUserPermission(GuildPermission.Administrator)]
 [RequireContext(ContextType.Guild)]
-public class SettingsModule : InteractionModuleBase<SocketInteractionContext>
+public class SettingsModule : AsterionInteractionModuleBase
 {
     private readonly IDataService _dataService;
     private readonly ILogger<SettingsModule> _logger;

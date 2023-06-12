@@ -19,9 +19,12 @@ namespace Asterion;
 public class Asterion
 {
     private readonly IConfiguration _config;
+    private int _shardId;
 
-    public Asterion()
+    public Asterion(int shardId)
     {
+        _shardId = shardId;
+        
         _config = new ConfigurationBuilder()
             .SetBasePath(AppContext.BaseDirectory)
             .AddJsonFile("config.json", false, true)

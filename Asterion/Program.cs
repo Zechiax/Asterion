@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using Figgle;
 using Serilog;
 
 namespace Asterion;
@@ -9,6 +10,8 @@ public class Program
     {
         if (args.Length > 0 && args[0] == "migration") return;
 
+        Console.WriteLine(FiggleFonts.Slant.Render("Asterion v3"));
+        
         Thread.CurrentThread.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
 
         Log.Logger = new LoggerConfiguration()
@@ -24,6 +27,6 @@ public class Program
             .WriteTo.Console()
             .CreateLogger();
 
-        new Asterion().MainAsync().GetAwaiter().GetResult();
+        new Asterion(0).MainAsync().GetAwaiter().GetResult();
     }
 }

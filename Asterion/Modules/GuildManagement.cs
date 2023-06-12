@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using Asterion.Attributes;
+using Asterion.Common;
 using Asterion.Interfaces;
 using Discord;
 using Discord.Interactions;
@@ -7,7 +8,7 @@ using Discord.Interactions;
 namespace Asterion.Modules;
 
 [EnabledInDm(false)]
-public class GuildManagement : InteractionModuleBase<SocketInteractionContext>
+public class GuildManagement : AsterionInteractionModuleBase
 {
     private readonly IDataService _dataService;
 

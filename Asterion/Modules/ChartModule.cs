@@ -1,4 +1,5 @@
 using Asterion.AutocompleteHandlers;
+using Asterion.Common;
 using Asterion.Services;
 using Asterion.Services.Modrinth;
 using Discord;
@@ -12,7 +13,7 @@ using SkiaSharp;
 
 namespace Asterion.Modules;
 
-public class ChartModule : InteractionModuleBase<SocketInteractionContext>
+public class ChartModule : AsterionInteractionModuleBase
 {
     private readonly ILogger<ChartModule> _logger;
     private readonly ModrinthService _modrinthService;

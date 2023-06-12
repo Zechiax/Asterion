@@ -1,5 +1,6 @@
 ﻿using Asterion.Attributes;
 using Asterion.AutocompleteHandlers;
+using Asterion.Common;
 using Asterion.ComponentBuilders;
 using Asterion.Database.Models;
 using Asterion.EmbedBuilders;
@@ -22,7 +23,7 @@ namespace Asterion.Modules;
 [EnabledInDm(false)]
 [RequireContext(ContextType.Guild)]
 // ReSharper disable once ClassNeverInstantiated.Global
-public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
+public class ModrinthModule : AsterionInteractionModuleBase
 {
     private readonly DiscordSocketClient _client;
     private readonly IDataService _dataService;
@@ -51,7 +52,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         _logger.LogDebug("Search for user '{Query}", query);
         var searchResult = await _modrinthService.FindUser(query);
         _logger.LogDebug("Search status: {SearchStatus}", searchResult.SearchStatus);
-
+        
         switch (searchResult.SearchStatus)
         {
             case SearchStatus.ApiDown:

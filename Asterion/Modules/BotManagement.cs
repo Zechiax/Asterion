@@ -1,4 +1,5 @@
 ﻿using Asterion.AutocompleteHandlers;
+using Asterion.Common;
 using Asterion.Interfaces;
 using Discord.Interactions;
 using Microsoft.Extensions.DependencyInjection;
@@ -6,7 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Asterion.Modules;
 
 [RequireOwner]
-public class BotManagement : InteractionModuleBase<SocketInteractionContext>
+public class BotManagement : AsterionInteractionModuleBase
 {
     private readonly IDataService _dataService;
 

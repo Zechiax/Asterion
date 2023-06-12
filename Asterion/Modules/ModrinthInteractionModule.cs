@@ -1,4 +1,5 @@
 ﻿using Asterion.Attributes;
+using Asterion.Common;
 using Asterion.ComponentBuilders;
 using Asterion.Database.Models;
 using Asterion.EmbedBuilders;
@@ -14,7 +15,7 @@ using Modrinth.Models;
 namespace Asterion.Modules;
 
 [EnabledInDm(false)]
-public class ModrinthInteractionModule : InteractionModuleBase
+public class ModrinthInteractionModule : AsterionInteractionModuleBase
 {
     private const string RequestError = "Sorry, there was an error processing your request, try again later";
     private readonly IDataService _dataService;
@@ -40,7 +41,7 @@ public class ModrinthInteractionModule : InteractionModuleBase
         components.WithButton(ModrinthComponentBuilder.GetProjectLinkButton(project))
             .WithButton(ModrinthComponentBuilder.GetUserToViewButton(Context.User.Id,
                 team.GetOwner()?.User.Id, project.Id));
-
+        
         return components;
     }
 
@@ -52,7 +53,7 @@ public class ModrinthInteractionModule : InteractionModuleBase
         await DeferAsync();
 
         var guildId = Context.Guild.Id;
-        var channel = await Context.Guild.GetTextChannelAsync(Context.Channel.Id);
+        var channel = Context.Guild.GetTextChannel(Context.Channel.Id);
 
         var subscribed = await _dataService.IsGuildSubscribedToProjectAsync(guildId, projectId);
 
@@ -106,7 +107,7 @@ public class ModrinthInteractionModule : InteractionModuleBase
             ephemeral: true);
 
 
-        var guildChannels = await Context.Guild.GetTextChannelsAsync();
+        var guildChannels = Context.Guild.TextChannels;
 
         var options = new SelectMenuBuilder
         {

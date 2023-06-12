@@ -41,4 +41,19 @@
         <PackageReference Include="System.Data.SQLite" Version="1.0.117" />
     </ItemGroup>
 
+    <ItemGroup>
+      <EmbeddedResource Update="Resources\responses.en-US.resx">
+        <Generator>ResXFileCodeGenerator</Generator>
+        <LastGenOutput>responses.en-US.Designer.cs</LastGenOutput>
+      </EmbeddedResource>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Update="Resources\responses.en-US.Designer.cs">
+        <DesignTime>True</DesignTime>
+        <AutoGen>True</AutoGen>
+        <DependentUpon>responses.en-US.resx</DependentUpon>
+      </Compile>
+    </ItemGroup>
+
 </Project>

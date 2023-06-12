@@ -10,15 +10,7 @@ public class BotCommands : AsterionInteractionModuleBase
     [SlashCommand("ping", "Pings the bot", runMode: RunMode.Async)]
     public async Task Ping()
     {
-        if (Context.Client is BaseSocketClient socketClient)
-        {
-            var latency = socketClient.Latency;
-            await RespondAsync($"Pong! Latency: {latency}ms");
-        }
-        else
-        {
-            await RespondAsync("Unable to determine latency.");
-        }
+        await RespondAsync($"Pong! Latency: {Context.Client.Latency}ms");
     }
 #endif
 }

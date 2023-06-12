@@ -146,6 +146,11 @@ public class Asterion
             .AddMemoryCache()
             .AddLogging(configure => configure.AddSerilog(dispose: true));
 
+        services.AddLocalization(options =>
+        {
+            options.ResourcesPath = "Resources";
+        });
+
         if (IsDebug())
             services.Configure<LoggerFilterOptions>(options => options.MinLevel = LogLevel.Debug);
         else

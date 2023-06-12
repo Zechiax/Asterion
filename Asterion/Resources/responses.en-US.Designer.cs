@@ -58,5 +58,14 @@ namespace Asterion.Resources {
                 resourceCulture = value;
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Hello World!.
+        /// </summary>
+        internal static string HelloWorld {
+            get {
+                return ResourceManager.GetString("HelloWorld", resourceCulture);
+            }
+        }
     }
 }

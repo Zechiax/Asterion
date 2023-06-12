@@ -143,6 +143,7 @@ public class Asterion
             .AddHttpClient()
             .AddDbContext<DataContext>()
             .AddSingleton<IBotStatsService, BotStatsService>()
+            .AddSingleton<ILocalizationService, LocalizationService>()
             .AddMemoryCache()
             .AddLogging(configure => configure.AddSerilog(dispose: true));
 

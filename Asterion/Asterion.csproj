@@ -42,14 +42,14 @@
     </ItemGroup>
 
     <ItemGroup>
-      <EmbeddedResource Update="Resources\responses.en-US.resx">
+      <EmbeddedResource Update="Resources\Responses\responses.en-US.resx">
         <Generator>ResXFileCodeGenerator</Generator>
         <LastGenOutput>responses.en-US.Designer.cs</LastGenOutput>
       </EmbeddedResource>
     </ItemGroup>
 
     <ItemGroup>
-      <Compile Update="Resources\responses.en-US.Designer.cs">
+      <Compile Update="Resources\Responses\responses.en-US.Designer.cs">
         <DesignTime>True</DesignTime>
         <AutoGen>True</AutoGen>
         <DependentUpon>responses.en-US.resx</DependentUpon>

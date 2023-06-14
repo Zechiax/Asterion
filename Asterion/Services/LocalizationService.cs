@@ -9,6 +9,7 @@ public class LocalizationService : ILocalizationService
 {
     private readonly IStringLocalizer _localizer;
     private readonly ILogger<LocalizationService> _logger;
+    private readonly CultureInfo _defaultCultureInfo = CultureInfo.GetCultureInfo("en-US");
 
     public LocalizationService(IStringLocalizerFactory localizer, ILogger<LocalizationService> logger)
     {
@@ -16,31 +17,42 @@ public class LocalizationService : ILocalizationService
         _logger = logger;
     }
     
-    public string Get(string key)
+    public LocalizedString Get(string key)
     {
         var localizedString = _localizer[key];
      
         if (localizedString.ResourceNotFound)
         {
             _logger.LogWarning("Missing localization for key: {Key}, report this to the developers!", key);
-            return key;
+            return localizedString;
         }
         
         return localizedString;
     }
 
-    public string Get(string key, CultureInfo cultureInfo)
+    public LocalizedString Get(string key, CultureInfo? cultureInfo)
     {
-        return _localizer[key, cultureInfo];
+        // We have to set the culture of the current thread to the culture we want to use
+        SetCulture(cultureInfo);
+
+        return _localizer[key];
     }
 
-    public string Get(string key, object[] parameters)
+    public LocalizedString Get(string key, params object[] parameters)
     {
         return _localizer[key, parameters];
     }
 
-    public string Get(string key, CultureInfo cultureInfo, object[] parameters)
+    public LocalizedString Get(string key, CultureInfo? cultureInfo, params object[] parameters)
     {
-        return _localizer[key, cultureInfo, parameters];
+        SetCulture(cultureInfo);
+        
+        return _localizer[key, parameters];
+    }
+    
+    private void SetCulture(CultureInfo? cultureInfo)
+    {
+        CultureInfo.CurrentCulture = cultureInfo ?? _defaultCultureInfo;
+        CultureInfo.CurrentUICulture = cultureInfo ?? _defaultCultureInfo;
     }
 }

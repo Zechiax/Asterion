@@ -19,15 +19,18 @@
         <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
     </resheader>
     <data name="Error_ModrinthApiUnavailable" xml:space="preserve">
-        <value>The Modrinth API is currently unavailable.</value>
+        <value>The Modrinth API is currently unavailable</value>
     </data>
     <data name="Error_TryAgainLater" xml:space="preserve">
-        <value>Please try again later.</value>
+        <value>Please try again later</value>
     </data>
     <data name="Error_Unknown" xml:space="preserve">
         <value>Unknown error</value>
     </data>
-    <data name="Modrinth_Search_NoResult" xml:space="preserve">
+    <data name="Modrinth_Search_NoResult_WithQuery" xml:space="preserve">
         <value>No results for query '{0}'</value>
+    </data>
+    <data name="Modrinth_Search_Unsuccessful" xml:space="preserve">
+        <value>Search was not successful</value>
     </data>
 </root>

@@ -11,7 +11,7 @@ public class BotManagement : AsterionInteractionModuleBase
 {
     private readonly IDataService _dataService;
 
-    public BotManagement(IServiceProvider serviceProvider)
+    public BotManagement(IServiceProvider serviceProvider, ILocalizationService localizationService) : base(localizationService)
     {
         _dataService = serviceProvider.GetRequiredService<IDataService>();
     }

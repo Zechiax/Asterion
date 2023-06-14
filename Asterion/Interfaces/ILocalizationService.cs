@@ -1,12 +1,13 @@
 ﻿using System.Globalization;
 using Discord.Interactions;
+using Microsoft.Extensions.Localization;
 
 namespace Asterion.Interfaces;
 
 public interface ILocalizationService
 {
-    string Get(string key);
-    string Get(string key, CultureInfo cultureInfo);
-    string Get(string key, object[] parameters);
-    string Get(string key, CultureInfo cultureInfo, object[] parameters);
+    LocalizedString Get(string key);
+    LocalizedString Get(string key, CultureInfo? cultureInfo);
+    LocalizedString Get(string key, params object[] parameters);
+    LocalizedString Get(string key, CultureInfo? cultureInfo, params object[] parameters);
 }

@@ -32,7 +32,7 @@ public class ModrinthModule : AsterionInteractionModuleBase
     private readonly ModrinthService _modrinthService;
     private readonly ILocalizationService _localizationService;
 
-    public ModrinthModule(IServiceProvider serviceProvider)
+    public ModrinthModule(IServiceProvider serviceProvider, ILocalizationService localizationService) : base(localizationService)
     {
         _localizationService = serviceProvider.GetRequiredService<ILocalizationService>();
         _dataService = serviceProvider.GetRequiredService<IDataService>();
@@ -91,26 +91,11 @@ public class ModrinthModule : AsterionInteractionModuleBase
         _logger.LogDebug("Search for query '{Query}'", query);
         var searchResult = await _modrinthService.FindProject(query);
         _logger.LogDebug("Search status: {SearchStatus}", searchResult.SearchStatus);
-        switch (searchResult.SearchStatus)
+
+        if (searchResult.Success == false)
         {
-            case SearchStatus.ApiDown:
-                await ModifyOriginalResponseAsync(x =>
-                {
-                    x.Content = "Modrinth API is probably down, please try again later";
-                });
-                return;
-            case SearchStatus.NoResult:
-                await ModifyOriginalResponseAsync(x => { x.Content = _localizationService.Get("Modrinth_Search_NoResult", new object[]{query}); });
-                return;
-            case SearchStatus.UnknownError:
-                await ModifyOriginalResponseAsync(x => { x.Content = "Unknown error, please try again later"; });
-                return;
-            case SearchStatus.FoundById:
-                break;
-            case SearchStatus.FoundBySearch:
-                break;
-            default:
-                throw new ArgumentOutOfRangeException();
+            await FollowupWithSearchResultErrorAsync(searchResult);
+            return;
         }
 
         var projectDto = searchResult.Payload;

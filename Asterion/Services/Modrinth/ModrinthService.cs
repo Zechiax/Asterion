@@ -333,12 +333,12 @@ public partial class ModrinthService
             catch (ModrinthApiException e)
             {
                 _logger.LogDebug(e, "Error while searching for project '{Query}'", query);
-                return new SearchResult<ProjectDto>(new ProjectDto(), SearchStatus.ApiDown);
+                return new SearchResult<ProjectDto>(new ProjectDto(), SearchStatus.ApiDown, query);
             }
             catch (Exception e)
             {
                 _logger.LogError(e, "Error while searching for project '{Query}'", query);
-                return new SearchResult<ProjectDto>(new ProjectDto(), SearchStatus.ApiDown);
+                return new SearchResult<ProjectDto>(new ProjectDto(), SearchStatus.ApiDown, query);
             }
 
             if (projectFoundById && project is not null)
@@ -347,7 +347,7 @@ public partial class ModrinthService
                 {
                     Project = project,
                     SearchResponse = searchResponse
-                }, SearchStatus.FoundById);
+                }, SearchStatus.FoundById, query);
 
                 SetSearchResultToCache(result, query);
 
@@ -361,7 +361,7 @@ public partial class ModrinthService
 
             // No search results
             if (searchResponse.TotalHits <= 0)
-                return new SearchResult<ProjectDto>(new ProjectDto(), SearchStatus.NoResult);
+                return new SearchResult<ProjectDto>(new ProjectDto(), SearchStatus.NoResult, query);
 
             // Return first result
             project = await Api.Project.GetAsync(searchResponse.Hits[0].ProjectId);
@@ -370,7 +370,7 @@ public partial class ModrinthService
             {
                 Project = project,
                 SearchResponse = searchResponse
-            }, SearchStatus.FoundBySearch);
+            }, SearchStatus.FoundBySearch, query);
 
             SetSearchResultToCache(result, query);
 
@@ -380,7 +380,7 @@ public partial class ModrinthService
         {
             _logger.LogWarning("Could not get project information for query '{Query}', exception: {Message}", query,
                 e.Message);
-            return new SearchResult<ProjectDto>(new ProjectDto(), SearchStatus.ApiDown);
+            return new SearchResult<ProjectDto>(new ProjectDto(), SearchStatus.ApiDown, query);
         }
     }
 
@@ -412,11 +412,11 @@ public partial class ModrinthService
         {
             // Project not found by slug or id
             _logger.LogDebug("User not found '{Query}'", query);
-            return new SearchResult<UserDto>(new UserDto(), SearchStatus.NoResult);
+            return new SearchResult<UserDto>(new UserDto(), SearchStatus.NoResult, query);
         }
         catch (Exception)
         {
-            return new SearchResult<UserDto>(new UserDto(), SearchStatus.ApiDown);
+            return new SearchResult<UserDto>(new UserDto(), SearchStatus.ApiDown, query);
         }
 
         // User can't be null from here
@@ -429,7 +429,7 @@ public partial class ModrinthService
                 User = user,
                 Projects = projects,
                 MajorColor = (await httpClient.GetMajorColorFromImageUrl(user.AvatarUrl)).ToDiscordColor()
-            }, SearchStatus.FoundBySearch);
+            }, SearchStatus.FoundBySearch, query);
 
             _cache.Set($"user-query:{user.Id}", searchResult, TimeSpan.FromMinutes(60));
             _cache.Set($"user-query:{query}", searchResult, TimeSpan.FromMinutes(60));
@@ -438,7 +438,7 @@ public partial class ModrinthService
         }
         catch (Exception)
         {
-            return new SearchResult<UserDto>(new UserDto(), SearchStatus.ApiDown);
+            return new SearchResult<UserDto>(new UserDto(), SearchStatus.ApiDown, query);
         }
     }
 }

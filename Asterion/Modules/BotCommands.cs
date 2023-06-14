@@ -14,4 +14,7 @@ public class BotCommands : AsterionInteractionModuleBase
         await RespondAsync($"Pong! Latency: {Context.Client.Latency}ms");
     }
 #endif
+    public BotCommands(ILocalizationService localizationService) : base(localizationService)
+    {
+    }
 }

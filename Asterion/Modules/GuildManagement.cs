@@ -12,7 +12,8 @@ public class GuildManagement : AsterionInteractionModuleBase
 {
     private readonly IDataService _dataService;
 
-    public GuildManagement(IDataService dataService)
+    public GuildManagement(IDataService dataService, ILocalizationService localizationService) : base(
+        localizationService)
     {
         _dataService = dataService;
     }

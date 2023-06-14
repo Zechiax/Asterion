@@ -33,4 +33,10 @@
     <data name="Modrinth_Search_Unsuccessful" xml:space="preserve">
         <value>Search was not successful</value>
     </data>
+    <data name="Settings" xml:space="preserve">
+        <value>Settings</value>
+    </data>
+    <data name="Settings_Button_NotificationStyle" xml:space="preserve">
+        <value>Notification Style</value>
+    </data>
 </root>

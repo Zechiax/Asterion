@@ -11,6 +11,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Modrinth;
+using Quartz;
 using Serilog;
 using RunMode = Discord.Commands.RunMode;
 
@@ -102,6 +103,11 @@ public class Asterion
         // so that we can get the correct guild count
         services.GetRequiredService<IBotStatsService>().Initialize();
 
+        // We start the scheduler after the client has been logged in
+        // so that we can get the correct guild count
+        var scheduler = await services.GetRequiredService<ISchedulerFactory>().GetScheduler();
+        await scheduler.Start();
+        
         await Task.Delay(Timeout.Infinite);
     }
 
@@ -147,6 +153,16 @@ public class Asterion
             .AddMemoryCache()
             .AddLogging(configure => configure.AddSerilog(dispose: true));
 
+        services.AddQuartz(q =>
+        {
+            q.UseInMemoryStore();
+            q.UseMicrosoftDependencyInjectionJobFactory();
+        });
+        services.AddQuartzHostedService(options =>
+        {
+            options.WaitForJobsToComplete = true;
+        });
+        
         services.AddLocalization(options =>
         {
             options.ResourcesPath = "Resources";

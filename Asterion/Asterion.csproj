@@ -33,6 +33,9 @@
         <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="7.0.0" />
         <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="7.0.0" />
         <PackageReference Include="Modrinth.Net" Version="3.2.0" />
+        <PackageReference Include="Quartz" Version="3.6.2" />
+        <PackageReference Include="Quartz.AspNetCore" Version="3.6.2" />
+        <PackageReference Include="Quartz.Extensions.DependencyInjection" Version="3.6.2" />
         <PackageReference Include="Serilog" Version="2.12.0" />
         <PackageReference Include="Serilog.AspNetCore" Version="7.0.0" />
         <PackageReference Include="Serilog.Sinks.Console" Version="4.1.0" />

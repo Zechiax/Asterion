@@ -82,6 +82,15 @@ public class Asterion
         await client.LoginAsync(TokenType.Bot, _config.GetValue<string>("token"));
         await client.StartAsync();
 
+        // We start the stats service after the client has been logged in
+        // so that we can get the correct guild count
+        services.GetRequiredService<IBotStatsService>().Initialize();
+
+        // We start the scheduler after the client has been logged in
+        // so that we can get the correct guild count
+        var scheduler = await services.GetRequiredService<ISchedulerFactory>().GetScheduler();
+        await scheduler.Start();
+        
         // Disconnect from Discord when pressing Ctrl+C
         Console.CancelKeyPress += (_, args) =>
         {
@@ -92,21 +101,15 @@ public class Asterion
             client.LogoutAsync().Wait();
             logger.LogInformation("Stopping the client");
             client.StopAsync().Wait();
+            
+            logger.LogInformation("Stopping the scheduler");
+            scheduler.Shutdown().Wait();
 
             logger.LogInformation("Disposing services");
             services.DisposeAsync().GetAwaiter().GetResult();
 
             args.Cancel = false;
         };
-
-        // We start the stats service after the client has been logged in
-        // so that we can get the correct guild count
-        services.GetRequiredService<IBotStatsService>().Initialize();
-
-        // We start the scheduler after the client has been logged in
-        // so that we can get the correct guild count
-        var scheduler = await services.GetRequiredService<ISchedulerFactory>().GetScheduler();
-        await scheduler.Start();
         
         await Task.Delay(Timeout.Infinite);
     }

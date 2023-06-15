@@ -40,7 +40,6 @@ public class SearchUpdatesJob : IJob
         {
             
         }
-
     }
 
     private async Task DoExecutionWork()
@@ -55,15 +54,78 @@ public class SearchUpdatesJob : IJob
         var copy = projects.ToList();
         var updateStatsTask = UpdateStatisticsData(copy);
 
-        var updatedProjects = FilterUpdatedProjects(projectsDto, projects);
+        var updatedProjects = FilterUpdatedProjects(projectsDto, projects).ToArray();
         var versionsIds = updatedProjects.SelectMany(p => p.Versions).ToArray();
         
         var versions = await GetAllVersionsAsync(versionsIds);
+
+        Dictionary<Project, IList<Version>> projectVersions = new();
         
+        foreach (var project in updatedProjects)
+        {
+            var projectVersionsList = versions.Where(v => v.ProjectId == project.Id)
+                .OrderByDescending(v => v.DatePublished)
+                .ToList();
+            projectVersions.Add(project, projectVersionsList);
+        }
+        
+        // This will modify the projectVersions dictionary in-place and only keep the projects and versions that have updates
+        await CheckForUpdatesAsync(projectVersions);
+        
+        // TODO: Create DiscordNotifyJob
 
         // Let's await all the background tasks we started
         await updateStatsTask;
     }
+    
+    private async Task CheckForUpdatesAsync(Dictionary<Project, IList<Version>> projectVersions)
+    {
+        // This list will hold the keys to remove from the projectVersions dictionary
+        var keysToRemove = new List<Project>();
+
+        // Loop through the projects in the dictionary
+        foreach (var (project, versions) in projectVersions)
+        {
+            var latestVersion = versions.First();
+            var dbProject = await _dataService.GetModrinthProjectByIdAsync(project.Id);
+            if (dbProject == null)
+            {
+                _logger.LogError("Failed to find project {ProjectId} in the database", project.Id);
+                keysToRemove.Add(project);
+                continue;
+            }
+
+            if (dbProject.LastCheckVersion == latestVersion.Id)
+            {
+                keysToRemove.Add(project);
+                continue;
+            }
+
+            _logger.LogInformation("Found update for project {ProjectId}", project.Id);
+            var success = await _dataService.UpdateModrinthProjectAsync(dbProject.ProjectId, latestVersion.Id, project.Title,
+                DateTime.UtcNow);
+
+            if (!success)
+            {
+                _logger.LogError("Failed to update project {ProjectId} in the database", project.Id);
+                keysToRemove.Add(project);
+                continue;
+            }
+    
+            // Remove versions from the list that are the same or newer than the latest version
+            // This modifies the list associated with the project in the dictionary
+            var keepVersions = versions.Where(v => v.DatePublished >= latestVersion.DatePublished).ToList();
+            projectVersions[project] = keepVersions;
+        }
+
+        // Now remove the projects from the dictionary that were added to the keysToRemove list
+        // This modifies the dictionary in-place
+        foreach (var key in keysToRemove)
+        {
+            projectVersions.Remove(key);
+        }
+    }
+
 
     private async Task<IList<Version>> GetAllVersionsAsync(string[] versionIds)
     {

@@ -1,4 +1,5 @@
-﻿using Asterion.Database.Models;
+﻿using System.Text.Json;
+using Asterion.Database.Models;
 using Asterion.Extensions;
 using Asterion.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -15,11 +16,13 @@ public class SearchUpdatesJob : IJob
     private readonly IDataService _dataService;
     private readonly ILogger<SearchUpdatesJob> _logger;
     private readonly ProjectStatisticsManager _projectStatisticsManager;
+    private readonly IScheduler _scheduler;
     
     private const int SplitSize = 100;
     
-    public SearchUpdatesJob(IModrinthClient client, IDataService dataService, ILogger<SearchUpdatesJob> logger, ProjectStatisticsManager projectStatisticsManager)
+    public SearchUpdatesJob(IScheduler scheduler, IModrinthClient client, IDataService dataService, ILogger<SearchUpdatesJob> logger, ProjectStatisticsManager projectStatisticsManager)
     {
+        _scheduler = scheduler;
         _client = client;
         _dataService = dataService;
         _logger = logger;
@@ -57,13 +60,13 @@ public class SearchUpdatesJob : IJob
         var updatedProjects = FilterUpdatedProjects(projectsDto, projects).ToArray();
         var versionsIds = updatedProjects.SelectMany(p => p.Versions).ToArray();
         
-        var versions = await GetAllVersionsAsync(versionsIds);
+        var versionsList = await GetAllVersionsAsync(versionsIds);
 
         Dictionary<Project, IList<Version>> projectVersions = new();
         
         foreach (var project in updatedProjects)
         {
-            var projectVersionsList = versions.Where(v => v.ProjectId == project.Id)
+            var projectVersionsList = versionsList.Where(v => v.ProjectId == project.Id)
                 .OrderByDescending(v => v.DatePublished)
                 .ToList();
             projectVersions.Add(project, projectVersionsList);
@@ -72,7 +75,22 @@ public class SearchUpdatesJob : IJob
         // This will modify the projectVersions dictionary in-place and only keep the projects and versions that have updates
         await CheckForUpdatesAsync(projectVersions);
         
-        // TODO: Create DiscordNotifyJob
+        // For each project, we'll create a Discord Notification job and pass it the information it needs
+        foreach (var (project, versions) in projectVersions)
+        {
+            var job = JobBuilder.Create<SendDiscordNotificationJob>()
+                //.WithIdentity($"discord-notification-{project.Id}", "modrinth")
+                .UsingJobData("Project", JsonSerializer.Serialize(project))
+                .UsingJobData("Versions", JsonSerializer.Serialize(versions))
+                .Build();
+            
+            var trigger = TriggerBuilder.Create()
+                //.WithIdentity($"discord-notification-{project.Id}", "modrinth")
+                .StartNow()
+                .Build();
+            
+            await _scheduler.ScheduleJob(job, trigger);
+        }
 
         // Let's await all the background tasks we started
         await updateStatsTask;

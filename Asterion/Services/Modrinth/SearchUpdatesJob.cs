@@ -20,9 +20,9 @@ public class SearchUpdatesJob : IJob
     
     private const int SplitSize = 100;
     
-    public SearchUpdatesJob(IScheduler scheduler, IModrinthClient client, IDataService dataService, ILogger<SearchUpdatesJob> logger, ProjectStatisticsManager projectStatisticsManager)
+    public SearchUpdatesJob(ISchedulerFactory scheduler, IModrinthClient client, IDataService dataService, ILogger<SearchUpdatesJob> logger, ProjectStatisticsManager projectStatisticsManager)
     {
-        _scheduler = scheduler;
+        _scheduler = scheduler.GetScheduler().GetAwaiter().GetResult();
         _client = client;
         _dataService = dataService;
         _logger = logger;

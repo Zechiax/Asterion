@@ -1,5 +1,9 @@
 ﻿using System.Text.Json;
+using Asterion.ComponentBuilders;
+using Asterion.Database.Models;
+using Asterion.EmbedBuilders;
 using Asterion.Interfaces;
+using Discord;
 using Discord.WebSocket;
 using Microsoft.Extensions.Logging;
 using Modrinth;
@@ -14,11 +18,13 @@ public class SendDiscordNotificationJob : IJob
     private readonly ILogger<SendDiscordNotificationJob> _logger;
     private readonly IDataService _dataService;
     private readonly DiscordSocketClient _client;
+    private readonly IModrinthClient _modrinthClient;
 
     private JobKey _jobKey;
     
-    public SendDiscordNotificationJob(ILogger<SendDiscordNotificationJob> logger, IDataService dataService, DiscordSocketClient client)
+    public SendDiscordNotificationJob(ILogger<SendDiscordNotificationJob> logger, IDataService dataService, DiscordSocketClient client, IModrinthClient modrinthClient)
     {
+        _modrinthClient = modrinthClient;
         _client = client;
         _logger = logger;
         _dataService = dataService;
@@ -68,6 +74,9 @@ public class SendDiscordNotificationJob : IJob
             return;
         }
 
+        // If the request fail, the job will be rescheduled so it should be fine to just throw here
+        var team = await _modrinthClient.Team.GetAsync(project.Team);
+
         foreach (var guild in guilds)
         {
             var entry = await _dataService.GetModrinthEntryAsync(guild.GuildId, project.Id);
@@ -88,6 +97,28 @@ public class SendDiscordNotificationJob : IJob
                 // TODO: Maybe notify the user that the channel was not found and remove the entry?
                 continue;
             }
+            
+            var pingRole = guild.PingRole is null ? null : channel.Guild.GetRole((ulong) guild.PingRole);
+            
+            foreach (var version in projects)
+            {
+                var embed = ModrinthEmbedBuilder.VersionUpdateEmbed(guild.GuildSettings, project, version, team).Build();
+                var buttons = new ComponentBuilder().WithButton(ModrinthComponentBuilder.GetVersionUrlButton(project, version)).Build();
+                
+                await SendUpdateEmbedToChannel(channel, pingRole?.Mention ?? string.Empty, embed, buttons);
+            }
+        }
+    }
+
+    private async Task SendUpdateEmbedToChannel(ISocketMessageChannel channel, string message, Embed embed, MessageComponent buttons)
+    {
+        try
+        {
+            await channel.SendMessageAsync(message, embed: embed, components: buttons);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send message to channel {ChannelId}", channel.Id);
         }
     }
 }

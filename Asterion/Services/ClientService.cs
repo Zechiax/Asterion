@@ -39,7 +39,7 @@ public class ClientService
             .WithIdentity("RefreshTrigger", "group1")
             .StartNow()
             .WithSimpleSchedule(x => x
-                .WithIntervalInSeconds(10) // Every 15 minutes
+                .WithIntervalInSeconds(15 * 60) // Every 15 minutes
                 .RepeatForever())
             .Build();
 

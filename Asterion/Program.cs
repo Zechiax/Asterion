@@ -21,8 +21,9 @@ public class Program
             .MinimumLevel.Debug()
 #else
                 .MinimumLevel.Information()
-                .MinimumLevel.Override("Microsoft.EntityFrameworkCore.Database.Command", Serilog.Events.LogEventLevel.Warning)
 #endif
+            .MinimumLevel.Override("Microsoft.EntityFrameworkCore", Serilog.Events.LogEventLevel.Information) // Set the minimum log level for EF Core messages
+            .MinimumLevel.Override("Microsoft.EntityFrameworkCore.Database.Command", Serilog.Events.LogEventLevel.Warning) // Set the minimum log level for EF Core command messages
             .Enrich.FromLogContext()
             .WriteTo.Console()
             .CreateLogger();

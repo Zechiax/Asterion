@@ -36,7 +36,7 @@ public class SendDiscordNotificationJob : IJob
         
         // We currently store the data there as JSON, so we need to deserialize it
         var projectJson = context.JobDetail.JobDataMap.GetString("project");
-        var versionListJson = context.JobDetail.JobDataMap.GetString("versionList");
+        var versionListJson = context.JobDetail.JobDataMap.GetString("versions");
         
         if (projectJson is null || versionListJson is null)
         {
@@ -55,7 +55,7 @@ public class SendDiscordNotificationJob : IJob
             return;
         }
         
-        _logger.LogInformation("Starting to send notifications for {ProjectName}", project.Title);
+        _logger.LogInformation("Starting to send notifications for {ProjectName} ({ProjectID}) with {NewVersionsCount} new versions", project.Title, project.Id, versionList.Length);
         await SendNotifications(project, versionList);
     }
 
@@ -64,7 +64,7 @@ public class SendDiscordNotificationJob : IJob
         _logger.LogWarning("Aborting job ID {JobId}", _jobKey);
     }
 
-    private async Task SendNotifications(Project project, Version[] projects)
+    private async Task SendNotifications(Project project, Version[] versions)
     {
         var guilds = await _dataService.GetAllGuildsSubscribedToProject(project.Id);
 
@@ -100,8 +100,9 @@ public class SendDiscordNotificationJob : IJob
             
             var pingRole = guild.PingRole is null ? null : channel.Guild.GetRole((ulong) guild.PingRole);
             
-            foreach (var version in projects)
+            foreach (var version in versions)
             {
+                _logger.LogDebug("Sending notification for version {VersionId} of project {ProjectId} to guild {GuildId}", version.Id, project.Id, guild.GuildId);
                 var embed = ModrinthEmbedBuilder.VersionUpdateEmbed(guild.GuildSettings, project, version, team).Build();
                 var buttons = new ComponentBuilder().WithButton(ModrinthComponentBuilder.GetVersionUrlButton(project, version)).Build();
                 

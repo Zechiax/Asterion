@@ -53,9 +53,9 @@ public class SearchUpdatesJob : IJob
         
         var projects = await _client.Project.GetMultipleAsync(projectIds);
 
-        // We let the statistics update run in the background, as it's not critical to the job
+        // We let the statistics update
         var copy = projects.ToList();
-        var updateStatsTask = UpdateStatisticsData(copy);
+        await UpdateStatisticsData(copy);
 
         var updatedProjects = FilterUpdatedProjects(projectsDto, projects).ToArray();
         var versionsIds = updatedProjects.SelectMany(p => p.Versions).ToArray();
@@ -75,13 +75,24 @@ public class SearchUpdatesJob : IJob
         // This will modify the projectVersions dictionary in-place and only keep the projects and versions that have updates
         await CheckForUpdatesAsync(projectVersions);
         
+        if (projectVersions.Count > 0)
+        {
+            _logger.LogInformation("Found {Count} projects with updates", projectVersions.Count);
+        }
+        else
+        {
+            _logger.LogInformation("No projects with updates found");
+        }
+        
         // For each project, we'll create a Discord Notification job and pass it the information it needs
         foreach (var (project, versions) in projectVersions)
         {
+            _logger.LogInformation("Scheduling Discord notification for project {ProjectId} with {NewVersionsCount} new versions", project.Id, versions.Count);
+            
             var job = JobBuilder.Create<SendDiscordNotificationJob>()
                 //.WithIdentity($"discord-notification-{project.Id}", "modrinth")
-                .UsingJobData("Project", JsonSerializer.Serialize(project))
-                .UsingJobData("Versions", JsonSerializer.Serialize(versions))
+                .UsingJobData("project", JsonSerializer.Serialize(project))
+                .UsingJobData("versions", JsonSerializer.Serialize(versions.ToArray()))
                 .Build();
             
             var trigger = TriggerBuilder.Create()
@@ -91,9 +102,6 @@ public class SearchUpdatesJob : IJob
             
             await _scheduler.ScheduleJob(job, trigger);
         }
-
-        // Let's await all the background tasks we started
-        await updateStatsTask;
     }
     
     private async Task CheckForUpdatesAsync(Dictionary<Project, IList<Version>> projectVersions)
@@ -132,7 +140,7 @@ public class SearchUpdatesJob : IJob
     
             // Remove versions from the list that are the same or newer than the latest version
             // This modifies the list associated with the project in the dictionary
-            var keepVersions = versions.Where(v => v.DatePublished >= latestVersion.DatePublished).ToList();
+            var keepVersions = versions.Where(v => v.DatePublished <= latestVersion.DatePublished && v.DatePublished > dbProject.LastUpdated).ToList();
             projectVersions[project] = keepVersions;
         }
 

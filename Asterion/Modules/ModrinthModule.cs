@@ -13,6 +13,7 @@ using Discord.WebSocket;
 using Fergun.Interactive;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Modrinth;
 using Modrinth.Exceptions;
 using Modrinth.Models;
 
@@ -31,9 +32,11 @@ public class ModrinthModule : AsterionInteractionModuleBase
     private readonly ILogger<ModrinthModule> _logger;
     private readonly ModrinthService _modrinthService;
     private readonly ILocalizationService _localizationService;
+    private readonly IModrinthClient _modrinthClient;
 
-    public ModrinthModule(IServiceProvider serviceProvider, ILocalizationService localizationService) : base(localizationService)
+    public ModrinthModule(IModrinthClient modrinthClient, IServiceProvider serviceProvider, ILocalizationService localizationService) : base(localizationService)
     {
+        _modrinthClient = modrinthClient;
         _localizationService = serviceProvider.GetRequiredService<ILocalizationService>();
         _dataService = serviceProvider.GetRequiredService<IDataService>();
         _modrinthService = serviceProvider.GetRequiredService<ModrinthService>();
@@ -364,14 +367,13 @@ public class ModrinthModule : AsterionInteractionModuleBase
     public async Task GetRandomProject()
     {
         await DeferAsync();
-
-        var api = _modrinthService.Api;
+        
         Project? randomProject;
         try
         {
             // Count to 70, as Modrinth currently returns less than 70 projects
             // If it's set to 1, it will sometimes return 0 projects
-            randomProject = (await api.Project.GetRandomAsync(70)).FirstOrDefault();
+            randomProject = (await _modrinthClient.Project.GetRandomAsync(70)).FirstOrDefault();
         }
         catch (ModrinthApiException e)
         {
@@ -381,7 +383,7 @@ public class ModrinthModule : AsterionInteractionModuleBase
 
         if (randomProject == null) throw new Exception("No projects found");
 
-        var team = await api.Team.GetAsync(randomProject.Team);
+        var team = await _modrinthClient.Team.GetAsync(randomProject.Team);
 
         var embed = ModrinthEmbedBuilder.GetProjectEmbed(randomProject, team);
 

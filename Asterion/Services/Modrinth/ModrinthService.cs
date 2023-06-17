@@ -1,12 +1,7 @@
 ﻿using System.ComponentModel;
 using System.Net;
-using System.Timers;
-using Asterion.ComponentBuilders;
-using Asterion.Database.Models;
-using Asterion.EmbedBuilders;
 using Asterion.Extensions;
 using Asterion.Interfaces;
-using Discord;
 using Discord.WebSocket;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,9 +9,7 @@ using Microsoft.Extensions.Logging;
 using Modrinth;
 using Modrinth.Exceptions;
 using Modrinth.Models;
-using Array = System.Array;
-using Timer = System.Timers.Timer;
-using Version = Modrinth.Models.Version;
+using Quartz;
 
 namespace Asterion.Services.Modrinth;
 
@@ -30,8 +23,11 @@ public partial class ModrinthService
     private readonly ILogger _logger;
     private readonly ProjectStatisticsManager _projectStatisticsManager;
     private readonly BackgroundWorker _updateWorker;
+    private readonly IScheduler _scheduler;
+    private readonly JobKey _jobKey;
+    protected IModrinthClient Api { get; }
 
-    public ModrinthService(IServiceProvider serviceProvider, IHttpClientFactory httpClientFactory)
+    public ModrinthService(IServiceProvider serviceProvider, IHttpClientFactory httpClientFactory, ISchedulerFactory scheduler)
     {
         _httpClientFactory = httpClientFactory;
         Api = serviceProvider.GetRequiredService<IModrinthClient>();
@@ -40,231 +36,31 @@ public partial class ModrinthService
         _dataService = serviceProvider.GetRequiredService<IDataService>();
         _client = serviceProvider.GetRequiredService<DiscordSocketClient>();
         _projectStatisticsManager = serviceProvider.GetRequiredService<ProjectStatisticsManager>();
+        _scheduler = scheduler.GetScheduler().GetAwaiter().GetResult();
 
         _cacheEntryOptions = new MemoryCacheEntryOptions
         {
             AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15)
         };
 
-        _updateWorker = new BackgroundWorker();
-        _updateWorker.DoWork += CheckUpdates;
-
-
-        var checkTimer = new Timer(MinutesToMilliseconds(10));
-        checkTimer.Elapsed += checkTimer_Elapsed;
-        checkTimer.Start();
+        var job = JobBuilder.Create<SearchUpdatesJob>()
+            .WithIdentity("SearchUpdatesJob", "Modrinth")
+            .Build();
+        
+        _jobKey = job.Key;
+        
+        // Every 10 minutes
+        var trigger = TriggerBuilder.Create()
+            .WithIdentity("SearchUpdatesTrigger", "Modrinth")
+            .StartAt(DateBuilder.FutureDate(10, IntervalUnit.Minute)) // Start 10 minutes from now
+            .WithSimpleSchedule(x => x
+                .WithIntervalInMinutes(10)
+                .RepeatForever())
+            .Build();
+        
+        _scheduler.ScheduleJob(job, trigger);
 
         _logger.LogInformation("Modrinth service initialized");
-    }
-
-    public IModrinthClient Api { get; }
-
-    private static double MinutesToMilliseconds(int minutes)
-    {
-        return TimeSpan.FromMinutes(minutes).TotalMilliseconds;
-    }
-
-    /// <summary>
-    ///     Checks updates for every project stored in database, sends notification to every guild who has subscribed for
-    ///     updates
-    /// </summary>
-    /// <param name="sender"></param>
-    /// <param name="e"></param>
-    private async void CheckUpdates(object? sender, DoWorkEventArgs e)
-    {
-        try
-        {
-            _logger.LogInformation("Running update check");
-
-            var databaseProjects = await _dataService.GetAllModrinthProjectsAsync();
-
-            var projectIds = databaseProjects.Select(x => x.ProjectId);
-            _logger.LogDebug("Getting multiple projects ({Count}) from Modrinth", databaseProjects.Count);
-            var apiProjects = await GetMultipleProjects(projectIds);
-
-            if (apiProjects is null)
-            {
-                _logger.LogWarning("Could not get information from API, update search interrupted");
-                return;
-            }
-            
-            // Update downloads data in database - before we remove projects which are not updated
-            _logger.LogDebug("Updating downloads in database");
-            foreach (var project in apiProjects)
-            {
-                await _projectStatisticsManager.UpdateDownloadsAsync(project);
-            }
-            
-            // Remove projects which are not updated (last update timestamp is less or equal to the last update timestamp in database)
-            apiProjects = apiProjects.Where(x => databaseProjects.Any(y => y.ProjectId == x.Id && y.LastUpdated < x.Updated)).ToArray();
-
-            _logger.LogDebug("Got {Count} projects", apiProjects.Length);
-
-            var versions = apiProjects.SelectMany(p => p.Versions).ToArray();
-
-
-            const int splitBy = 100;
-            _logger.LogDebug("Getting multiple versions ({Count}) from Modrinth", versions.Length);
-
-            // Make multiple requests to get all versions - we don't want to get 1500+ versions in one request
-            // We make sure to split the requests into chunks of 500 versions
-            var apiVersions = new List<Version>();
-            // Split the array into chunks of 500, we use ArraySegment
-            var versionChunks = Array.Empty<ArraySegment<string>>();
-
-            for (var i = 0; i < versions.Length; i += splitBy)
-            {
-                _logger.LogDebug("Appending versions {Start} to {End}", i, Math.Min(splitBy, versions.Length - i));
-                versionChunks = versionChunks
-                    .Append(new ArraySegment<string>(versions, i, Math.Min(splitBy, versions.Length - i))).ToArray();
-            }
-
-            foreach (var chunk in versionChunks)
-            {
-                _logger.LogDebug("Getting versions {Start} to {End}", chunk.Offset, chunk.Offset + chunk.Count);
-                var versionsChunk = await GetMultipleVersionsAsync(chunk);
-                if (versionsChunk is null)
-                {
-                    _logger.LogWarning("Could not get information from API, update search interrupted");
-                    return;
-                }
-
-                apiVersions.AddRange(versionsChunk);
-            }
-
-            _logger.LogDebug("Got {Count} versions", apiVersions.Count);
-
-            foreach (var project in apiProjects)
-            {
-                _logger.LogDebug("Checking new versions for project {Title} ID {ProjectId}", project.Title, project.Id);
-                var versionList = apiVersions.Where(x => x.ProjectId == project.Id).ToList();
-
-                var newVersions = await GetNewVersions(versionList, project.Id);
-
-                if (newVersions is null)
-                {
-                    _logger.LogWarning("There was an error while finding new versions for project ID {ID}, skipping...",
-                        project.Id);
-                    continue;
-                }
-
-                if (newVersions.Length == 0)
-                {
-                    _logger.LogDebug("No new versions for project {Title} ID {ID}", project.Title, project.Id);
-                    continue;
-                }
-
-                _logger.LogInformation("Found {Count} new versions for project {Title} ID {ID}", newVersions.Length,
-                    project.Title, project.Id);
-
-                // Update data in database
-                _logger.LogDebug("Updating data in database");
-                await _dataService.UpdateModrinthProjectAsync(project.Id, newVersions[0].Id, project.Title,
-                    project.Updated);
-
-                var team = await GetProjectsTeamMembersAsync(project.Id);
-
-                var guilds = await _dataService.GetAllGuildsSubscribedToProject(project.Id);
-
-                await CheckGuilds(newVersions, project, guilds, team);
-            }
-
-            _logger.LogInformation("Update check ended");
-        }
-        catch (Exception exception)
-        {
-            _logger.LogCritical("Exception while checking for updates: {Exception} \n\nStackTrace: {StackTrace}",
-                exception.Message, exception.StackTrace);
-        }
-    }
-
-    private async Task<Version[]?> GetNewVersions(IEnumerable<Version> versionList, string projectId)
-    {
-        var dbProject = await _dataService.GetModrinthProjectByIdAsync(projectId);
-
-        if (dbProject is null)
-        {
-            _logger.LogWarning("Project ID {ID} not found in database", projectId);
-            return null;
-        }
-
-        // Ensures the data is chronologically ordered
-        var orderedVersions = versionList.OrderByDescending(x => x.DatePublished);
-
-        // Take new versions from the latest to the one we already checked
-        var newVersions = orderedVersions.TakeWhile(version =>
-            version.Id != dbProject.LastCheckVersion && version.DatePublished > dbProject.LastUpdated).ToArray();
-
-        return newVersions;
-    }
-
-    /// <summary>
-    ///     Will load guild's channel from custom field of entries in database and send updates
-    /// </summary>
-    /// <param name="versions"></param>
-    /// <param name="project"></param>
-    /// <param name="guilds"></param>
-    /// <param name="teamMembers"></param>
-    private async Task CheckGuilds(Version[] versions, Project project, IEnumerable<Guild> guilds,
-        TeamMember[]? teamMembers = null)
-    {
-        foreach (var guild in guilds)
-        {
-            var entry = await _dataService.GetModrinthEntryAsync(guild.GuildId, project.Id);
-
-            // Channel is not set, skip sending updates to this guild
-            if (entry!.CustomUpdateChannel is null)
-            {
-                _logger.LogInformation(
-                    "Guild ID {GuildID} has not yet set default update channel or custom channel for this project",
-                    guild.GuildId);
-                continue;
-            }
-
-            var channel = _client.GetGuild(guild.GuildId).GetTextChannel((ulong) entry.CustomUpdateChannel);
-
-            _logger.LogInformation("Sending updates to guild ID {Id} and channel ID {Channel}", guild.GuildId,
-                channel.Id);
-
-            // None of these can be null, everything is checked beforehand
-            await SendUpdatesToChannel(channel, project, versions, teamMembers, guild.GuildSettings);
-        }
-    }
-
-    /// <summary>
-    ///     Sends update information about every new version to specified Text Channel
-    /// </summary>
-    /// <param name="textChannel"></param>
-    /// <param name="currentProject"></param>
-    /// <param name="newVersions"></param>
-    /// <param name="team"></param>
-    /// <param name="guildSettings"></param>
-    private async Task SendUpdatesToChannel(SocketTextChannel textChannel, Project currentProject,
-        IEnumerable<Version> newVersions, TeamMember[]? team, GuildSettings guildSettings)
-    {
-        // Iterate versions - they are ordered from latest to oldest, we want to sent them chronologically
-        foreach (var version in newVersions.Reverse())
-        {
-            var embed = ModrinthEmbedBuilder.VersionUpdateEmbed(guildSettings, currentProject, version, team);
-            var buttons =
-                new ComponentBuilder().WithButton(
-                    ModrinthComponentBuilder.GetVersionUrlButton(currentProject, version));
-            try
-            {
-                var pingRoleId = await _dataService.GetPingRoleIdAsync(textChannel.Guild.Id);
-
-                SocketRole? pingRole = null;
-                if (pingRoleId is not null) pingRole = textChannel.Guild.GetRole((ulong) pingRoleId);
-
-                await textChannel.SendMessageAsync(pingRole?.Mention, embed: embed.Build(),
-                    components: buttons.Build());
-            }
-            catch (Exception ex)
-            {
-                _logger.LogCritical("Error while sending message to guild {Guild}: {Exception}", textChannel.Guild.Id,
-                    ex.Message);
-            }
-        }
     }
 
     /// <summary>
@@ -273,24 +69,9 @@ public partial class ModrinthService
     /// <returns>False if worker is busy</returns>
     public bool ForceUpdate()
     {
-        if (_updateWorker.IsBusy) return false;
-
-        _updateWorker.RunWorkerAsync();
-
+        _scheduler.TriggerJob(_jobKey);
+        
         return true;
-    }
-
-
-    private void checkTimer_Elapsed(object? sender, ElapsedEventArgs e)
-    {
-        try
-        {
-            if (!_updateWorker.IsBusy) _updateWorker.RunWorkerAsync();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogCritical("Error while checking for updates: {Exception}", ex.Message);
-        }
     }
 
     /// <summary>

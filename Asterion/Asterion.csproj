@@ -37,7 +37,7 @@
         <PackageReference Include="Serilog.Sinks.Console" Version="4.1.0" />
         <PackageReference Include="SixLabors.ImageSharp" Version="3.0.1" />
         <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="2.88.3" />
-        <PackageReference Include="System.Data.SQLite" Version="1.0.117" />
+        <PackageReference Include="System.Data.SQLite" Version="1.0.118" />
     </ItemGroup>
 
 </Project>

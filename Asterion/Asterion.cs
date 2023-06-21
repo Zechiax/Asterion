@@ -95,15 +95,16 @@ public class Asterion
         Console.CancelKeyPress += (_, args) =>
         {
             args.Cancel = true;
+            
             logger.LogInformation("{Key} pressed, exiting bot", args.SpecialKey);
 
+            logger.LogInformation("Stopping the scheduler");
+            scheduler.Shutdown(true).Wait();
+            
             logger.LogInformation("Logging out from Discord");
             client.LogoutAsync().Wait();
             logger.LogInformation("Stopping the client");
             client.StopAsync().Wait();
-            
-            logger.LogInformation("Stopping the scheduler");
-            scheduler.Shutdown().Wait();
 
             logger.LogInformation("Disposing services");
             services.DisposeAsync().GetAwaiter().GetResult();

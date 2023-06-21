@@ -71,7 +71,7 @@ public class SearchUpdatesJob : IJob
                 .ToList();
             projectVersions.Add(project, projectVersionsList);
         }
-        
+
         // This will modify the projectVersions dictionary in-place and only keep the projects and versions that have updates
         await CheckForUpdatesAsync(projectVersions);
         
@@ -88,7 +88,6 @@ public class SearchUpdatesJob : IJob
         foreach (var (project, versions) in projectVersions)
         {
             _logger.LogInformation("Scheduling Discord notification for project {ProjectId} with {NewVersionsCount} new versions", project.Id, versions.Count);
-            
             var job = JobBuilder.Create<SendDiscordNotificationJob>()
                 //.WithIdentity($"discord-notification-{project.Id}", "modrinth")
                 .UsingJobData("project", JsonSerializer.Serialize(project))

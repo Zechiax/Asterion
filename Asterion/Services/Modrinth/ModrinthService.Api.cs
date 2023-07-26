@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
+using Modrinth.Exceptions;
 using Modrinth.Models;
 using Modrinth.Models.Tags;
 using Version = Modrinth.Models.Version;
@@ -62,9 +63,11 @@ public partial class ModrinthService
             var searchResponse = await Api.Version.GetMultipleAsync(versions);
             return searchResponse;
         }
-        catch (Exception e)
+        catch (ModrinthApiException e)
         {
-            _logger.LogWarning("{ExceptionMessage}", e.Message);
+            _logger.LogWarning(e, "Error while getting multiple versions");
+            _logger.LogWarning("The response was: {Response}", e.Response);
+            _logger.LogWarning("The response message was: {ResponseMessage}", e.Response.RequestMessage);
         }
 
         return null;

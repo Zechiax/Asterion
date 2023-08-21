@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using Asterion.EmbedBuilders;
 using Asterion.Interfaces;
 using Discord;
 using Discord.Interactions;
@@ -42,12 +43,7 @@ public class AsterionInteractionModuleBase : InteractionModuleBase<SocketInterac
                 throw new ArgumentOutOfRangeException();
         }
 
-        var embed = new EmbedBuilder()
-            .WithTitle(title)
-            .WithDescription(description)
-            .WithColor(Color.Red)
-            .WithCurrentTimestamp()
-            .Build();
+        var embed = CommonEmbedBuilder.GetErrorEmbedBuilder(title, description).Build();
         
         await FollowupAsync(embeds: new[] {embed});
     }

@@ -17,25 +17,18 @@ public partial class ModrinthService
 {
     private readonly IMemoryCache _cache;
     private readonly MemoryCacheEntryOptions _cacheEntryOptions;
-    private readonly DiscordSocketClient _client;
-    private readonly IDataService _dataService;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger _logger;
-    private readonly ProjectStatisticsManager _projectStatisticsManager;
-    private readonly BackgroundWorker _updateWorker;
     private readonly IScheduler _scheduler;
     private readonly JobKey _jobKey;
-    protected IModrinthClient Api { get; }
+    private readonly IModrinthClient _api;
 
     public ModrinthService(IServiceProvider serviceProvider, IHttpClientFactory httpClientFactory, ISchedulerFactory scheduler)
     {
         _httpClientFactory = httpClientFactory;
-        Api = serviceProvider.GetRequiredService<IModrinthClient>();
+        _api = serviceProvider.GetRequiredService<IModrinthClient>();
         _logger = serviceProvider.GetRequiredService<ILogger<ModrinthService>>();
         _cache = serviceProvider.GetRequiredService<IMemoryCache>();
-        _dataService = serviceProvider.GetRequiredService<IDataService>();
-        _client = serviceProvider.GetRequiredService<DiscordSocketClient>();
-        _projectStatisticsManager = serviceProvider.GetRequiredService<ProjectStatisticsManager>();
         _scheduler = scheduler.GetScheduler().GetAwaiter().GetResult();
 
         _cacheEntryOptions = new MemoryCacheEntryOptions
@@ -99,9 +92,9 @@ public partial class ModrinthService
             var projectFoundById = false;
             try
             {
-                project = await Api.Project.GetAsync(query);
+                project = await _api.Project.GetAsync(query);
 
-                searchResponse = await Api.Project.SearchAsync(query);
+                searchResponse = await _api.Project.SearchAsync(query);
                 // Won't be set if exception is thrown
                 projectFoundById = true;
             }
@@ -138,14 +131,14 @@ public partial class ModrinthService
 
         try
         {
-            searchResponse = await Api.Project.SearchAsync(query);
+            searchResponse = await _api.Project.SearchAsync(query);
 
             // No search results
             if (searchResponse.TotalHits <= 0)
                 return new SearchResult<ProjectDto>(new ProjectDto(), SearchStatus.NoResult, query);
 
             // Return first result
-            project = await Api.Project.GetAsync(searchResponse.Hits[0].ProjectId);
+            project = await _api.Project.GetAsync(searchResponse.Hits[0].ProjectId);
 
             var result = new SearchResult<ProjectDto>(new ProjectDto
             {
@@ -186,7 +179,7 @@ public partial class ModrinthService
 
         try
         {
-            user = await Api.User.GetAsync(query);
+            user = await _api.User.GetAsync(query);
             _logger.LogDebug("User query '{Query}' found", query);
         }
         catch (ModrinthApiException e) when (e.Response.StatusCode == HttpStatusCode.NotFound)
@@ -203,7 +196,7 @@ public partial class ModrinthService
         // User can't be null from here
         try
         {
-            var projects = await Api.User.GetProjectsAsync(user.Id);
+            var projects = await _api.User.GetProjectsAsync(user.Id);
 
             var searchResult = new SearchResult<UserDto>(new UserDto
             {

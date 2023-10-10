@@ -53,8 +53,7 @@ public class ClientService
         await _client.SetGameAsync(
             $"Monitoring {count} project{(count == 1 ? null : 's')} for updates in {_client.Guilds.Count} servers");
     }
-
-    // Define your Quartz job class as an inner class of ClientService
+    
     private class RefreshJob : IJob
     {
         private readonly ClientService _clientService;

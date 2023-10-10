@@ -44,15 +44,13 @@ public class BotStatsService : IBotStatsService
                 _logger.LogInformation("Publishing bot stats to top.gg, server count: {ServerCount}",
                     _discordClient.Guilds.Count);
                 using var request = new HttpRequestMessage(HttpMethod.Post,
-                    $"https://top.gg/api/bots/{_discordClient.CurrentUser.Id}/stats")
+                    $"https://top.gg/api/bots/{_discordClient.CurrentUser.Id}/stats");
+                request.Content = new StringContent(JsonConvert.SerializeObject(new
                 {
-                    Content = new StringContent(JsonConvert.SerializeObject(new
-                    {
-                        server_count = _discordClient.Guilds.Count,
-                        // shard_count = 1,
-                        shards = Array.Empty<string>()
-                    }), Encoding.UTF8, "application/json")
-                };
+                    server_count = _discordClient.Guilds.Count,
+                    // shard_count = 1,
+                    shards = Array.Empty<string>()
+                }), Encoding.UTF8, "application/json");
 
                 request.Headers.Add("Authorization", _topGgToken);
 

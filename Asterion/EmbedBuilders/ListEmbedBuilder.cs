@@ -16,7 +16,7 @@ public static class ListEmbedBuilder
 
         var currentEntry = 0;
 
-        var numberOfEmbeds = entries.Count / 25 + 1;
+        var numberOfEmbeds = entries.Count / 25 + (entries.Count % 25 > 0 ? 1 : 0);
 
         for (var i = 0; i < numberOfEmbeds; i++)
         {

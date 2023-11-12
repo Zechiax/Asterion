@@ -167,6 +167,17 @@ public class ModrinthModule : AsterionInteractionModuleBase
             });
             return;
         }
+        
+        var subscribed = await _dataService.IsGuildSubscribedToProjectAsync(Context.Guild.Id, project.Id);
+        
+        if (subscribed)
+        {
+            await ModifyOriginalResponseAsync(x =>
+            {
+                x.Content = $"You're already subscribed to project ID {project.Id}";
+            });
+            return;
+        }
 
         var versions = await _modrinthService.GetVersionListAsync(project.Id);
         if (versions == null)

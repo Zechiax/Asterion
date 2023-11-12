@@ -185,8 +185,6 @@ public class ModrinthInteractionModule : AsterionInteractionModuleBase
 
         var guildId = Context.Guild.Id;
 
-        var subscribed = await _dataService.IsGuildSubscribedToProjectAsync(guildId, projectId);
-
         var project = await _modrinthService.GetProject(projectId);
         var guild = await _dataService.GetGuildByIdAsync(guildId);
 
@@ -203,6 +201,8 @@ public class ModrinthInteractionModule : AsterionInteractionModuleBase
             await FollowupAsync(RequestError, ephemeral: true);
             return;
         }
+        
+        var subscribed = await _dataService.IsGuildSubscribedToProjectAsync(guildId, project.Id);        
 
         var team = await _modrinthService.GetProjectsTeamMembersAsync(project.Id);
 

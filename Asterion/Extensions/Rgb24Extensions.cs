@@ -1,4 +1,5 @@
-﻿using Color = Discord.Color;
+﻿using SixLabors.ImageSharp.PixelFormats;
+using Color = Discord.Color;
 
 namespace Asterion.Extensions;
 

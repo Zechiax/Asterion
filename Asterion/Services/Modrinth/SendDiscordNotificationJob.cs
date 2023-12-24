@@ -20,7 +20,7 @@ public class SendDiscordNotificationJob : IJob
     private readonly DiscordSocketClient _client;
     private readonly IModrinthClient _modrinthClient;
 
-    private JobKey _jobKey;
+    private JobKey _jobKey = null!;
     
     public SendDiscordNotificationJob(ILogger<SendDiscordNotificationJob> logger, IDataService dataService, DiscordSocketClient client, IModrinthClient modrinthClient)
     {
@@ -89,7 +89,7 @@ public class SendDiscordNotificationJob : IJob
                 continue;
             }
             
-            var channel = _client.GetGuild(guild.GuildId)?.GetTextChannel((ulong) entry.CustomUpdateChannel);
+            var channel = _client.GetGuild(guild.GuildId)?.GetTextChannel((ulong) entry.CustomUpdateChannel!);
             
             if (channel is null)
             {
@@ -100,7 +100,7 @@ public class SendDiscordNotificationJob : IJob
             
             var pingRole = guild.PingRole is null ? null : channel.Guild.GetRole((ulong) guild.PingRole);
             
-            foreach (var version in versions)
+            foreach (var version in versions.OrderBy(x => x.DatePublished))
             {
                 _logger.LogDebug("Sending notification for version {VersionId} of project {ProjectId} to guild {GuildId}", version.Id, project.Id, guild.GuildId);
                 var embed = ModrinthEmbedBuilder.VersionUpdateEmbed(guild.GuildSettings, project, version, team).Build();

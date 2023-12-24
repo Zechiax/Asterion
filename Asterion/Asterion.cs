@@ -160,7 +160,6 @@ public class Asterion
         services.AddQuartz(q =>
         {
             q.UseInMemoryStore();
-            q.UseMicrosoftDependencyInjectionJobFactory();
         });
         services.AddQuartzHostedService(options =>
         {

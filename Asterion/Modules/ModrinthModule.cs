@@ -361,7 +361,14 @@ public class ModrinthModule : AsterionInteractionModuleBase
 
         var guild = await _dataService.GetGuildByIdAsync(Context.Guild.Id);
 
-        var embed = ModrinthEmbedBuilder.VersionUpdateEmbed(guild?.GuildSettings, project, latestVersion, team);
+        if (guild is null)
+        {
+            // Try again later
+            await ModifyOriginalResponseAsync(x => { x.Content = "Internal error, please try again later"; });
+            return;
+        }
+        
+        var embed = ModrinthEmbedBuilder.VersionUpdateEmbed(guild.GuildSettings, project, latestVersion, team);
 
         var buttons =
             new ComponentBuilder().WithButton(

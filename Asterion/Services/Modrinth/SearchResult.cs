@@ -5,18 +5,19 @@ namespace Asterion.Services.Modrinth;
 
 public class SearchResult<T>
 {
-    public SearchResult(T? payload, SearchStatus searchStatus)
+    public SearchResult(T? payload, SearchStatus searchStatus, string query)
     {
         Payload = payload;
         SearchStatus = searchStatus;
         SearchTime = DateTime.UtcNow;
+        Query = query;
     }
 
     /// <summary>
     ///     Success in getting results
     /// </summary>
     public bool Success => SearchStatus is SearchStatus.FoundById or SearchStatus.FoundBySearch;
-
+    public string Query { get; }
     public DateTime SearchTime { get; private set; }
     public SearchStatus SearchStatus { get; }
     public T? Payload { get; private set; }

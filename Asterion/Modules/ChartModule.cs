@@ -1,4 +1,6 @@
 using Asterion.AutocompleteHandlers;
+using Asterion.Common;
+using Asterion.Interfaces;
 using Asterion.Services;
 using Asterion.Services.Modrinth;
 using Discord;
@@ -12,13 +14,14 @@ using SkiaSharp;
 
 namespace Asterion.Modules;
 
-public class ChartModule : InteractionModuleBase<SocketInteractionContext>
+public class ChartModule : AsterionInteractionModuleBase
 {
     private readonly ILogger<ChartModule> _logger;
     private readonly ModrinthService _modrinthService;
     private readonly ProjectStatisticsManager _projectStatisticsManager;
 
-    public ChartModule(IServiceProvider serviceProvider)
+    public ChartModule(IServiceProvider serviceProvider, ILocalizationService localizationService) : base(
+        localizationService)
     {
         _projectStatisticsManager = serviceProvider.GetRequiredService<ProjectStatisticsManager>();
         _modrinthService = serviceProvider.GetRequiredService<ModrinthService>();
@@ -29,7 +32,8 @@ public class ChartModule : InteractionModuleBase<SocketInteractionContext>
     [Group("chart", "Creates charts of different statistics")]
     public class ChartType : ChartModule
     {
-        public ChartType(IServiceProvider serviceProvider) : base(serviceProvider)
+        public ChartType(IServiceProvider serviceProvider, ILocalizationService localizationService) : base(
+            serviceProvider, localizationService)
         {
         }
 

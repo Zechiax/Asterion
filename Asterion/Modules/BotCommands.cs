@@ -1,13 +1,20 @@
-﻿using Discord.Interactions;
+﻿using Asterion.Common;
+using Asterion.Interfaces;
+using Discord.Interactions;
+using Discord.WebSocket;
 
 namespace Asterion.Modules;
 
-public class BotCommands : InteractionModuleBase<SocketInteractionContext>
+public class BotCommands : AsterionInteractionModuleBase
 {
+#if DEBUG
     [SlashCommand("ping", "Pings the bot", runMode: RunMode.Async)]
     public async Task Ping()
     {
-        await RespondAsync($"Pong :ping_pong: It took me {Context.Client.Latency}ms to respond to you",
-            ephemeral: true);
+        await RespondAsync($"Pong! Latency: {Context.Client.Latency}ms");
+    }
+#endif
+    public BotCommands(ILocalizationService localizationService) : base(localizationService)
+    {
     }
 }

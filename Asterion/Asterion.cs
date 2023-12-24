@@ -11,6 +11,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Modrinth;
+using Quartz;
 using Serilog;
 using RunMode = Discord.Commands.RunMode;
 
@@ -19,9 +20,12 @@ namespace Asterion;
 public class Asterion
 {
     private readonly IConfiguration _config;
+    private int _shardId;
 
-    public Asterion()
+    public Asterion(int shardId)
     {
+        _shardId = shardId;
+        
         _config = new ConfigurationBuilder()
             .SetBasePath(AppContext.BaseDirectory)
             .AddJsonFile("config.json", false, true)
@@ -78,12 +82,25 @@ public class Asterion
         await client.LoginAsync(TokenType.Bot, _config.GetValue<string>("token"));
         await client.StartAsync();
 
+        // We start the stats service after the client has been logged in
+        // so that we can get the correct guild count
+        services.GetRequiredService<IBotStatsService>().Initialize();
+
+        // We start the scheduler after the client has been logged in
+        // so that we can get the correct guild count
+        var scheduler = await services.GetRequiredService<ISchedulerFactory>().GetScheduler();
+        await scheduler.Start();
+        
         // Disconnect from Discord when pressing Ctrl+C
         Console.CancelKeyPress += (_, args) =>
         {
             args.Cancel = true;
+            
             logger.LogInformation("{Key} pressed, exiting bot", args.SpecialKey);
 
+            logger.LogInformation("Stopping the scheduler");
+            scheduler.Shutdown(true).Wait();
+            
             logger.LogInformation("Logging out from Discord");
             client.LogoutAsync().Wait();
             logger.LogInformation("Stopping the client");
@@ -94,11 +111,7 @@ public class Asterion
 
             args.Cancel = false;
         };
-
-        // We start the stats service after the client has been logged in
-        // so that we can get the correct guild count
-        services.GetRequiredService<IBotStatsService>().Initialize();
-
+        
         await Task.Delay(Timeout.Infinite);
     }
 
@@ -140,8 +153,23 @@ public class Asterion
             .AddHttpClient()
             .AddDbContext<DataContext>()
             .AddSingleton<IBotStatsService, BotStatsService>()
+            .AddSingleton<ILocalizationService, LocalizationService>()
             .AddMemoryCache()
             .AddLogging(configure => configure.AddSerilog(dispose: true));
+
+        services.AddQuartz(q =>
+        {
+            q.UseInMemoryStore();
+        });
+        services.AddQuartzHostedService(options =>
+        {
+            options.WaitForJobsToComplete = true;
+        });
+        
+        services.AddLocalization(options =>
+        {
+            options.ResourcesPath = "Resources";
+        });
 
         if (IsDebug())
             services.Configure<LoggerFilterOptions>(options => options.MinLevel = LogLevel.Debug);

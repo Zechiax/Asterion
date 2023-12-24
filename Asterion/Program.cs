@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using Figgle;
 using Serilog;
 
 namespace Asterion;
@@ -9,6 +10,8 @@ public class Program
     {
         if (args.Length > 0 && args[0] == "migration") return;
 
+        Console.WriteLine(FiggleFonts.Slant.Render("Asterion v3"));
+        
         Thread.CurrentThread.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
 
         Log.Logger = new LoggerConfiguration()
@@ -18,12 +21,13 @@ public class Program
             .MinimumLevel.Debug()
 #else
                 .MinimumLevel.Information()
-                .MinimumLevel.Override("Microsoft.EntityFrameworkCore.Database.Command", Serilog.Events.LogEventLevel.Warning)
 #endif
+            .MinimumLevel.Override("Microsoft.EntityFrameworkCore", Serilog.Events.LogEventLevel.Information) // Set the minimum log level for EF Core messages
+            .MinimumLevel.Override("Microsoft.EntityFrameworkCore.Database.Command", Serilog.Events.LogEventLevel.Warning) // Set the minimum log level for EF Core command messages
             .Enrich.FromLogContext()
             .WriteTo.Console()
             .CreateLogger();
 
-        new Asterion().MainAsync().GetAwaiter().GetResult();
+        new Asterion(0).MainAsync().GetAwaiter().GetResult();
     }
 }

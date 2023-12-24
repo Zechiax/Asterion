@@ -1,5 +1,6 @@
 ﻿using Asterion.Attributes;
 using Asterion.AutocompleteHandlers;
+using Asterion.Common;
 using Asterion.ComponentBuilders;
 using Asterion.Database.Models;
 using Asterion.EmbedBuilders;
@@ -12,6 +13,7 @@ using Discord.WebSocket;
 using Fergun.Interactive;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Modrinth;
 using Modrinth.Exceptions;
 using Modrinth.Models;
 
@@ -22,16 +24,20 @@ namespace Asterion.Modules;
 [EnabledInDm(false)]
 [RequireContext(ContextType.Guild)]
 // ReSharper disable once ClassNeverInstantiated.Global
-public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
+public class ModrinthModule : AsterionInteractionModuleBase
 {
     private readonly DiscordSocketClient _client;
     private readonly IDataService _dataService;
     private readonly InteractiveService _interactive;
     private readonly ILogger<ModrinthModule> _logger;
     private readonly ModrinthService _modrinthService;
+    private readonly ILocalizationService _localizationService;
+    private readonly IModrinthClient _modrinthClient;
 
-    public ModrinthModule(IServiceProvider serviceProvider)
+    public ModrinthModule(IModrinthClient modrinthClient, IServiceProvider serviceProvider, ILocalizationService localizationService) : base(localizationService)
     {
+        _modrinthClient = modrinthClient;
+        _localizationService = serviceProvider.GetRequiredService<ILocalizationService>();
         _dataService = serviceProvider.GetRequiredService<IDataService>();
         _modrinthService = serviceProvider.GetRequiredService<ModrinthService>();
         _interactive = serviceProvider.GetRequiredService<InteractiveService>();
@@ -51,7 +57,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         _logger.LogDebug("Search for user '{Query}", query);
         var searchResult = await _modrinthService.FindUser(query);
         _logger.LogDebug("Search status: {SearchStatus}", searchResult.SearchStatus);
-
+        
         switch (searchResult.SearchStatus)
         {
             case SearchStatus.ApiDown:
@@ -88,26 +94,11 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
         _logger.LogDebug("Search for query '{Query}'", query);
         var searchResult = await _modrinthService.FindProject(query);
         _logger.LogDebug("Search status: {SearchStatus}", searchResult.SearchStatus);
-        switch (searchResult.SearchStatus)
+
+        if (searchResult.Success == false)
         {
-            case SearchStatus.ApiDown:
-                await ModifyOriginalResponseAsync(x =>
-                {
-                    x.Content = "Modrinth API is probably down, please try again later";
-                });
-                return;
-            case SearchStatus.NoResult:
-                await ModifyOriginalResponseAsync(x => { x.Content = $"No result for query '{query}'"; });
-                return;
-            case SearchStatus.UnknownError:
-                await ModifyOriginalResponseAsync(x => { x.Content = "Unknown error, please try again later"; });
-                return;
-            case SearchStatus.FoundById:
-                break;
-            case SearchStatus.FoundBySearch:
-                break;
-            default:
-                throw new ArgumentOutOfRangeException();
+            await FollowupWithSearchResultErrorAsync(searchResult);
+            return;
         }
 
         var projectDto = searchResult.Payload;
@@ -173,6 +164,17 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
             {
                 x.Content =
                     "There was an error processing your request, check if the ID is correct or try again later";
+            });
+            return;
+        }
+        
+        var subscribed = await _dataService.IsGuildSubscribedToProjectAsync(Context.Guild.Id, project.Id);
+        
+        if (subscribed)
+        {
+            await ModifyOriginalResponseAsync(x =>
+            {
+                x.Content = $"You're already subscribed to project ID {project.Id}";
             });
             return;
         }
@@ -359,7 +361,14 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
 
         var guild = await _dataService.GetGuildByIdAsync(Context.Guild.Id);
 
-        var embed = ModrinthEmbedBuilder.VersionUpdateEmbed(guild?.GuildSettings, project, latestVersion, team);
+        if (guild is null)
+        {
+            // Try again later
+            await ModifyOriginalResponseAsync(x => { x.Content = "Internal error, please try again later"; });
+            return;
+        }
+        
+        var embed = ModrinthEmbedBuilder.VersionUpdateEmbed(guild.GuildSettings, project, latestVersion, team);
 
         var buttons =
             new ComponentBuilder().WithButton(
@@ -376,14 +385,13 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
     public async Task GetRandomProject()
     {
         await DeferAsync();
-
-        var api = _modrinthService.Api;
+        
         Project? randomProject;
         try
         {
             // Count to 70, as Modrinth currently returns less than 70 projects
             // If it's set to 1, it will sometimes return 0 projects
-            randomProject = (await api.Project.GetRandomAsync(70)).FirstOrDefault();
+            randomProject = (await _modrinthClient.Project.GetRandomAsync(70)).FirstOrDefault();
         }
         catch (ModrinthApiException e)
         {
@@ -393,7 +401,7 @@ public class ModrinthModule : InteractionModuleBase<SocketInteractionContext>
 
         if (randomProject == null) throw new Exception("No projects found");
 
-        var team = await api.Team.GetAsync(randomProject.Team);
+        var team = await _modrinthClient.Team.GetAsync(randomProject.Team);
 
         var embed = ModrinthEmbedBuilder.GetProjectEmbed(randomProject, team);
 

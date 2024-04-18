@@ -99,6 +99,12 @@ public class SendDiscordNotificationJob : IJob
             }
             
             var pingRole = guild.PingRole is null ? null : channel.Guild.GetRole((ulong) guild.PingRole);
+            var customPingRole = entry.CustomPingRole;
+            
+            if (customPingRole.HasValue)
+            {
+                pingRole = channel.Guild.GetRole(customPingRole.Value);
+            }
             
             foreach (var version in versions.OrderBy(x => x.DatePublished))
             {

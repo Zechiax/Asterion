@@ -13,6 +13,7 @@ public class ModrinthEntry
     public virtual Array Array { get; set; } = null!;
 
     public ulong? CustomUpdateChannel { get; set; }
+    public ulong? CustomPingRole { get; set; }
 
     [Required] public string ProjectId { get; set; } = null!;
 

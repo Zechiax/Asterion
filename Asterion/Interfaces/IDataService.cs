@@ -133,6 +133,6 @@ public interface IDataService
     /// <returns></returns>
     public Task<bool> ChangeModrinthEntryChannel(ulong guildId, string projectId, ulong newChannelId);
 
-    public Task<bool> SetPingRoleAsync(ulong guildId, ulong? roleId);
-    public Task<ulong?> GetPingRoleIdAsync(ulong guildId);
+    public Task<bool> SetPingRoleAsync(ulong guildId, ulong? roleId, string? projectId = null);
+    public Task<ulong?> GetPingRoleIdAsync(ulong guildId, string? projectId = null);
 }

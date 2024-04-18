@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using Asterion.Attributes;
+using Asterion.AutocompleteHandlers;
 using Asterion.Common;
 using Asterion.Interfaces;
 using Discord;
@@ -78,25 +79,37 @@ public class GuildManagement : AsterionInteractionModuleBase
     [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
     [DoManageSubsRoleCheck(Group = "ManageSubs")]
     [SlashCommand("set-ping-role", "Sets the role, which will be notified every time a project gets an update")]
-    public async Task SetPingRole(IRole role)
+    public async Task SetPingRole(IRole role, [Autocomplete(typeof(SubscribedIdAutocompletionHandler))]
+        string? projectId = null)
     {
         await DeferAsync(true);
-        var success = await _dataService.SetPingRoleAsync(Context.Guild.Id, role.Id);
+        var success = await _dataService.SetPingRoleAsync(Context.Guild.Id, role.Id, projectId);
 
         if (success)
-            await FollowupAsync(
-                $"Ping role set to role {role.Mention} :white_check_mark: This role will be notified with each update");
+        {
+            if (projectId is not null)
+                await FollowupAsync(
+                    $"Ping role set to role {role.Mention} for project {projectId} :white_check_mark: This role will be notified with each update");
+            else
+            {
+                await FollowupAsync(
+                    $"Ping role set to role {role.Mention} :white_check_mark: This role will be notified with each update");
+            }
+        }
         else
+        {
             await FollowupAsync("There was an error while setting the ping role, please try again later");
+        }
     }
 
     [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
     [DoManageSubsRoleCheck(Group = "ManageSubs")]
     [SlashCommand("remove-ping-role", "Removes the ping role")]
-    public async Task RemovePingRole()
+    public async Task RemovePingRole([Autocomplete(typeof(SubscribedIdAutocompletionHandler))]
+        string? projectId = null)
     {
         await DeferAsync(true);
-        var oldRole = await _dataService.GetPingRoleIdAsync(Context.Guild.Id);
+        var oldRole = await _dataService.GetPingRoleIdAsync(Context.Guild.Id, projectId);
 
         if (oldRole.HasValue == false)
         {
@@ -104,7 +117,7 @@ public class GuildManagement : AsterionInteractionModuleBase
             return;
         }
 
-        var success = await _dataService.SetPingRoleAsync(Context.Guild.Id, null);
+        var success = await _dataService.SetPingRoleAsync(Context.Guild.Id, null, projectId);
 
         if (success)
             await FollowupAsync(

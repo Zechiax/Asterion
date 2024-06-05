@@ -121,7 +121,7 @@ public class Asterion
         {
             AlwaysDownloadUsers = true,
             MessageCacheSize = 100,
-            GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.MessageContent
+            GatewayIntents = GatewayIntents.AllUnprivileged
         };
 
         var commandConfig = new CommandServiceConfig

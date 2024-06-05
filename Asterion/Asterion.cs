@@ -106,9 +106,6 @@ public class Asterion
             logger.LogInformation("Stopping the client");
             client.StopAsync().Wait();
 
-            logger.LogInformation("Disposing services");
-            services.DisposeAsync().GetAwaiter().GetResult();
-
             args.Cancel = false;
         };
         
@@ -134,12 +131,14 @@ public class Asterion
             UserAgent = "Zechiax/Asterion",
             RateLimitRetryCount = 3
         };
+        
+        var client = new DiscordSocketClient(config);
 
         var services = new ServiceCollection()
             .AddSingleton(_config)
-            .AddSingleton(new DiscordSocketClient(config))
+            .AddSingleton(client)
             .AddSingleton(new CommandService(commandConfig))
-            .AddSingleton<InteractionService>()
+            .AddSingleton<InteractionService>( new InteractionService(client))
             .AddSingleton<InteractionCommandHandler>()
             .AddSingleton<MessageHandler>()
             .AddSingleton<LoggingService>()

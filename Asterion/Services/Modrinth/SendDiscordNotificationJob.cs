@@ -119,7 +119,7 @@ public class SendDiscordNotificationJob : IJob
                         _logger.LogDebug("Skipping version {VersionId} of project {ProjectId} due to release filter", version.Id, project.Id);
                         continue;
                     default:
-                        _logger.LogError("Unknown version type {VersionType} for version {VersionId} of project {ProjectId}", version.ProjectVersionType, version.Id, project.Id);
+                        _logger.LogDebug("Version {VersionId} of project {ProjectId} passed release filter", version.Id, project.Id);
                         break;
                 }
 

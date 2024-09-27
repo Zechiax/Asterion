@@ -411,6 +411,22 @@ public class DataService : IDataService
         }
     }
 
+    public async Task<bool> SetReleaseFilterAsync(ulong entryId, ReleaseType releaseType)
+    {
+        using var scope = _services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<DataContext>();
+        
+        var entry = await db.ModrinthEntries.FirstOrDefaultAsync(x => x.EntryId == entryId);
+        
+        if (entry is null) return false;
+        
+        entry.ReleaseFilter = releaseType;
+        
+        await db.SaveChangesAsync();
+        
+        return true;
+    }
+
     private async Task JoinGuild(SocketGuild guild)
     {
         await AddGuildAsync(guild.Id);

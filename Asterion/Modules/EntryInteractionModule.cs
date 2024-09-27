@@ -3,11 +3,14 @@ using Asterion.Interfaces;
 using Discord;
 using Discord.Interactions;
 using System.Threading.Tasks;
+using Asterion.Attributes;
 using Asterion.AutocompleteHandlers;
 using Asterion.Database.Models;
 
 namespace Asterion.Modules
 {
+    [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
+    [DoManageSubsRoleCheck(Group = "ManageSubs")]
     public class EntryInteractionModule(ILocalizationService localizationService, IDataService dataService)
         : AsterionInteractionModuleBase(localizationService)
     {

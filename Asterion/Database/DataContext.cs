@@ -52,5 +52,9 @@ public class DataContext : DbContext
         modelBuilder.Entity<GuildSettings>().Property(p => p.MessageStyle).HasDefaultValue(MessageStyle.Full);
         modelBuilder.Entity<GuildSettings>().Property(p => p.ChangelogStyle).HasDefaultValue(ChangelogStyle.PlainText);
         modelBuilder.Entity<GuildSettings>().Property(p => p.ChangeLogMaxLength).HasDefaultValue(2000);
+        
+        modelBuilder.Entity<ModrinthEntry>()
+            .Property(e => e.ReleaseFilter)
+            .HasDefaultValue(ReleaseType.Alpha | ReleaseType.Beta | ReleaseType.Release);
     }
 }

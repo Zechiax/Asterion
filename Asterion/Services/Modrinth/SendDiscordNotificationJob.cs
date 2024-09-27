@@ -8,6 +8,7 @@ using Discord.WebSocket;
 using Microsoft.Extensions.Logging;
 using Modrinth;
 using Modrinth.Models;
+using Modrinth.Models.Enums.Project;
 using Quartz;
 using Version = Modrinth.Models.Version;
 
@@ -108,6 +109,20 @@ public class SendDiscordNotificationJob : IJob
             
             foreach (var version in versions.OrderBy(x => x.DatePublished))
             {
+                var releaseFilter = entry.ReleaseFilter;
+
+                switch (version.ProjectVersionType)
+                {
+                    case ProjectVersionType.Alpha when !releaseFilter.HasFlag(ReleaseType.Alpha):
+                    case ProjectVersionType.Beta when !releaseFilter.HasFlag(ReleaseType.Beta):
+                    case ProjectVersionType.Release when !releaseFilter.HasFlag(ReleaseType.Release):
+                        _logger.LogDebug("Skipping version {VersionId} of project {ProjectId} due to release filter", version.Id, project.Id);
+                        continue;
+                    default:
+                        _logger.LogDebug("Version {VersionId} of project {ProjectId} passed release filter", version.Id, project.Id);
+                        break;
+                }
+
                 _logger.LogDebug("Sending notification for version {VersionId} of project {ProjectId} to guild {GuildId}", version.Id, project.Id, guild.GuildId);
                 var embed = ModrinthEmbedBuilder.VersionUpdateEmbed(guild.GuildSettings, project, version, team).Build();
                 var buttons = new ComponentBuilder().WithButton(ModrinthComponentBuilder.GetVersionUrlButton(project, version)).Build();

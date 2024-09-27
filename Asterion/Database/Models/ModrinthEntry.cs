@@ -24,4 +24,14 @@ public class ModrinthEntry
     public virtual Guild Guild { get; set; } = null!;
 
     [Required] public DateTime Created { get; set; }
+    
+    [Required] public ReleaseType ReleaseFilter { get; set; } = ReleaseType.Alpha | ReleaseType.Beta | ReleaseType.Release;
+}
+
+[Flags]
+public enum ReleaseType
+{
+    Alpha = 1,
+    Beta = 2,
+    Release = 4
 }

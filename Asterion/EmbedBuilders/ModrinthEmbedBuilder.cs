@@ -287,8 +287,14 @@ public static class ModrinthEmbedBuilder
                 {
                     Name = "Links",
                     Value = string.Join(" | ",
+                        new[] {
                         $"[Changelog]({project.Url}/changelog)",
-                        $"[Version Info]({project.GetVersionUrl(version)})")
+                        $"[Version Info]({project.GetVersionUrl(version)})",
+                        project.SourceUrl is not null
+                            ? $"[Source]({project.SourceUrl})"
+                            : null
+                        }.Where(x => !string.IsNullOrEmpty(x))
+                    )
                 }
             },
             Timestamp = version.DatePublished,

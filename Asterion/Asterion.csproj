@@ -20,27 +20,27 @@
         <PackageReference Include="Html2Markdown" Version="7.0.1.9" />
         <PackageReference Include="Humanizer.Core" Version="2.14.1" />
         <PackageReference Include="LiveChartsCore.SkiaSharpView" Version="2.0.0-rc3.3" />
-        <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.10" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.8" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.8" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.8">
+        <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.0" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.0" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.0" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.0">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
-        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
-        <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.1" />
-        <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.0" />
-        <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.0" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.0" />
         <PackageReference Include="Modrinth.Net" Version="3.4.5" />
-        <PackageReference Include="Quartz" Version="3.13.0" />
-        <PackageReference Include="Quartz.AspNetCore" Version="3.13.0" />
-        <PackageReference Include="Quartz.Extensions.DependencyInjection" Version="3.13.0" />
-        <PackageReference Include="Serilog" Version="4.0.2" />
+        <PackageReference Include="Quartz" Version="3.13.1" />
+        <PackageReference Include="Quartz.AspNetCore" Version="3.13.1" />
+        <PackageReference Include="Quartz.Extensions.DependencyInjection" Version="3.13.1" />
+        <PackageReference Include="Serilog" Version="4.1.0" />
         <PackageReference Include="Serilog.AspNetCore" Version="8.0.3" />
         <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
-        <PackageReference Include="SixLabors.ImageSharp" Version="3.1.5" />
-        <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="2.88.8" />
+        <PackageReference Include="SixLabors.ImageSharp" Version="3.1.6" />
+        <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="2.88.9" />
         <PackageReference Include="System.Data.SQLite" Version="1.0.119" />
     </ItemGroup>
 

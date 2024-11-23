@@ -149,12 +149,16 @@ namespace Asterion.Modules
             // Use the static method to generate the updated embed
             var updatedEmbed = CreateModrinthEntryEmbed(entry, newReleaseFilter);
 
+            var supportedLoaders = (await modrinthClient.Project.GetAsync(projectId)).Loaders;
+            
             // Update the original message with the new embed
             await ModifyOriginalResponseAsync(msg =>
             {
                 msg.Embed = updatedEmbed;
                 msg.Components = new ComponentBuilder()
-                    .WithSelectMenu(CreateReleaseFilterComponent(projectId, newReleaseFilter)).Build();
+                    .WithSelectMenu(CreateReleaseFilterComponent(projectId, newReleaseFilter))
+                    .WithSelectMenu(CreateLoaderFilterComponent(projectId, supportedLoaders, entry.LoaderFilter))
+                    .Build();
             });
 
             // Optionally, acknowledge the selection change in a temporary message
@@ -197,6 +201,7 @@ namespace Asterion.Modules
             {
                 msg.Embed = updatedEmbed;
                 msg.Components = new ComponentBuilder()
+                    .WithSelectMenu(CreateReleaseFilterComponent(projectId, entry.ReleaseFilter))
                     .WithSelectMenu(CreateLoaderFilterComponent(projectId, supportedLoaders, entry.LoaderFilter))
                     .Build();
             });

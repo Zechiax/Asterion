@@ -122,6 +122,22 @@ public class SendDiscordNotificationJob : IJob
                         _logger.LogDebug("Version {VersionId} of project {ProjectId} passed release filter", version.Id, project.Id);
                         break;
                 }
+                
+                // Now we check if there is a loader filter
+                if (entry.LoaderFilter is not null && entry.LoaderFilter.Length > 0)
+                {
+                    var versionLoaders = version.Loaders;
+                    
+                    // Now we check, if any of the loaders are in the filter
+                    if (!versionLoaders.Any(x => entry.LoaderFilter.Contains(x)))
+                    {
+                        _logger.LogDebug("Skipping version {VersionId} of project {ProjectId} due to loader filter", version.Id, project.Id);
+                        continue;
+                        
+                    }
+                    
+                    _logger.LogDebug("Version {VersionId} of project {ProjectId} passed loader filter", version.Id, project.Id);
+                }
 
                 _logger.LogDebug("Sending notification for version {VersionId} of project {ProjectId} to guild {GuildId}", version.Id, project.Id, guild.GuildId);
                 var embed = ModrinthEmbedBuilder.VersionUpdateEmbed(guild.GuildSettings, project, version, team).Build();

@@ -37,7 +37,7 @@ namespace Asterion.Modules
                 .AddField("🔖 Release Filter", releaseFilter.ToString(), true)
                 .AddField("🔍 Loader Filter",
                     entry.LoaderFilter == null ? "None" : string.Join(", ", entry.LoaderFilter), true)
-                .AddField("🕒 Created", TimestampTag.FromDateTime(entry.Created).ToString(), true)
+                .AddField("🕒 Created", TimestampTag.FromDateTime(entry.Created).ToString(), false)
                 .WithColor(Color.Blue)
                 .WithCurrentTimestamp()
                 .Build();
@@ -65,13 +65,9 @@ namespace Asterion.Modules
         {
             var selectMenu = new SelectMenuBuilder()
                 .WithCustomId($"loader_filter:{projectId}")
-                .WithPlaceholder("Select loader(s)")
-                .WithMinValues(1)
-                .WithMaxValues(supportedLoaders.Length + 1); // +1 for the "All" option
-
-            // Add "All" option
-            selectMenu.AddOption("All", "all", "Include all loaders",
-                isDefault: currentLoaderFilter == null || currentLoaderFilter.Length == 0);
+                .WithPlaceholder("Select loader(s) to filter - currently ALL")
+                .WithMinValues(0)
+                .WithMaxValues(supportedLoaders.Length);
 
             // Add options for each supported loader
             foreach (var loader in supportedLoaders)
@@ -86,7 +82,8 @@ namespace Asterion.Modules
         // Interaction command to display the entry info and provide a dropdown
         [SlashCommand("entry", "Displays entry information and allows selection of release type filters.")]
         public async Task ShowEntryAsync(
-            [Summary("project_id")] [Autocomplete(typeof(SubscribedIdAutocompletionHandler))] string projectId)
+            [Summary("project_id")] [Autocomplete(typeof(SubscribedIdAutocompletionHandler))]
+            string projectId)
         {
             await DeferAsync();
 
@@ -104,13 +101,13 @@ namespace Asterion.Modules
             var components = new ComponentBuilder();
             // Create a SelectMenu for ReleaseType filter
             var releaseFilterComponent = CreateReleaseFilterComponent(projectId, entry.ReleaseFilter);
-            components.WithSelectMenu(releaseFilterComponent);
-            
+            components.WithSelectMenu(releaseFilterComponent, 0);
+
             // Create a SelectMenu for Loader filter
             var project = await modrinthClient.Project.GetAsync(projectId);
             var supportedLoaders = project.Loaders;
             var loaderFilterComponent = CreateLoaderFilterComponent(projectId, supportedLoaders, entry.LoaderFilter);
-            components.WithSelectMenu(loaderFilterComponent);
+            components.WithSelectMenu(loaderFilterComponent, 1);
 
             // Send the embed with the dropdown menu
             await FollowupAsync(embed: embed, components: components.Build());
@@ -156,13 +153,14 @@ namespace Asterion.Modules
             await ModifyOriginalResponseAsync(msg =>
             {
                 msg.Embed = updatedEmbed;
-                msg.Components = new ComponentBuilder().WithSelectMenu(CreateReleaseFilterComponent(projectId, newReleaseFilter)).Build();
+                msg.Components = new ComponentBuilder()
+                    .WithSelectMenu(CreateReleaseFilterComponent(projectId, newReleaseFilter)).Build();
             });
 
             // Optionally, acknowledge the selection change in a temporary message
             await FollowupAsync("Release filter updated successfully!", ephemeral: true);
         }
-        
+
         [ComponentInteraction("loader_filter:*")]
         public async Task HandleLoaderFilterSelectionAsync(string projectId, string[] selectedValues)
         {
@@ -179,17 +177,18 @@ namespace Asterion.Modules
 
             // Convert selectedValues back into the Loader filter array
             string[]? newLoaderFilter = null;
-            if (selectedValues.Length > 0 && selectedValues[0] != "all")
+            if (selectedValues.Length > 0)
             {
                 newLoaderFilter = selectedValues;
             }
 
             // Update the loader filter in the database
             await dataService.SetLoaderFilterAsync(entry.EntryId, newLoaderFilter);
+            entry.LoaderFilter = newLoaderFilter;
 
             // Use the static method to generate the updated embed
             var updatedEmbed = CreateModrinthEntryEmbed(entry, entry.ReleaseFilter);
-            
+
             // TODO: Maybe parse the supported loaders from the selected project instead of fetching it again
             var supportedLoaders = (await modrinthClient.Project.GetAsync(projectId)).Loaders;
 
@@ -197,7 +196,9 @@ namespace Asterion.Modules
             await ModifyOriginalResponseAsync(msg =>
             {
                 msg.Embed = updatedEmbed;
-                msg.Components = new ComponentBuilder().WithSelectMenu(CreateLoaderFilterComponent(projectId, supportedLoaders, entry.LoaderFilter)).Build();
+                msg.Components = new ComponentBuilder()
+                    .WithSelectMenu(CreateLoaderFilterComponent(projectId, supportedLoaders, entry.LoaderFilter))
+                    .Build();
             });
 
             // Optionally, acknowledge the selection change in a temporary message

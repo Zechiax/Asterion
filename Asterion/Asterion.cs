@@ -51,8 +51,6 @@ public class Asterion
         // Setup interaction command handler
         await services.GetRequiredService<InteractionCommandHandler>().InitializeAsync();
 
-        await services.GetRequiredService<MessageHandler>().InitializeAsync();
-
         // Initialize data service after client has been connected
         client.Ready += services.GetRequiredService<IDataService>().InitializeAsync;
         services.GetRequiredService<ClientService>().Initialize();
@@ -140,7 +138,6 @@ public class Asterion
             .AddSingleton(new CommandService(commandConfig))
             .AddSingleton<InteractionService>( new InteractionService(client))
             .AddSingleton<InteractionCommandHandler>()
-            .AddSingleton<MessageHandler>()
             .AddSingleton<LoggingService>()
             .AddSingleton<IDataService, DataService>()
             .AddSingleton<ModrinthService>()

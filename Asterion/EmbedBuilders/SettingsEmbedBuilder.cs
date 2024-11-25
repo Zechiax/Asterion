@@ -34,12 +34,7 @@ public static class SettingsEmbedBuilder
         description.AppendLine(Format.Bold(Format.Underline("Overview of settings")));
         description.AppendLine();
         description.AppendLine(
-            $"**1. Check messages for Modrinth links:** {GetEmojiByBool((bool) guild.GuildSettings.CheckMessagesForModrinthLink!)}");
-        description.AppendLine(
-            $"**2. Show channel selection after subscribe:** {GetEmojiByBool((bool) guild.GuildSettings.ShowChannelSelection!)}");
-        description.AppendLine(
-            $"**3. Show subscribe button in Modrinth project embeds:** {GetEmojiByBool((bool) guild.GuildSettings.ShowSubscribeButton!)}");
-        ;
+            $"**1. Show subscribe button in Modrinth project embeds:** {GetEmojiByBool((bool) guild.GuildSettings.ShowSubscribeButton!)}");
 
         var embed = new EmbedBuilder
         {

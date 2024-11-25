@@ -62,21 +62,7 @@ public static class SettingsComponentBuilder
                 new ActionRowBuilder()
                     .WithButton(new ButtonBuilder
                     {
-                        Label = "1. [Experimental] Scan messages",
-                        CustomId = $"settings-message-scan:{userId};{guildSettings.CheckMessagesForModrinthLink}",
-                        Emote = Emoji.Parse(":warning:"),
-                        Style = ButtonStyle.Primary
-                    })
-                    .WithButton(new ButtonBuilder
-                    {
-                        Label = "2. Channel selection after subscribe",
-                        CustomId = $"settings-channel-selection:{userId};{guildSettings.ShowChannelSelection}",
-                        Style = ButtonStyle.Primary,
-                        IsDisabled = true
-                    })
-                    .WithButton(new ButtonBuilder
-                    {
-                        Label = "3. Show subscribe button",
+                        Label = "1. Show subscribe button",
                         CustomId = $"settings-show-subscribe-button:{userId};{guildSettings.ShowSubscribeButton}",
                         Style = ButtonStyle.Primary
                     }),

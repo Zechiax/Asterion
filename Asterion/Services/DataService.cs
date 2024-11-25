@@ -427,6 +427,22 @@ public class DataService : IDataService
         return true;
     }
 
+    public async Task<bool> SetLoaderFilterAsync(ulong entryEntryId, string[]? newLoaderFilter)
+    {
+        using var scope = _services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<DataContext>();
+        
+        var entry = db.ModrinthEntries.FirstOrDefault(x => x.EntryId == entryEntryId);
+        
+        if (entry is null) return false;
+        
+        entry.LoaderFilter = newLoaderFilter;
+        
+        await db.SaveChangesAsync();
+        
+        return true;
+    }
+
     private async Task JoinGuild(SocketGuild guild)
     {
         await AddGuildAsync(guild.Id);

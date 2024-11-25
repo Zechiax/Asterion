@@ -136,4 +136,5 @@ public interface IDataService
     public Task<bool> SetPingRoleAsync(ulong guildId, ulong? roleId, string? projectId = null);
     public Task<ulong?> GetPingRoleIdAsync(ulong guildId, string? projectId = null);
     public Task<bool> SetReleaseFilterAsync(ulong entryId, ReleaseType releaseType);
+    public Task<bool> SetLoaderFilterAsync(ulong entryEntryId, string[]? newLoaderFilter);
 }

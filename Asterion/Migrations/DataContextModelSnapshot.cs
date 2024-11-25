@@ -15,7 +15,7 @@ namespace Asterion.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "8.0.8");
+            modelBuilder.HasAnnotation("ProductVersion", "9.0.0");
 
             modelBuilder.Entity("Asterion.Database.Models.Array", b =>
                 {
@@ -148,6 +148,9 @@ namespace Asterion.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER")
                         .HasDefaultValue(7);
+
+                    b.Property<string>("SerializedLoaderFilter")
+                        .HasColumnType("TEXT");
 
                     b.HasKey("EntryId");
 

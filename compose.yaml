@@ -1,0 +1,6 @@
+﻿services:
+  asterionng:
+    image: asterionng
+    build:
+      context: .
+      dockerfile: AsterionNg/Dockerfile

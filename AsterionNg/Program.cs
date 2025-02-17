@@ -27,6 +27,9 @@ Log.Logger = new LoggerConfiguration()
 builder.Services.AddNamedOptions<StartupOptions>();
 builder.Services.AddNamedOptions<ReferenceOptions>();
 
+// Add localization services
+builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
+
 builder.Services.AddDbContext<AsterionDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("Default")));
 

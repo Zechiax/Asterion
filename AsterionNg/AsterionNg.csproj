@@ -19,6 +19,7 @@
       <PackageReference Include="Discord.Net" Version="3.17.1" />
       <PackageReference Include="Fergun.Interactive" Version="1.8.1" />
       <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.2" />
+      <PackageReference Include="Microsoft.Extensions.Localization" Version="9.0.2" />
       <PackageReference Include="Microsoft.Extensions.Options.DataAnnotations" Version="9.0.2" />
       <PackageReference Include="Serilog" Version="4.2.0" />
       <PackageReference Include="Serilog.Extensions.Hosting" Version="9.0.0" />
@@ -35,6 +36,21 @@
       <None Update="appsettings.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
+    </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Update="Resources\Modules\General.resx">
+        <Generator>ResXFileCodeGenerator</Generator>
+        <LastGenOutput>Modules.General.Designer.cs</LastGenOutput>
+      </EmbeddedResource>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Update="Resources\Modules\General.Designer.cs">
+        <DesignTime>True</DesignTime>
+        <AutoGen>True</AutoGen>
+        <DependentUpon>General.resx</DependentUpon>
+      </Compile>
     </ItemGroup>
 
 </Project>

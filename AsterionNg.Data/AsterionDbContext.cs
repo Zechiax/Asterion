@@ -2,7 +2,4 @@
 
 namespace AsterionNg.Data;
 
-public class AsterionDbContext : DbContext
-{
-    
-}
+public class AsterionDbContext(DbContextOptions<AsterionDbContext> options) : DbContext(options);

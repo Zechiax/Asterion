@@ -21,6 +21,7 @@ Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
     .Enrich.FromLogContext()
     .WriteTo.Console()
+    .WriteTo.File("logs/asterion.log", rollingInterval: RollingInterval.Day)
     .CreateLogger();
 
 builder.Services.AddNamedOptions<StartupOptions>();
@@ -40,7 +41,12 @@ builder.Services.AddDiscordHost((config, _) =>
         AlwaysDownloadUsers = false,
     };
 
-    config.Token = builder.Configuration.GetSection(StartupOptions.GetSectionName()).Get<StartupOptions>()!.Token;
+    var startupOptions = builder.Configuration.GetSection(StartupOptions.GetSectionName()).Get<StartupOptions>();
+    
+    if (startupOptions is null)
+        throw new InvalidOperationException("Startup options are not configured correctly.");
+    
+    config.Token = startupOptions.Token;
 });
 
 builder.Services.AddInteractionService((config, _) =>

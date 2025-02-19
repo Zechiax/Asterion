@@ -30,6 +30,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\AsterionNg.Data\AsterionNg.Data.csproj" />
+      <ProjectReference Include="..\AsterionNg.Search\AsterionNg.Search.csproj" />
     </ItemGroup>
 
     <ItemGroup>

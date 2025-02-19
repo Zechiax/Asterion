@@ -12,7 +12,8 @@ namespace AsterionNg.Modules;
 
 public class GeneralModule(
     IOptions<ReferenceOptions> options,
-    IStringLocalizerFactory factory) : ModuleBase(factory)
+    IStringLocalizerFactory factory,
+    IGuildCultureProvider? cultureProvider) : ModuleBase(factory, cultureProvider)
 {
     [SlashCommand("about", "Shows information about the app.")]
     public async Task AboutAsync()

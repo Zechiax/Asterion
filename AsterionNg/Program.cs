@@ -1,6 +1,9 @@
-﻿using AsterionNg.Common.Options;
+﻿using AsterionNg.Common;
+using AsterionNg.Common.Options;
 using AsterionNg.Data;
 using AsterionNg.Extensions;
+using AsterionNg.Search;
+using AsterionNg.Search.Providers;
 using AsterionNg.Services;
 using Discord;
 using Discord.Addons.Hosting;
@@ -10,6 +13,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Modrinth;
 using Serilog;
 
 Directory.SetCurrentDirectory(AppDomain.CurrentDomain.BaseDirectory);
@@ -30,11 +34,20 @@ builder.Services.AddNamedOptions<ReferenceOptions>();
 // Add localization services
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
 
+builder.Services.AddSingleton<IGuildCultureProvider, DefaultGuildCultureProvider>();
+builder.Services.AddSingleton<ProjectSearchService>(
+    new ProjectSearchService([new ModrinthSearchProvider(new ModrinthClient())]));
+
 builder.Services.AddDbContext<AsterionDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("Default")));
 
-builder.Services.AddDiscordHost((config, _) =>
+builder.Services.Configure<ModrinthClientConfig>(config =>
 {
+    config.UserAgent = "AsterionNg";
+});
+
+builder.Services.AddDiscordHost((config, _) =>
+{ 
     config.SocketConfig = new DiscordSocketConfig
     {
         LogLevel = LogSeverity.Info,

@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AsterionNg.Data", "Asterion
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AsterionNg.Search", "AsterionNg.Search\AsterionNg.Search.csproj", "{AAF0BFBE-C479-44E4-B445-BAC4C3EAA7C2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AsterionNg.Watchtower", "AsterionNg.Watchtower\AsterionNg.Watchtower.csproj", "{18F5E09C-6B51-4CB4-93F8-9ECE16085ECF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -41,5 +43,9 @@ Global
 		{AAF0BFBE-C479-44E4-B445-BAC4C3EAA7C2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AAF0BFBE-C479-44E4-B445-BAC4C3EAA7C2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AAF0BFBE-C479-44E4-B445-BAC4C3EAA7C2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{18F5E09C-6B51-4CB4-93F8-9ECE16085ECF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{18F5E09C-6B51-4CB4-93F8-9ECE16085ECF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{18F5E09C-6B51-4CB4-93F8-9ECE16085ECF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{18F5E09C-6B51-4CB4-93F8-9ECE16085ECF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

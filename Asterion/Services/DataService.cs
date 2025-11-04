@@ -1,5 +1,4 @@
-﻿using System.Data.Entity.Core;
-using Asterion.Database;
+﻿using Asterion.Database;
 using Asterion.Database.Models;
 using Asterion.Interfaces;
 using Discord;
@@ -282,7 +281,7 @@ public class DataService : IDataService
         if (guildsProjects is null)
         {
             _logger.LogError("Guild with ID {GuildId} does not exist", guildId);
-            throw new ObjectNotFoundException($"Guild with ID {guildId} does not exist");
+            throw new InvalidOperationException("Guild does not exist");
         }
 
         var entry = guildsProjects.FirstOrDefault(x => x.ProjectId == projectId && x.GuildId == guildId);

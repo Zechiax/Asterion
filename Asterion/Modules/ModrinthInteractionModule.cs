@@ -14,7 +14,7 @@ using Modrinth.Models;
 
 namespace Asterion.Modules;
 
-[EnabledInDm(false)]
+[RequireContext(ContextType.Guild)]
 public class ModrinthInteractionModule : AsterionInteractionModuleBase
 {
     private const string RequestError = "Sorry, there was an error processing your request, try again later";

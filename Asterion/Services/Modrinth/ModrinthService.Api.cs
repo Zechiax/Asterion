@@ -67,7 +67,7 @@ public partial class ModrinthService
         {
             _logger.LogWarning(e, "Error while getting multiple versions");
             _logger.LogWarning("The response was: {Response}", e.Response);
-            _logger.LogWarning("The response message was: {ResponseMessage}", e.Response.RequestMessage);
+            _logger.LogWarning("The response message was: {ResponseMessage}", e.Response?.RequestMessage);
         }
 
         return null;

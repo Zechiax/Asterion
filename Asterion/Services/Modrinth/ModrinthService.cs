@@ -99,7 +99,7 @@ public partial class ModrinthService
                 projectFoundById = true;
             }
             // Not found status code is returned when requested project was not found
-            catch (ModrinthApiException e) when (e.Response.StatusCode == HttpStatusCode.NotFound)
+            catch (ModrinthApiException e) when (e.Response?.StatusCode == HttpStatusCode.NotFound)
             {
                 // Project not found by slug or id
                 _logger.LogDebug("Project query '{Query}' not found with ID or slug", query);
@@ -182,7 +182,7 @@ public partial class ModrinthService
             user = await _api.User.GetAsync(query);
             _logger.LogDebug("User query '{Query}' found", query);
         }
-        catch (ModrinthApiException e) when (e.Response.StatusCode == HttpStatusCode.NotFound)
+        catch (ModrinthApiException e) when (e.Response?.StatusCode == HttpStatusCode.NotFound)
         {
             // Project not found by slug or id
             _logger.LogDebug("User not found '{Query}'", query);

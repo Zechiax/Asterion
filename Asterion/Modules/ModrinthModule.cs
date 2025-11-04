@@ -21,7 +21,6 @@ using Modrinth.Models;
 
 namespace Asterion.Modules;
 
-[EnabledInDm(false)]
 [RequireContext(ContextType.Guild)]
 // ReSharper disable once ClassNeverInstantiated.Global
 public class ModrinthModule : AsterionInteractionModuleBase

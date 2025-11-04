@@ -1,5 +1,5 @@
 ﻿using System.Globalization;
-using Figgle;
+using Figgle.Fonts;
 using Serilog;
 
 namespace Asterion;

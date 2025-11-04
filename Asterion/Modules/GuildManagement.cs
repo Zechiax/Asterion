@@ -8,7 +8,7 @@ using Discord.Interactions;
 
 namespace Asterion.Modules;
 
-[EnabledInDm(false)]
+[RequireContext(ContextType.Guild)]
 public class GuildManagement : AsterionInteractionModuleBase
 {
     private readonly IDataService _dataService;

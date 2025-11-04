@@ -15,10 +15,7 @@ public class ModrinthProject : IProject
     // Additional Modrinth-specific properties
     public string[] Categories { get; set; }
     public int Downloads { get; set; }
-}
-
-
-public class ModrinthSearchProvider(ModrinthClient httpClient) : IProjectSearchProvider
+}public class ModrinthSearchProvider(ModrinthClient httpClient) : IProjectSearchProvider
 {
     private readonly ModrinthClient _client = httpClient;
     private const string BaseUrl = "https://api.modrinth.com/v2";

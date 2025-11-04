@@ -1,10 +1,11 @@
 ﻿namespace AsterionNg.Watchtower;
 
-public class ModrinthLookout
+public interface IWatchtower
 {
+    
 }
 
-public class Watchtower
+public class Watchtower 
 {
     
 }

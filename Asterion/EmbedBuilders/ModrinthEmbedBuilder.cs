@@ -5,7 +5,6 @@ using Asterion.Services.Modrinth;
 using Discord;
 using Html2Markdown;
 using Humanizer;
-using Humanizer.Bytes;
 using Modrinth.Extensions;
 using Modrinth.Models;
 using Modrinth.Models.Enums.Project;

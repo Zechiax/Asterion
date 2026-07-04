@@ -2,6 +2,7 @@
 using System.Net;
 using Asterion.Extensions;
 using Asterion.Interfaces;
+using Asterion.Services.Notifications;
 using Discord.WebSocket;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,7 +10,6 @@ using Microsoft.Extensions.Logging;
 using Modrinth;
 using Modrinth.Exceptions;
 using Modrinth.Models;
-using Quartz;
 
 namespace Asterion.Services.Modrinth;
 
@@ -19,39 +19,21 @@ public partial class ModrinthService
     private readonly MemoryCacheEntryOptions _cacheEntryOptions;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger _logger;
-    private readonly IScheduler _scheduler;
-    private readonly JobKey _jobKey;
+    private readonly UpdateDetectionService _updateDetectionService;
     private readonly IModrinthClient _api;
 
-    public ModrinthService(IServiceProvider serviceProvider, IHttpClientFactory httpClientFactory, ISchedulerFactory scheduler)
+    public ModrinthService(IServiceProvider serviceProvider, IHttpClientFactory httpClientFactory, UpdateDetectionService updateDetectionService)
     {
         _httpClientFactory = httpClientFactory;
         _api = serviceProvider.GetRequiredService<IModrinthClient>();
         _logger = serviceProvider.GetRequiredService<ILogger<ModrinthService>>();
         _cache = serviceProvider.GetRequiredService<IMemoryCache>();
-        _scheduler = scheduler.GetScheduler().GetAwaiter().GetResult();
+        _updateDetectionService = updateDetectionService;
 
         _cacheEntryOptions = new MemoryCacheEntryOptions
         {
             AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15)
         };
-
-        var job = JobBuilder.Create<SearchUpdatesJob>()
-            .WithIdentity("SearchUpdatesJob", "Modrinth")
-            .Build();
-        
-        _jobKey = job.Key;
-        
-        // Every 10 minutes
-        var trigger = TriggerBuilder.Create()
-            .WithIdentity("SearchUpdatesTrigger", "Modrinth")
-            .StartAt(DateBuilder.FutureDate(10, IntervalUnit.Minute)) // Start 10 minutes from now
-            .WithSimpleSchedule(x => x
-                .WithIntervalInMinutes(10)
-                .RepeatForever())
-            .Build();
-        
-        _scheduler.ScheduleJob(job, trigger);
 
         _logger.LogInformation("Modrinth service initialized");
     }
@@ -62,8 +44,8 @@ public partial class ModrinthService
     /// <returns>False if worker is busy</returns>
     public bool ForceUpdate()
     {
-        _scheduler.TriggerJob(_jobKey);
-        
+        _ = _updateDetectionService.TriggerImmediateCheckAsync();
+
         return true;
     }
 

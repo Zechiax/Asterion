@@ -1,18 +1,15 @@
-using System.Timers;
 using Asterion.Database;
 using Asterion.Database.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Modrinth.Models;
-using Timer = System.Timers.Timer;
 using Version = Modrinth.Models.Version;
 
 namespace Asterion.Services;
 
 public class ProjectStatisticsManager
 {
-    private readonly Timer _databaseCleanupTimer;
     private readonly ILogger<ProjectStatisticsManager> _logger;
     private readonly IServiceProvider _services;
 
@@ -20,21 +17,6 @@ public class ProjectStatisticsManager
     {
         _services = services;
         _logger = services.GetRequiredService<ILogger<ProjectStatisticsManager>>();
-
-        _databaseCleanupTimer = new Timer(TimeSpan.FromHours(4));
-        _databaseCleanupTimer.Elapsed += DatabaseCleanupTimerElapsed;
-        _databaseCleanupTimer.Start();
-
-        DatabaseCleanupTimerElapsed(null, null);
-    }
-
-    private void DatabaseCleanupTimerElapsed(object? state, ElapsedEventArgs? elapsedEventArgs)
-    {
-        const int removedEntries = 0;
-        _logger.LogInformation("Running statistics database cleanup");
-        // var removedEntries = await FreeSpaceFromUnusedEntries();}}
-        _logger.LogInformation("Finished statistics database cleanup, removed {RemovedProjects} entries",
-            removedEntries);
     }
 
     public async Task UpdateDownloadsAsync(Project project, IEnumerable<Version>? version = null)
@@ -139,47 +121,4 @@ public class ProjectStatisticsManager
             .ToListAsync();
     }
 
-    /*public async Task<int> FreeSpaceFromUnusedEntries()
-    {
-        using var scope = _services.CreateScope();
-        await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
-
-        var removedEntries = 0;
-        
-        var currentTime = DateTime.UtcNow.AddDays(-3);
-
-        var oldVersionStatsToKeep = db.ProjectDownloads
-            .AsNoTracking()
-            .Where(p => p.Date <= currentTime).Select(p => new {p.VersionId, p.Id, p.Date}).ToList();
-        
-        _logger.LogInformation("Found {OldEntries} entries for version statistics", oldVersionStatsToKeep.Count);
-        
-        // We keep only the latest version in an hour
-        var idsToKeep = oldVersionStatsToKeep
-            .GroupBy(p => new {p.VersionId, p.Date.Year, p.Date.Month, p.Date.Day, p.Date.Hour})
-            .Select(p => p.OrderByDescending(arg => arg.Date).First().Id)
-            .ToList();
-        
-        _logger.LogInformation("Removing old version statistics, keeping {KeptEntries} entries", idsToKeep.Count);
-
-        //await using var versionRemovalTransaction = await db.Database.BeginTransactionAsync();
-
-        try
-        {
-            db.ProjectDownloads.RemoveRange(
-                db.ProjectDownloads.Where(p => p.Date < currentTime && !idsToKeep.Contains(p.Id))
-            );
-
-            removedEntries += await db.SaveChangesAsync();
-            //await versionRemovalTransaction.CommitAsync();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to remove old version statistics");
-            //await versionRemovalTransaction.RollbackAsync();
-            throw;
-        }
-
-        return removedEntries;
-    }*/
 }

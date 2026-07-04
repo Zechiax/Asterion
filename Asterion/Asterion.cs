@@ -2,6 +2,8 @@
 using Asterion.Interfaces;
 using Asterion.Services;
 using Asterion.Services.Modrinth;
+using Asterion.Services.Notifications;
+using Asterion.Services.Notifications.Delivery;
 using Discord;
 using Discord.Commands;
 using Discord.Interactions;
@@ -9,9 +11,9 @@ using Discord.WebSocket;
 using Fergun.Interactive;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Modrinth;
-using Quartz;
 using Serilog;
 using RunMode = Discord.Commands.RunMode;
 
@@ -84,21 +86,24 @@ public class Asterion
         // so that we can get the correct guild count
         services.GetRequiredService<IBotStatsService>().Initialize();
 
-        // We start the scheduler after the client has been logged in
-        // so that we can get the correct guild count
-        var scheduler = await services.GetRequiredService<ISchedulerFactory>().GetScheduler();
-        await scheduler.Start();
-        
+        // This app builds a plain ServiceProvider rather than a Generic Host, so nothing starts
+        // registered IHostedServices automatically - we have to do it ourselves, after the client
+        // has logged in so background services relying on guild/client state see it as ready.
+        var hostedServices = services.GetServices<IHostedService>().ToList();
+        foreach (var hostedService in hostedServices)
+            await hostedService.StartAsync(CancellationToken.None);
+
         // Disconnect from Discord when pressing Ctrl+C
         Console.CancelKeyPress += (_, args) =>
         {
             args.Cancel = true;
-            
+
             logger.LogInformation("{Key} pressed, exiting bot", args.SpecialKey);
 
-            logger.LogInformation("Stopping the scheduler");
-            scheduler.Shutdown(true).Wait();
-            
+            logger.LogInformation("Stopping background services");
+            foreach (var hostedService in hostedServices)
+                hostedService.StopAsync(CancellationToken.None).Wait();
+
             logger.LogInformation("Logging out from Discord");
             client.LogoutAsync().Wait();
             logger.LogInformation("Stopping the client");
@@ -106,7 +111,7 @@ public class Asterion
 
             args.Cancel = false;
         };
-        
+
         await Task.Delay(Timeout.Infinite);
     }
 
@@ -153,15 +158,23 @@ public class Asterion
             .AddMemoryCache()
             .AddLogging(configure => configure.AddSerilog(dispose: true));
 
-        services.AddQuartz(q =>
-        {
-            q.UseInMemoryStore();
-        });
-        services.AddQuartzHostedService(options =>
-        {
-            options.WaitForJobsToComplete = true;
-        });
-        
+        // Notification outbox/dispatch pipeline
+        services
+            .AddSingleton<INotificationScheduler, NotificationScheduler>()
+            .AddSingleton<INotificationReader, NotificationReader>()
+            .AddSingleton<INotificationSignal, NotificationSignal>()
+            .AddSingleton<INotificationSender, BotSender>()
+            .AddSingleton<INotificationSender, WebhookSender>()
+            .AddSingleton<WebhookRateLimiter>()
+            .AddSingleton<NotificationSenderRouter>()
+            // Registered as itself too (not just IHostedService) so it can also be resolved and invoked
+            // directly, sharing the same singleton instance the host runs.
+            .AddSingleton<UpdateDetectionService>()
+            .AddHostedService(sp => sp.GetRequiredService<UpdateDetectionService>())
+            .AddHostedService<NotificationDispatchService>()
+            .AddHostedService<MaintenanceService>()
+            .AddHostedService<BotActivityRefreshService>();
+
         services.AddLocalization(options =>
         {
             options.ResourcesPath = "Resources";

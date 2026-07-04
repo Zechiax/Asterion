@@ -26,6 +26,7 @@ public class DataContext : DbContext
     public virtual DbSet<GuildSettings> GuildSettings { get; set; } = null!;
     public virtual DbSet<TotalDownloads> TotalDownloads { get; set; } = null!;
     public virtual DbSet<ModrinthInstanceStatistics> ModrinthInstanceStatistics { get; set; } = null!;
+    public virtual DbSet<PendingNotification> PendingNotifications { get; set; } = null!;
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -61,6 +62,14 @@ public class DataContext : DbContext
         // Ignore the LoaderFilter property
         modelBuilder.Entity<ModrinthEntry>()
             .Ignore(e => e.LoaderFilter);
+
+        // Used by the dispatch poll to find due notifications
+        modelBuilder.Entity<PendingNotification>()
+            .HasIndex(p => new { p.Status, p.NextRetryAt });
+
+        // Used by the maintenance purge of old terminal-status rows
+        modelBuilder.Entity<PendingNotification>()
+            .HasIndex(p => new { p.Status, p.LastAttemptAt });
     }
 
 }

@@ -16,6 +16,9 @@ public class ModrinthEntry
     public ulong? CustomUpdateChannel { get; set; }
     public ulong? CustomPingRole { get; set; }
 
+    // If set, notifications for this entry are delivered via this webhook instead of the bot client.
+    public string? WebhookUrl { get; set; }
+
     [Required] public string ProjectId { get; set; } = null!;
 
     public virtual ModrinthProject Project { get; set; } = null!;

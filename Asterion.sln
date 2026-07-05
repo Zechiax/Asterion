@@ -4,6 +4,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Asterion", "Asterion\Asteri
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Asterion.Test", "Asterion.Test\Asterion.Test.csproj", "{EE65894E-E153-49C2-840B-D6A84DF0A01D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Seeder", "Seeder\Seeder.csproj", "{B1374ECC-DCCF-4068-A4F0-CEA3189BB79B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{EE65894E-E153-49C2-840B-D6A84DF0A01D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EE65894E-E153-49C2-840B-D6A84DF0A01D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EE65894E-E153-49C2-840B-D6A84DF0A01D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B1374ECC-DCCF-4068-A4F0-CEA3189BB79B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B1374ECC-DCCF-4068-A4F0-CEA3189BB79B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B1374ECC-DCCF-4068-A4F0-CEA3189BB79B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B1374ECC-DCCF-4068-A4F0-CEA3189BB79B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

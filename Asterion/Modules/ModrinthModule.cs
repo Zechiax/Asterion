@@ -33,7 +33,7 @@ public class ModrinthModule : AsterionInteractionModuleBase
     private readonly ILocalizationService _localizationService;
     private readonly IModrinthClient _modrinthClient;
 
-    public ModrinthModule(IModrinthClient modrinthClient, IServiceProvider serviceProvider, ILocalizationService localizationService) : base(localizationService)
+    public ModrinthModule(IModrinthClient modrinthClient, IServiceProvider serviceProvider, ILocalizationService localizationService, IGuildCultureProvider cultureProvider) : base(localizationService, cultureProvider)
     {
         _modrinthClient = modrinthClient;
         _localizationService = serviceProvider.GetRequiredService<ILocalizationService>();

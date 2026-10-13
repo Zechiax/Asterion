@@ -184,7 +184,7 @@ public partial class ModrinthService
             {
                 User = user,
                 Projects = projects,
-                MajorColor = (await httpClient.GetMajorColorFromImageUrl(user.AvatarUrl)).ToDiscordColor()
+                MajorColor = await httpClient.GetMajorColorFromImageUrl(user.AvatarUrl)
             }, SearchStatus.FoundBySearch, query);
 
             _cache.Set($"user-query:{user.Id}", searchResult, TimeSpan.FromMinutes(60));

@@ -20,8 +20,8 @@ public class ChartModule : AsterionInteractionModuleBase
     private readonly ModrinthService _modrinthService;
     private readonly ProjectStatisticsManager _projectStatisticsManager;
 
-    public ChartModule(IServiceProvider serviceProvider, ILocalizationService localizationService) : base(
-        localizationService)
+    public ChartModule(IServiceProvider serviceProvider, ILocalizationService localizationService, IGuildCultureProvider cultureProvider) : base(
+        localizationService, cultureProvider)
     {
         _projectStatisticsManager = serviceProvider.GetRequiredService<ProjectStatisticsManager>();
         _modrinthService = serviceProvider.GetRequiredService<ModrinthService>();
@@ -32,8 +32,8 @@ public class ChartModule : AsterionInteractionModuleBase
     [Group("chart", "Creates charts of different statistics")]
     public class ChartType : ChartModule
     {
-        public ChartType(IServiceProvider serviceProvider, ILocalizationService localizationService) : base(
-            serviceProvider, localizationService)
+        public ChartType(IServiceProvider serviceProvider, ILocalizationService localizationService, IGuildCultureProvider cultureProvider) : base(
+            serviceProvider, localizationService, cultureProvider)
         {
         }
 

@@ -16,9 +16,10 @@ namespace Asterion.Modules
     [DoManageSubsRoleCheck(Group = "ManageSubs")]
     public class EntryInteractionModule(
         ILocalizationService localizationService,
+        IGuildCultureProvider cultureProvider,
         IDataService dataService,
         IModrinthClient modrinthClient)
-        : AsterionInteractionModuleBase(localizationService)
+        : AsterionInteractionModuleBase(localizationService, cultureProvider)
     {
         public static Embed CreateModrinthEntryEmbed(ModrinthEntry entry, ReleaseType releaseFilter)
         {

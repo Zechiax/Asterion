@@ -1,43 +1,46 @@
-﻿using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp.Processing;
-using SixLabors.ImageSharp.Processing.Processors.Quantization;
+using SkiaSharp;
+using Color = Discord.Color;
 
 namespace Asterion.Services;
 
 public static class ImageService
 {
-    public static async Task<Rgb24> GetMajorColorFromImageUrl(this HttpClient client, string? imageUrl)
-    {
-        if (string.IsNullOrEmpty(imageUrl)) return new Rgb24();
+    private const int SampleSize = 100;
 
-        // CREDIT to James Jackson-South: https://gist.github.com/JimBobSquarePants/12e0ef5d904d03110febea196cf1d6ee
+    public static async Task<Color> GetMajorColorFromImageUrl(this HttpClient client, string? imageUrl)
+    {
+        if (string.IsNullOrEmpty(imageUrl)) return new Color();
+
         try
         {
-            var stream = await client.GetStreamAsync(imageUrl);
+            await using var stream = await client.GetStreamAsync(imageUrl);
+            using var original = SKBitmap.Decode(stream);
+            if (original is null) return new Color();
 
-            using var image = await Image.LoadAsync<Rgb24>(stream);
-            image.Mutate(
-                x => x
-                    // Scale the image down preserving the aspect ratio. This will speed up quantization.
-                    // We use nearest neighbor as it will be the fastest approach.
-                    .Resize(new ResizeOptions {Sampler = KnownResamplers.NearestNeighbor, Size = new Size(100, 0)})
+            // Scale down preserving the aspect ratio to speed up the averaging.
+            var height = Math.Max(1, original.Height * SampleSize / Math.Max(1, original.Width));
+            using var bitmap = original.Resize(new SKImageInfo(SampleSize, height, SKColorType.Rgba8888, SKAlphaType.Unpremul),
+                SKFilterQuality.Low);
+            if (bitmap is null) return new Color();
 
-                    // Reduce the color palette to 1 color without dithering.
-                    .Quantize(new OctreeQuantizer(new QuantizerOptions
-                    {
-                        DitherScale = 0,
-                        MaxColors = 1,
-                        Dither = null
-                    })));
+            long r = 0, g = 0, b = 0, weight = 0;
+            foreach (var pixel in bitmap.Pixels)
+            {
+                // Ignore transparent pixels, weight the rest by opacity.
+                if (pixel.Alpha == 0) continue;
+                r += pixel.Red * pixel.Alpha;
+                g += pixel.Green * pixel.Alpha;
+                b += pixel.Blue * pixel.Alpha;
+                weight += pixel.Alpha;
+            }
 
-            var dominant = image[0, 0];
+            if (weight == 0) return new Color();
 
-            return dominant;
+            return new Color((byte) (r / weight), (byte) (g / weight), (byte) (b / weight));
         }
         catch (Exception)
         {
-            return new Rgb24();
+            return new Color();
         }
     }
 }

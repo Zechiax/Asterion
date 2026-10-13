@@ -1,4 +1,5 @@
 using System.Text;
+using Asterion.Configuration;
 using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -20,7 +21,7 @@ public class BotStatsService : IBotStatsService
         _discordClient = discordClient;
         _logger = logger;
 
-        _topGgToken = config["TopGgToken"];
+        _topGgToken = config[ConfigKeys.TopGgToken];
     }
 
     public void Initialize()

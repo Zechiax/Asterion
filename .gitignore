@@ -1,6 +1,8 @@
 # Custom
 .idea/
 config.json
+config.json.migrated
+config.toml
 data.sqlite
 data.sqlite-shm
 data.sqlite-wal

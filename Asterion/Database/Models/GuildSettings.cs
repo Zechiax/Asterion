@@ -33,4 +33,9 @@ public class GuildSettings
     public ChangelogStyle ChangelogStyle { get; set; } = ChangelogStyle.PlainText;
 
     public long ChangeLogMaxLength { get; set; } = 2000;
+
+    /// <summary>
+    ///     Discord locale code chosen by a server admin (e.g. "cs", "de"). Null = follow Discord's own locale.
+    /// </summary>
+    public string? Language { get; set; }
 }

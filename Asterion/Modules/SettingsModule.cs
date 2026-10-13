@@ -18,7 +18,7 @@ public class SettingsModule : AsterionInteractionModuleBase
     private readonly IDataService _dataService;
     private readonly ILogger<SettingsModule> _logger;
 
-    public SettingsModule(ILocalizationService localizationService, IServiceProvider serviceProvider) : base(localizationService)
+    public SettingsModule(ILocalizationService localizationService, IServiceProvider serviceProvider, IGuildCultureProvider cultureProvider) : base(localizationService, cultureProvider)
     {
         _logger = serviceProvider.GetRequiredService<ILogger<SettingsModule>>();
         _dataService = serviceProvider.GetRequiredService<IDataService>();

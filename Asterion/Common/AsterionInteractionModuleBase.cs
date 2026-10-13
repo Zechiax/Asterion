@@ -10,49 +10,50 @@ namespace Asterion.Common;
 public class AsterionInteractionModuleBase : InteractionModuleBase<SocketInteractionContext>
 {
     protected CultureInfo? CommandCultureInfo { get; set; }
-    protected ILocalizationService LocalizationService { get; } 
-    public AsterionInteractionModuleBase(ILocalizationService localizationService)
+    protected ILocalizationService LocalizationService { get; }
+    private readonly IGuildCultureProvider _cultureProvider;
+
+    public AsterionInteractionModuleBase(ILocalizationService localizationService, IGuildCultureProvider cultureProvider)
     {
         LocalizationService = localizationService;
+        _cultureProvider = cultureProvider;
     }
 
-    protected async Task FollowupWithSearchResultErrorAsync<T>(Services.Modrinth.SearchResult<T> status) 
+    protected async Task FollowupWithSearchResultErrorAsync<T>(Services.Modrinth.SearchResult<T> status)
     {
         if (status.Success)
         {
             throw new ArgumentException("SearchResult was successful, but was expected to be an error");
         }
-        
-        string title = LocalizationService.Get("Modrinth_Search_Unsuccessful", CommandCultureInfo);
+
+        string title = LocalizationService.Get("modrinth-search-unsuccessful", CommandCultureInfo);
 
         string? description;
         switch (status.SearchStatus)
         {
             case Services.Modrinth.SearchStatus.ApiDown:
-                description = LocalizationService.Get("Error_ModrinthApiUnavailable", CommandCultureInfo);
-                title += ". " + LocalizationService.Get("Error_TryAgainLater", CommandCultureInfo);
+                description = LocalizationService.Get("error-modrinth-api-unavailable", CommandCultureInfo);
+                title += ". " + LocalizationService.Get("error-try-again-later", CommandCultureInfo);
                 break;
             case Services.Modrinth.SearchStatus.NoResult:
-                description = LocalizationService.Get("Modrinth_Search_NoResult_WithQuery", CommandCultureInfo, new object[] {status.Query});
+                description = LocalizationService.Get("modrinth-search-no-result", CommandCultureInfo, new { query = status.Query });
                 break;
             case Services.Modrinth.SearchStatus.UnknownError:
-                description = LocalizationService.Get("Error_Unknown", CommandCultureInfo);
-                title += ". " + LocalizationService.Get("Error_TryAgainLater", CommandCultureInfo);
+                description = LocalizationService.Get("error-unknown", CommandCultureInfo);
+                title += ". " + LocalizationService.Get("error-try-again-later", CommandCultureInfo);
                 break;
             default:
                 throw new ArgumentOutOfRangeException();
         }
 
         var embed = CommonEmbedBuilder.GetErrorEmbedBuilder(title, description).Build();
-        
+
         await FollowupAsync(embeds: new[] {embed});
     }
 
-    public override void BeforeExecute(ICommandInfo cmd)
+    public override async Task BeforeExecuteAsync(ICommandInfo command)
     {
-        // We currently set US culture for all commands
-        CommandCultureInfo = CultureInfo.GetCultureInfo("en-US");
-        
-        base.BeforeExecute(cmd);
+        CommandCultureInfo = await _cultureProvider.GetCultureAsync(Context.Interaction);
+        await base.BeforeExecuteAsync(command);
     }
 }

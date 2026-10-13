@@ -91,6 +91,9 @@ namespace Asterion.Migrations
                     b.Property<ulong>("GuildId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("Language")
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("MessageStyle")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER")

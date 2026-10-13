@@ -1,6 +1,9 @@
 ﻿using System.Globalization;
+using Asterion.Configuration;
 using Figgle.Fonts;
+using Microsoft.Extensions.Configuration;
 using Serilog;
+using Serilog.Extensions.Logging;
 
 namespace Asterion;
 
@@ -28,6 +31,32 @@ public class Program
             .WriteTo.Console()
             .CreateLogger();
 
-        new Asterion(0).MainAsync().GetAwaiter().GetResult();
+        var configPath = Path.Combine(AppContext.BaseDirectory, ConfigKeys.FileName);
+        IConfiguration config;
+        try
+        {
+            ConfigBootstrapper.EnsureConfigFile(AppContext.BaseDirectory, new SerilogLoggerFactory(Log.Logger).CreateLogger("Config"));
+            config = new ConfigurationBuilder().AddTomlFile(configPath).Build();
+        }
+        catch (Exception e)
+        {
+            Log.Fatal(e, "Could not load configuration from {Path}", configPath);
+            Log.CloseAndFlush();
+            Environment.Exit(1);
+            return;
+        }
+
+        var errors = ConfigValidator.Validate(config, Asterion.IsDebug());
+        if (errors.Count > 0)
+        {
+            Log.Fatal("Invalid configuration in {Path}, the bot will not start:", configPath);
+            foreach (var error in errors)
+                Log.Fatal(" - {Error}", error);
+            Log.CloseAndFlush();
+            Environment.Exit(1);
+            return;
+        }
+
+        new Asterion(0, config).MainAsync().GetAwaiter().GetResult();
     }
 }

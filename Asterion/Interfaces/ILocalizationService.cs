@@ -1,13 +1,11 @@
-﻿using System.Globalization;
-using Discord.Interactions;
-using Microsoft.Extensions.Localization;
+using System.Globalization;
 
 namespace Asterion.Interfaces;
 
 public interface ILocalizationService
 {
-    LocalizedString Get(string key);
-    LocalizedString Get(string key, CultureInfo? cultureInfo);
-    LocalizedString Get(string key, params object[] parameters);
-    LocalizedString Get(string key, CultureInfo? cultureInfo, params object[] parameters);
+    /// <summary>Looks up <paramref name="key"/> in <paramref name="culture"/>, falling back to en-US.</summary>
+    string Get(string key, CultureInfo? culture = null);
+
+    string Get(string key, CultureInfo? culture, object args);
 }

@@ -22,8 +22,8 @@ public class ModrinthInteractionModule : AsterionInteractionModuleBase
     private readonly ILogger<ModrinthInteractionModule> _logger;
     private readonly ModrinthService _modrinthService;
 
-    public ModrinthInteractionModule(IServiceProvider serviceProvider, ILocalizationService localizationService) :
-        base(localizationService)
+    public ModrinthInteractionModule(IServiceProvider serviceProvider, ILocalizationService localizationService, IGuildCultureProvider cultureProvider) :
+        base(localizationService, cultureProvider)
     {
         _dataService = serviceProvider.GetRequiredService<IDataService>();
         _modrinthService = serviceProvider.GetRequiredService<ModrinthService>();

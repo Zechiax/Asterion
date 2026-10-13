@@ -1,6 +1,8 @@
-﻿using Asterion.Database;
+﻿using Asterion.Configuration;
+using Asterion.Database;
 using Asterion.Interfaces;
 using Asterion.Services;
+using Asterion.Services.Localization;
 using Asterion.Services.Modrinth;
 using Asterion.Services.Notifications;
 using Asterion.Services.Notifications.Delivery;
@@ -24,14 +26,10 @@ public class Asterion
     private readonly IConfiguration _config;
     private int _shardId;
 
-    public Asterion(int shardId)
+    public Asterion(int shardId, IConfiguration config)
     {
         _shardId = shardId;
-        
-        _config = new ConfigurationBuilder()
-            .SetBasePath(AppContext.BaseDirectory)
-            .AddJsonFile("config.json", false, true)
-            .Build();
+        _config = config;
     }
 
     public async Task MainAsync()
@@ -65,7 +63,7 @@ public class Asterion
 
             if (IsDebug())
             {
-                var testGuildId = _config.GetValue<ulong>("testGuild");
+                var testGuildId = _config.GetValue<ulong>(ConfigKeys.TestGuild);
                 logger.LogInformation("Registering commands to test guild ID {Value}", testGuildId);
 
                 await commands.RegisterCommandsToGuildAsync(testGuildId);
@@ -79,7 +77,7 @@ public class Asterion
             commandsRegistered = true;
         };
 
-        await client.LoginAsync(TokenType.Bot, _config.GetValue<string>("token"));
+        await client.LoginAsync(TokenType.Bot, _config.GetValue<string>(ConfigKeys.Token));
         await client.StartAsync();
 
         // We start the stats service after the client has been logged in
@@ -141,7 +139,6 @@ public class Asterion
             .AddSingleton(_config)
             .AddSingleton(client)
             .AddSingleton(new CommandService(commandConfig))
-            .AddSingleton<InteractionService>( new InteractionService(client))
             .AddSingleton<InteractionCommandHandler>()
             .AddSingleton<LoggingService>()
             .AddSingleton<IDataService, DataService>()
@@ -154,9 +151,16 @@ public class Asterion
             .AddHttpClient()
             .AddDbContext<DataContext>()
             .AddSingleton<IBotStatsService, BotStatsService>()
+            .AddSingleton<FluentBundleStore>()
             .AddSingleton<ILocalizationService, LocalizationService>()
+            .AddSingleton<IGuildCultureProvider, GuildCultureProvider>()
             .AddMemoryCache()
             .AddLogging(configure => configure.AddSerilog(dispose: true));
+
+        services.AddSingleton<InteractionService>(sp => new InteractionService(client, new InteractionServiceConfig
+        {
+            LocalizationManager = new FluentLocalizationManager(sp.GetRequiredService<FluentBundleStore>())
+        }));
 
         // Notification outbox/dispatch pipeline
         services
@@ -175,11 +179,6 @@ public class Asterion
             .AddHostedService<MaintenanceService>()
             .AddHostedService<BotActivityRefreshService>();
 
-        services.AddLocalization(options =>
-        {
-            options.ResourcesPath = "Resources";
-        });
-
         if (IsDebug())
             services.Configure<LoggerFilterOptions>(options => options.MinLevel = LogLevel.Debug);
         else
@@ -189,7 +188,7 @@ public class Asterion
         return serviceProvider;
     }
 
-    private static bool IsDebug()
+    public static bool IsDebug()
     {
 #if DEBUG
         return true;

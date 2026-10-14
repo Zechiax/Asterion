@@ -322,18 +322,18 @@ public class ModrinthModule : AsterionInteractionModuleBase
     public async Task ListSubscribed()
     {
         await DeferAsync();
-        var list = (await _dataService.GetAllGuildsSubscribedProjectsAsync(Context.Guild.Id))!
-            .OrderBy(x => x.Project.Title).ToList();
 
-        if (list.Count == 0)
+        // Public, but only the user who ran the command can use it; settings panels open in place of the list
+        var (components, isEmpty) = await ListInteractionModule.BuildListAsync(_dataService,
+            Context.Guild.Id, Context.User.Id, null, 0, LocalizationService, CommandCultureInfo);
+
+        if (isEmpty)
         {
-            await FollowupAsync("You are not subscribed to any projects");
+            await FollowupAsync(LocalizationService.Get("list-empty", CommandCultureInfo));
             return;
         }
 
-        var embeds = ListEmbedBuilder.CreateListEmbed(list);
-
-        await FollowupAsync(embeds: embeds.ToArray());
+        await FollowupAsync(components: components, flags: MessageFlags.ComponentsV2);
     }
 
     [SlashCommand("latest-release", "Gets the latest release of project")]

@@ -52,6 +52,8 @@ public class DataService : IDataService
 
         // Remove all subscribed items
         db.ModrinthEntries.RemoveRange(db.ModrinthEntries.Where(x => x.ArrayId == array.ArrayId));
+        // Remove all follows, together with their followed projects
+        db.ModrinthFollows.RemoveRange(db.ModrinthFollows.Include(f => f.Projects).Where(f => f.GuildId == guildId));
         // Remove the guild
         db.Guilds.Remove(guild);
 
@@ -196,17 +198,8 @@ public class DataService : IDataService
 
         await db.SaveChangesAsync();
 
-        var guilds = await GetAllGuildsSubscribedToProject(projectId);
-
-        // No other guild is subscribed to this project, we can remove it
-        if (guilds.Count == 0)
-        {
-            var project = db.ModrinthProjects.Single(x => x.ProjectId == projectId);
-
-            db.Remove(project);
-
-            await db.SaveChangesAsync();
-        }
+        // Remove the project if no other entry or follow uses it
+        await ProjectCleanup.RemoveUnusedProjectsAsync(db, [projectId]);
 
         return true;
     }
@@ -558,20 +551,10 @@ public class DataService : IDataService
         using var scope = _services.CreateScope();
         await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
 
-        var projects = db.ModrinthProjects.ToList();
+        var removed = await ProjectCleanup.RemoveUnusedProjectsAsync(db);
 
-        foreach (var project in projects)
-        {
-            var entries = db.ModrinthEntries.Where(x => x.Project == project);
-
-
-            if (entries.Any()) continue;
-
-            // If the project has no entries, there is no need for it in database
-            _logger.LogInformation("Project ID {ProjectId} {ProjectTitle} has no entries, it\'s being removed",
-                project.ProjectId, project.Title);
-            db.ModrinthProjects.Remove(project);
-            await db.SaveChangesAsync();
-        }
+        foreach (var projectId in removed)
+            _logger.LogInformation("Project ID {ProjectId} has no entries or follows, it has been removed",
+                projectId);
     }
 }

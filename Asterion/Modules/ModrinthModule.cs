@@ -32,6 +32,7 @@ public class ModrinthModule : AsterionInteractionModuleBase
     private readonly ModrinthService _modrinthService;
     private readonly ILocalizationService _localizationService;
     private readonly IModrinthClient _modrinthClient;
+    private readonly IFollowService _followService;
 
     public ModrinthModule(IModrinthClient modrinthClient, IServiceProvider serviceProvider, ILocalizationService localizationService, IGuildCultureProvider cultureProvider) : base(localizationService, cultureProvider)
     {
@@ -42,6 +43,7 @@ public class ModrinthModule : AsterionInteractionModuleBase
         _interactive = serviceProvider.GetRequiredService<InteractiveService>();
         _client = serviceProvider.GetRequiredService<DiscordSocketClient>();
         _logger = serviceProvider.GetRequiredService<ILogger<ModrinthModule>>();
+        _followService = serviceProvider.GetRequiredService<IFollowService>();
     }
 
     public ButtonBuilder GetSubscribeButtons(string projectId, bool subEnabled = true)
@@ -80,8 +82,10 @@ public class ModrinthModule : AsterionInteractionModuleBase
 
         var embed = ModrinthEmbedBuilder.GetUserEmbed(searchResult);
 
-        var components =
-            new ComponentBuilder().WithButton(ModrinthComponentBuilder.GetUserLinkButton(userDto.User));
+        var components = new ComponentBuilder()
+            .WithButton(ModrinthComponentBuilder.GetUserLinkButton(userDto.User))
+            .WithButton(FollowComponentBuilder.GetFollowUserButton(userDto.User, LocalizationService,
+                CommandCultureInfo));
 
         await FollowupAsync(embed: embed.Build(), components: components.Build());
     }
@@ -318,13 +322,13 @@ public class ModrinthModule : AsterionInteractionModuleBase
 
     [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
     [DoManageSubsRoleCheck(Group = "ManageSubs")]
-    [SlashCommand("list", "Lists all your subscribed projects")]
+    [SlashCommand("list", "Lists all your subscribed projects and followed creators")]
     public async Task ListSubscribed()
     {
         await DeferAsync();
 
         // Public, but only the user who ran the command can use it; settings panels open in place of the list
-        var (components, isEmpty) = await ListInteractionModule.BuildListAsync(_dataService,
+        var (components, isEmpty) = await ListInteractionModule.BuildListAsync(_dataService, _followService,
             Context.Guild.Id, Context.User.Id, null, 0, LocalizationService, CommandCultureInfo);
 
         if (isEmpty)

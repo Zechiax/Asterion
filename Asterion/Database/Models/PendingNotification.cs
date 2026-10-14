@@ -21,8 +21,14 @@ public class PendingNotification
 
     [Required] public ulong GuildId { get; set; }
 
-    [Required] public ulong EntryId { get; set; }
-    public virtual ModrinthEntry Entry { get; set; } = null!;
+    // Exactly one of EntryId (manual subscription) or FollowId (followed target) is set.
+    public ulong? EntryId { get; set; }
+    public virtual ModrinthEntry? Entry { get; set; }
+
+    public int? FollowId { get; set; }
+    public virtual ModrinthFollow? Follow { get; set; }
+
+    [Required] public NotificationKind Kind { get; set; } = NotificationKind.Update;
 
     [Required] public NotificationStatus Status { get; set; } = NotificationStatus.Pending;
     [Required] public int AttemptCount { get; set; }
@@ -33,6 +39,15 @@ public class PendingNotification
     public DateTime? NextRetryAt { get; set; }
 
     [Required] public DateTime CreatedAt { get; set; }
+}
+
+public enum NotificationKind
+{
+    /// <summary>A project got a new version.</summary>
+    Update = 0,
+
+    /// <summary>A followed target published a new project.</summary>
+    NewProject = 1
 }
 
 public enum NotificationStatus

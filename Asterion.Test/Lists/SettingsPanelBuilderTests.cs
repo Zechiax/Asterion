@@ -1,5 +1,6 @@
 using Asterion.ComponentBuilders;
 using Asterion.Database.Models;
+using Asterion.EmbedBuilders;
 using Asterion.Interfaces;
 using Asterion.Modules;
 using Asterion.Services.Localization;
@@ -17,6 +18,23 @@ public class SettingsPanelBuilderTests
 {
     private static readonly ILocalizationService Loc = new LocalizationService(
         new FluentBundleStore(NullLogger<FluentBundleStore>.Instance), NullLogger<LocalizationService>.Instance);
+
+    private static ModrinthFollow MakeFollow()
+    {
+        return new ModrinthFollow
+        {
+            Id = 7,
+            GuildId = 1,
+            TargetType = FollowTargetType.User,
+            TargetId = "user-id",
+            TargetName = "Zechiax",
+            Events = FollowEvents.ProjectUpdate | FollowEvents.NewProject,
+            CustomUpdateChannel = 555,
+            CustomPingRole = 666,
+            LoaderFilter = ["fabric"],
+            Created = DateTime.UtcNow
+        };
+    }
 
     private static ModrinthEntry MakeEntry()
     {
@@ -44,25 +62,52 @@ public class SettingsPanelBuilderTests
     }
 
     [Test]
-    public async Task PanelOpenedByCommandHasNoBackButton()
+    public void FollowPanelHasAllSettingsWithinDiscordLimits()
     {
-        var entryPanel = await EntryInteractionModule.BuildSettingsPanelAsync(MakeEntry(), 42, ListInteractionModule.NoList,
-            Substitute.For<IDataService>(), MakeClient(), Loc, null);
+        var panel = FollowComponentBuilder.GetSettingsPanel(MakeFollow(), ["fabric", "quilt"], 42, 2,
+            ListInteractionModule.BackButton(42, ListTab.Creators, 2, Loc, null), Loc, null);
+        var all = ComponentTree.Flatten(panel);
 
-        Assert.That(ComponentTree.Flatten(entryPanel).OfType<ButtonComponent>().Select(b => b.CustomId),
-            Is.EqualTo(new[] { "entry-unsub:42:AANobbMI:-1" }));
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(all, Has.Count.LessThanOrEqualTo(ComponentTree.MaxComponentsPerMessage));
+            Assert.That(Menus(panel).Select(m => m.CustomId), Is.EqualTo(new[]
+            {
+                "follow_channel:42:7:2", "follow_ping:42:7:2", "follow_newping:42:7:2", "follow_events:42:7:2", "follow_release:42:7:2",
+                "follow_loader:42:7:2"
+            }));
+            Assert.That(all.OfType<ButtonComponent>().Select(b => b.CustomId),
+                Is.EqualTo(new[] { "list:42:c:2:back", "follow-remove:42:7:2" }));
+            Assert.That(all.OfType<ButtonComponent>().Last().Label, Is.EqualTo("Unfollow"));
+            Assert.That(all.OfType<TextDisplayComponent>().First().Content, Does.Contain("Zechiax (Modrinth user)"));
+        }
     }
 
     [Test]
-    public async Task PickersArePrefilledWithCurrentValues()
+    public async Task PanelOpenedByCommandHasNoBackButton()
     {
-        var entry = MakeEntry();
-        entry.CustomPingRole = 666;
-        var menus = Menus(await EntryInteractionModule.BuildSettingsPanelAsync(entry, 42, 2,
-            Substitute.For<IDataService>(), MakeClient(), Loc, null));
+        var followPanel = FollowComponentBuilder.GetSettingsPanel(MakeFollow(), [], 42, ListInteractionModule.NoList,
+            null, Loc, null);
+        var entryPanel = await EntryInteractionModule.BuildSettingsPanelAsync(MakeEntry(), 42, ListInteractionModule.NoList,
+            Substitute.For<IDataService>(), MakeClient(), Loc, null);
 
-        var channel = menus.Single(m => m.CustomId == "entry_channel:42:AANobbMI:2");
-        var pingRole = menus.Single(m => m.CustomId == "entry_ping:42:AANobbMI:2");
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(ComponentTree.Flatten(followPanel).OfType<ButtonComponent>().Select(b => b.CustomId),
+                Is.EqualTo(new[] { "follow-remove:42:7:-1" }));
+            Assert.That(ComponentTree.Flatten(entryPanel).OfType<ButtonComponent>().Select(b => b.CustomId),
+                Is.EqualTo(new[] { "entry-unsub:42:AANobbMI:-1" }));
+        }
+    }
+
+    [Test]
+    public void PickersArePrefilledWithCurrentValues()
+    {
+        var menus = Menus(FollowComponentBuilder.GetSettingsPanel(MakeFollow(), [], 42, 2, null, Loc, null));
+
+        var channel = menus.Single(m => m.CustomId == "follow_channel:42:7:2");
+        var pingRole = menus.Single(m => m.CustomId == "follow_ping:42:7:2");
+        var newProjectRole = menus.Single(m => m.CustomId == "follow_newping:42:7:2");
 
         using (Assert.EnterMultipleScope())
         {
@@ -73,7 +118,24 @@ public class SettingsPanelBuilderTests
             Assert.That(pingRole.Type, Is.EqualTo(ComponentType.RoleSelect));
             Assert.That(pingRole.MinValues, Is.EqualTo(0));
             Assert.That(pingRole.DefaultValues.Select(v => v.Id), Is.EqualTo(new[] { 666ul }));
+
+            Assert.That(newProjectRole.DefaultValues, Is.Empty);
         }
+    }
+
+    [Test]
+    public void LoaderMenuKeepsCurrentFilterAndIsLeftOutWithoutLoaders()
+    {
+        var follow = MakeFollow();
+
+        // The current filter stays selectable even if no project offers it
+        var loaderMenu = Menus(FollowComponentBuilder.GetSettingsPanel(follow, [], 42, 2, null, Loc, null))
+            .Single(m => m.CustomId == "follow_loader:42:7:2");
+        Assert.That(loaderMenu.Options.Select(o => o.Value), Is.EqualTo(new[] { "fabric" }));
+
+        follow.LoaderFilter = null;
+        Assert.That(Menus(FollowComponentBuilder.GetSettingsPanel(follow, [], 42, 2, null, Loc, null))
+            .Select(m => m.CustomId), Does.Not.Contain("follow_loader:42:7:2"));
     }
 
     [Test]
@@ -123,6 +185,14 @@ public class SettingsPanelBuilderTests
         var all = ComponentTree.Flatten(SettingsPanelBuilder.BuildMessage("Done", Color.Blue));
 
         Assert.That(all.OfType<ActionRowComponent>(), Is.Empty);
+    }
+
+    [Test]
+    public void FollowListRowShowsTargetType()
+    {
+        var follow = MakeFollow();
+
+        Assert.That(FollowEmbedBuilder.FormatListEntry(follow, Loc, null), Does.Contain("Type: Modrinth user"));
     }
 
     [TestCase(new string[0], null)]

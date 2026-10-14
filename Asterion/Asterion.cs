@@ -2,6 +2,7 @@
 using Asterion.Database;
 using Asterion.Interfaces;
 using Asterion.Services;
+using Asterion.Services.Follows;
 using Asterion.Services.Localization;
 using Asterion.Services.Modrinth;
 using Asterion.Services.Notifications;
@@ -177,7 +178,13 @@ public class Asterion
             .AddHostedService(sp => sp.GetRequiredService<UpdateDetectionService>())
             .AddHostedService<NotificationDispatchService>()
             .AddHostedService<MaintenanceService>()
+            .AddHostedService<FollowSyncService>()
             .AddHostedService<BotActivityRefreshService>();
+
+        // todo: later organizations
+        services
+            .AddSingleton<IFollowSource, UserFollowSource>()
+            .AddSingleton<IFollowService, FollowService>();
 
         if (IsDebug())
             services.Configure<LoggerFilterOptions>(options => options.MinLevel = LogLevel.Debug);

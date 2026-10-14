@@ -19,6 +19,7 @@ public class ModrinthInteractionModule : AsterionInteractionModuleBase
 {
     private const string RequestError = "Sorry, there was an error processing your request, try again later";
     private readonly IDataService _dataService;
+    private readonly IFollowService _followService;
     private readonly ILogger<ModrinthInteractionModule> _logger;
     private readonly ModrinthService _modrinthService;
 
@@ -26,6 +27,7 @@ public class ModrinthInteractionModule : AsterionInteractionModuleBase
         base(localizationService, cultureProvider)
     {
         _dataService = serviceProvider.GetRequiredService<IDataService>();
+        _followService = serviceProvider.GetRequiredService<IFollowService>();
         _modrinthService = serviceProvider.GetRequiredService<ModrinthService>();
         _logger = serviceProvider.GetRequiredService<ILogger<ModrinthInteractionModule>>();
     }
@@ -258,8 +260,39 @@ public class ModrinthInteractionModule : AsterionInteractionModuleBase
             components: new ComponentBuilder()
                 //.WithButton(ModrinthComponentBuilder.BackToProjectButton(discordUserId, projectId))
                 .WithButton(ModrinthComponentBuilder.GetUserLinkButton(findUser.Payload.User))
+                .WithButton(FollowComponentBuilder.GetFollowUserButton(findUser.Payload.User, LocalizationService,
+                    CommandCultureInfo))
                 .Build(),
             ephemeral: true);
+    }
+
+    [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
+    [DoManageSubsRoleCheck(Group = "ManageSubs")]
+    [ComponentInteraction(FollowComponentBuilder.FollowUserButtonId + ":*", runMode: RunMode.Async)]
+    public async Task FollowUser(string modrinthUserId)
+    {
+        await DeferAsync(true);
+
+        var findUser = await _modrinthService.FindUser(modrinthUserId);
+        if (!findUser.Success)
+        {
+            await FollowupWithSearchResultErrorAsync(findUser);
+            return;
+        }
+
+        if (Context.Channel is not ITextChannel channel)
+        {
+            await FollowupAsync(LocalizationService.Get("follow-channel-invalid", CommandCultureInfo),
+                ephemeral: true);
+            return;
+        }
+
+        var user = findUser.Payload.User;
+        var result = await _followService.AddFollowAsync(Context.Guild.Id, FollowTargetType.User, user.Id,
+            user.Username, channel.Id, FollowEvents.ProjectUpdate | FollowEvents.NewProject);
+
+        await FollowupAsync(FollowEmbedBuilder.DescribeAddResult(result, user.Username, channel.Mention,
+            LocalizationService, CommandCultureInfo), ephemeral: true);
     }
 
     [ComponentInteraction("back-project:*;*", runMode: RunMode.Async)]

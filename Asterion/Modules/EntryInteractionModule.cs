@@ -22,6 +22,7 @@ namespace Asterion.Modules
         ILocalizationService localizationService,
         IGuildCultureProvider cultureProvider,
         IDataService dataService,
+        IFollowService followService,
         IModrinthClient modrinthClient)
         : AsterionInteractionModuleBase(localizationService, cultureProvider)
     {
@@ -259,8 +260,8 @@ namespace Asterion.Modules
         {
             var components = listPage == ListInteractionModule.NoList
                 ? SettingsPanelBuilder.BuildMessage(text, SettingsPanelBuilder.SubscriptionAccent)
-                : (await ListInteractionModule.BuildListAsync(dataService, Context.Guild.Id, ownerId,
-                    ListTab.Projects, listPage, LocalizationService, CommandCultureInfo, text)).Components;
+                : (await ListInteractionModule.BuildListAsync(dataService, followService, Context.Guild.Id,
+                    ownerId, ListTab.Projects, listPage, LocalizationService, CommandCultureInfo, text)).Components;
 
             await ModifyOriginalResponseAsync(msg => msg.Components = components);
         }

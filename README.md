@@ -16,6 +16,9 @@ Access all of [Modrinth](https://modrinth.com/) within Discord
 - Find user on Modrinth
 - Auto embed when message contains URL to a Modrinth project (opt-in feature)
 - Subscribe for project updates and send them to custom channel
+- Follow Modrinth users with `/follow user` and get updates for all of their projects, including new ones
+    - Get a message when a followed user publishes a new project, with its own ping role
+    - Ignore single projects of a followed user, filter by release type and loader
 
 ## Images
 - Some things shown in these pictures can be changed using the `/settings` command (f.e. the subscribe button can be hidden from search embeds)
@@ -48,6 +51,8 @@ On wiki there are guides and documentation for all commands: https://zechiax.git
     - IDs of channels where you want to send updates
     - List of subscribed projects
         - And the date you subscribed to them
+    - List of followed Modrinth users (their public Modrinth ID and username)
+        - And the date you followed them, the projects known for each follow and the ignored ones
     - Bot preferences
 - This data is stored in a database and is not shared with anyone else
 - You can delete all data stored by the bot when you kick the bot from your guild

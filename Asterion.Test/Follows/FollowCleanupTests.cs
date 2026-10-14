@@ -1,0 +1,107 @@
+﻿using Asterion.Database;
+using Asterion.Database.Models;
+using Asterion.Services;
+using Asterion.Test.Fakes;
+using Asterion.Test.Notifications;
+using Discord.WebSocket;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
+using static Asterion.Test.Follows.FollowTestData;
+
+namespace Asterion.Test.Follows;
+
+/// <summary>
+///     Shared ModrinthProject rows must survive as long as an entry or a follow uses them.
+/// </summary>
+[TestFixture]
+public class FollowCleanupTests
+{
+    private static readonly DateTime LongAgo = DateTime.UtcNow.AddYears(-1);
+
+    private static DataContext OpenDb(IServiceProvider provider)
+    {
+        return provider.CreateScope().ServiceProvider.GetRequiredService<DataContext>();
+    }
+
+    [Test]
+    public async Task ProjectUsedOnlyByFollowSurvivesUntilFollowIsRemoved()
+    {
+        await using var provider = InMemoryDb.BuildServiceProvider();
+        await SeedGuildAsync(provider);
+        var source = new FakeFollowSource();
+        source.SetProjects(MakeProject("a", LongAgo));
+        var service = BuildService(provider, source);
+
+        var add = await service.AddFollowAsync(GuildId, FollowTargetType.User, UserId, "user", null,
+            FollowEvents.ProjectUpdate);
+
+        await using (var db = OpenDb(provider))
+        {
+            var removed = await ProjectCleanup.RemoveUnusedProjectsAsync(db);
+            Assert.That(removed, Is.Empty);
+        }
+
+        Assert.That(await service.RemoveFollowAsync(GuildId, add.Follow!.Id), Is.True);
+
+        await using var db2 = OpenDb(provider);
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(await db2.ModrinthFollows.CountAsync(), Is.EqualTo(0));
+            Assert.That(await db2.FollowProjects.CountAsync(), Is.EqualTo(0));
+            Assert.That(await db2.ModrinthProjects.CountAsync(), Is.EqualTo(0));
+        }
+    }
+
+    [Test]
+    public async Task UnsubscribingKeepsProjectThatAFollowStillUses()
+    {
+        await using var provider = InMemoryDb.BuildServiceProvider();
+        await SeedGuildAsync(provider);
+        var source = new FakeFollowSource();
+        source.SetProjects(MakeProject("a", LongAgo));
+        var followService = BuildService(provider, source);
+
+        using var discordClient = new DiscordSocketClient();
+        var dataService = new DataService(provider, NullLogger<DataService>.Instance, discordClient);
+
+        await dataService.AddModrinthProjectToGuildAsync(GuildId, "a", "a-v1", LongAgo, 555, "Project a");
+        var add = await followService.AddFollowAsync(GuildId, FollowTargetType.User, UserId, "user", null,
+            FollowEvents.ProjectUpdate);
+
+        Assert.That(await dataService.RemoveModrinthProjectFromGuildAsync(GuildId, "a"), Is.True);
+
+        await using (var db = OpenDb(provider))
+        {
+            Assert.That(await db.ModrinthEntries.CountAsync(), Is.EqualTo(0));
+            Assert.That(await db.ModrinthProjects.AnyAsync(p => p.ProjectId == "a"), Is.True);
+        }
+
+        await followService.RemoveFollowAsync(GuildId, add.Follow!.Id);
+
+        await using var db2 = OpenDb(provider);
+        Assert.That(await db2.ModrinthProjects.AnyAsync(p => p.ProjectId == "a"), Is.False);
+    }
+
+    [Test]
+    public async Task RemovingFollowKeepsProjectThatAnEntryStillUses()
+    {
+        await using var provider = InMemoryDb.BuildServiceProvider();
+        await SeedGuildAsync(provider);
+        var source = new FakeFollowSource();
+        source.SetProjects(MakeProject("a", LongAgo));
+        var followService = BuildService(provider, source);
+
+        using var discordClient = new DiscordSocketClient();
+        var dataService = new DataService(provider, NullLogger<DataService>.Instance, discordClient);
+
+        await dataService.AddModrinthProjectToGuildAsync(GuildId, "a", "a-v1", LongAgo, 555, "Project a");
+        var add = await followService.AddFollowAsync(GuildId, FollowTargetType.User, UserId, "user", null,
+            FollowEvents.ProjectUpdate);
+
+        await followService.RemoveFollowAsync(GuildId, add.Follow!.Id);
+
+        await using var db = OpenDb(provider);
+        Assert.That(await db.ModrinthProjects.AnyAsync(p => p.ProjectId == "a"), Is.True);
+    }
+}

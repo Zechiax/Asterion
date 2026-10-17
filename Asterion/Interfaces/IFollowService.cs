@@ -17,8 +17,10 @@ public interface IFollowService
     /// <summary>
     ///     Removes the follow and every project only it was using
     /// </summary>
-    /// <returns>False if the guild has no such follow</returns>
-    public Task<bool> RemoveFollowAsync(ulong guildId, int followId, CancellationToken ct = default);
+    /// <returns>The removed follow, null if the guild has no such follow</returns>
+    public Task<ModrinthFollow?> RemoveFollowAsync(ulong guildId, int followId, CancellationToken ct = default);
+
+    public Task<int> CountFollowsAsync(ulong guildId, CancellationToken ct = default);
 
     public Task<bool> SetIgnoredAsync(ulong guildId, int followId, string projectId, bool ignored,
         CancellationToken ct = default);
@@ -36,6 +38,12 @@ public interface IFollowService
     public Task<IList<ModrinthFollow>> GetAllFollowsAsync(CancellationToken ct = default);
 
     public Task<FollowSourceResult> FetchTargetAsync(FollowTargetType targetType, string targetId,
+        CancellationToken ct = default);
+
+    /// <summary>
+    ///     Loaders of the target's projects, cached so the settings panel doesn't call Modrinth on every change
+    /// </summary>
+    public Task<IReadOnlyList<string>> GetTargetLoadersAsync(FollowTargetType targetType, string targetId,
         CancellationToken ct = default);
 
     public Task<SyncResult?> SyncFollowAsync(int followId, bool announceNew, CancellationToken ct = default);

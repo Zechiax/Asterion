@@ -54,7 +54,11 @@ public static class FollowComponentBuilder
             fields.Add(new SettingsField(loc.Get("settings-loader-filter", culture), loaderMenu));
 
         var title = loc.Get("settings-follow-title", culture,
-            new { name = follow.TargetName, type = FollowEmbedBuilder.FormatTargetType(follow.TargetType, loc, culture) });
+            new
+            {
+                name = Format.Sanitize(follow.TargetName),
+                type = FollowEmbedBuilder.FormatTargetType(follow.TargetType, loc, culture)
+            });
 
         var buttons = new List<ButtonBuilder>();
         if (backButton is not null)
@@ -68,7 +72,7 @@ public static class FollowComponentBuilder
         ILocalizationService loc, CultureInfo? culture)
     {
         return SettingsPanelBuilder.BuildMessage(
-            loc.Get("follow-remove-confirm-question", culture, new { name = follow.TargetName }),
+            loc.Get("follow-remove-confirm-question", culture, new { name = Format.Sanitize(follow.TargetName) }),
             SettingsPanelBuilder.FollowAccent,
             new ButtonBuilder(loc.Get("button-confirm", culture),
                 $"{RemoveConfirmButtonId}:{ownerId}:{follow.Id}:{listPage}", ButtonStyle.Danger),

@@ -1,4 +1,5 @@
-﻿using Asterion.Database;
+﻿using System.Collections.Concurrent;
+using Asterion.Database;
 using Asterion.Database.Models;
 using Asterion.Extensions;
 using Asterion.Interfaces;
@@ -25,6 +26,19 @@ public class FollowService : IFollowService
 
     private static readonly ProjectStatus[] PublicStatuses =
         [ProjectStatus.Approved, ProjectStatus.Archived, ProjectStatus.Unlisted];
+
+    /// <summary>
+    ///     How long the loaders of a target are reused for the settings panel, the sync refreshes them as often
+    /// </summary>
+    private static readonly TimeSpan LoaderCacheDuration = TimeSpan.FromMinutes(15);
+
+    private readonly ConcurrentDictionary<(FollowTargetType, string), (DateTime At, IReadOnlyList<string> Loaders)>
+        _loaderCache = new();
+
+    /// <summary>
+    ///     Serializes syncs, so the first sync of a new follow and the background pass don't add the same rows
+    /// </summary>
+    private readonly SemaphoreSlim _syncLock = new(1, 1);
 
     private readonly IModrinthClient _client;
     private readonly ILogger<FollowService> _logger;
@@ -85,7 +99,7 @@ public class FollowService : IFollowService
         return new AddFollowResult(AddFollowStatus.Added, follow, sync);
     }
 
-    public async Task<bool> RemoveFollowAsync(ulong guildId, int followId, CancellationToken ct = default)
+    public async Task<ModrinthFollow?> RemoveFollowAsync(ulong guildId, int followId, CancellationToken ct = default)
     {
         using var scope = _services.CreateScope();
         await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
@@ -95,7 +109,7 @@ public class FollowService : IFollowService
             .FirstOrDefaultAsync(f => f.Id == followId && f.GuildId == guildId, ct);
 
         if (follow is null)
-            return false;
+            return null;
 
         var projectIds = follow.Projects.Select(fp => fp.ProjectId).ToList();
 
@@ -105,7 +119,15 @@ public class FollowService : IFollowService
 
         await ProjectCleanup.RemoveUnusedProjectsAsync(db, projectIds, ct);
 
-        return true;
+        return follow;
+    }
+
+    public async Task<int> CountFollowsAsync(ulong guildId, CancellationToken ct = default)
+    {
+        using var scope = _services.CreateScope();
+        await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
+
+        return await db.ModrinthFollows.CountAsync(f => f.GuildId == guildId, ct);
     }
 
     public async Task<bool> SetIgnoredAsync(ulong guildId, int followId, string projectId, bool ignored,
@@ -199,8 +221,48 @@ public class FollowService : IFollowService
         return await SyncFollowAsync(followId, source, announceNew, ct);
     }
 
+    public async Task<IReadOnlyList<string>> GetTargetLoadersAsync(FollowTargetType targetType, string targetId,
+        CancellationToken ct = default)
+    {
+        var cached = _loaderCache.TryGetValue((targetType, targetId), out var entry);
+        if (cached && DateTime.UtcNow - entry.At < LoaderCacheDuration)
+            return entry.Loaders;
+
+        var source = await FetchTargetAsync(targetType, targetId, ct);
+        if (source.Success)
+            return CacheLoaders(targetType, targetId, source);
+
+        // Stale loaders are better than none while Modrinth is unavailable
+        return cached ? entry.Loaders : [];
+    }
+
+    private IReadOnlyList<string> CacheLoaders(FollowTargetType targetType, string targetId, FollowSourceResult source)
+    {
+        var loaders = source.Projects!
+            .SelectMany(p => p.Loaders ?? [])
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        _loaderCache[(targetType, targetId)] = (DateTime.UtcNow, loaders);
+        return loaders;
+    }
+
     public async Task<SyncResult?> SyncFollowAsync(int followId, FollowSourceResult source, bool announceNew,
         CancellationToken ct = default)
+    {
+        await _syncLock.WaitAsync(ct);
+        try
+        {
+            return await SyncFollowLockedAsync(followId, source, announceNew, ct);
+        }
+        finally
+        {
+            _syncLock.Release();
+        }
+    }
+
+    private async Task<SyncResult?> SyncFollowLockedAsync(int followId, FollowSourceResult source, bool announceNew,
+        CancellationToken ct)
     {
         using var scope = _services.CreateScope();
         await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
@@ -215,6 +277,8 @@ public class FollowService : IFollowService
         // Never remove data after a failed call
         if (!source.Success)
             return await SaveSyncErrorAsync(db, follow, source.Error ?? "Unknown error", ct);
+
+        CacheLoaders(follow.TargetType, follow.TargetId, source);
 
         var current = source.Projects!
             .Where(p => PublicStatuses.Contains(p.Status))
@@ -305,7 +369,16 @@ public class FollowService : IFollowService
         follow.LastSyncError = null;
 
         // Single atomic commit: followed projects, project rows and outbox rows land together
-        await db.SaveChangesAsync(ct);
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException e)
+        {
+            // E.g. a subscription added the same project row meanwhile, nothing was saved, the next sync retries
+            _logger.LogWarning(e, "Could not save sync of follow {FollowId}", follow.Id);
+            return new SyncResult(false, "Database conflict, the next sync retries", known.Count, [], [], []);
+        }
 
         var removedIds = removed.Select(fp => fp.ProjectId).ToList();
         if (removedIds.Count > 0)

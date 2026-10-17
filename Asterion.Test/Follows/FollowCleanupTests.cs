@@ -42,7 +42,7 @@ public class FollowCleanupTests
             Assert.That(removed, Is.Empty);
         }
 
-        Assert.That(await service.RemoveFollowAsync(GuildId, add.Follow!.Id), Is.True);
+        Assert.That(await service.RemoveFollowAsync(GuildId, add.Follow!.Id), Is.Not.Null);
 
         await using var db2 = OpenDb(provider);
         using (Assert.EnterMultipleScope())

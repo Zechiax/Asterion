@@ -26,12 +26,10 @@ public class FollowInteractionModule(
     IDataService dataService)
     : AsterionInteractionModuleBase(localizationService, cultureProvider)
 {
-    public static async Task<IEnumerable<string>> GetLoaderOptionsAsync(IFollowService followService,
+    public static Task<IReadOnlyList<string>> GetLoaderOptionsAsync(IFollowService followService,
         ModrinthFollow follow)
     {
-        var source = await followService.FetchTargetAsync(follow.TargetType, follow.TargetId);
-
-        return source.Projects?.SelectMany(p => p.Loaders ?? []) ?? [];
+        return followService.GetTargetLoadersAsync(follow.TargetType, follow.TargetId);
     }
 
     /// <summary>
@@ -87,15 +85,15 @@ public class FollowInteractionModule(
     {
         await DeferAsync();
 
-        var follow = await followService.GetFollowAsync(Context.Guild.Id, followId);
-        if (follow is null || !await followService.RemoveFollowAsync(Context.Guild.Id, followId))
+        var removed = await followService.RemoveFollowAsync(Context.Guild.Id, followId);
+        if (removed is null)
         {
             await ShowResultAsync(ownerId, listPage, LocalizationService.Get("follow-not-found", CommandCultureInfo));
             return;
         }
 
         await ShowResultAsync(ownerId, listPage, LocalizationService.Get("follow-removed", CommandCultureInfo,
-            new { name = follow.TargetName }));
+            new { name = Format.Sanitize(removed.TargetName) }));
     }
 
     [ComponentInteraction(FollowComponentBuilder.RemoveCancelButtonId + ":*:*:*")]

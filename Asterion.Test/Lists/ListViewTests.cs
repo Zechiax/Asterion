@@ -46,6 +46,7 @@ public class ListViewTests
 
         var followService = Substitute.For<IFollowService>();
         followService.GetFollowsAsync(GuildId).Returns(follows);
+        followService.CountFollowsAsync(GuildId).Returns(followCount);
         return followService;
     }
 

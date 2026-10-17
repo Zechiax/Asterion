@@ -78,14 +78,14 @@ public class FollowModule(
     {
         await DeferAsync();
 
-        var existing = await followService.GetFollowAsync(Context.Guild.Id, follow);
-        if (existing is null || !await followService.RemoveFollowAsync(Context.Guild.Id, follow))
+        var removed = await followService.RemoveFollowAsync(Context.Guild.Id, follow);
+        if (removed is null)
         {
             await FollowupAsync(Loc("follow-not-found"));
             return;
         }
 
-        await FollowupAsync(Loc("follow-removed", new { name = existing.TargetName }));
+        await FollowupAsync(Loc("follow-removed", new { name = Format.Sanitize(removed.TargetName) }));
     }
 
     [SlashCommand("ignore", "Stop sending updates for one project of a followed creator")]
@@ -169,18 +169,21 @@ public class FollowModule(
         if (followProject is null ||
             !await followService.SetIgnoredAsync(Context.Guild.Id, followId, projectId, ignored))
         {
-            await FollowupAsync(Loc("follow-project-not-found", new { name = follow.TargetName, project = projectId }));
+            await FollowupAsync(Loc("follow-project-not-found",
+                new { name = Format.Sanitize(follow.TargetName), project = Format.Sanitize(projectId) }));
             return;
         }
 
-        var args = new { name = follow.TargetName, project = followProject.Project.Title ?? projectId };
+        var args = new
+        {
+            name = Format.Sanitize(follow.TargetName), project = Format.Sanitize(followProject.Project.Title ?? projectId)
+        };
         await FollowupAsync(Loc(ignored ? "follow-project-ignored" : "follow-project-unignored", args));
     }
 
     private async Task WarnIfCannotSendAsync(ITextChannel channel)
     {
-        var botUser = await channel.Guild.GetCurrentUserAsync();
-        if (botUser.GetPermissions(channel).SendMessages)
+        if (BotCanSendIn(channel.Id))
             return;
 
         await FollowupAsync(Loc("no-send-permission", new { channel = channel.Mention }), ephemeral: true);

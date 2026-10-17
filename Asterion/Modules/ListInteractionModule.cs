@@ -60,9 +60,10 @@ public class ListInteractionModule(
             .OrderBy(e => e.Project.Title ?? e.ProjectId, StringComparer.OrdinalIgnoreCase)
             .ThenBy(e => e.ProjectId)
             .ToList();
-        var follows = await followService.GetFollowsAsync(guildId);
+        // Follows with their projects are only loaded for the creators tab, the other tabs need just the count
+        var followCount = await followService.CountFollowsAsync(guildId);
 
-        var shownTab = tab ?? (entries.Count == 0 && follows.Count > 0 ? ListTab.Creators : ListTab.Projects);
+        var shownTab = tab ?? (entries.Count == 0 && followCount > 0 ? ListTab.Creators : ListTab.Projects);
 
         ButtonBuilder TabButton(ListTab buttonTab, string key, int count)
         {
@@ -74,11 +75,11 @@ public class ListInteractionModule(
         var tabs = new[]
         {
             TabButton(ListTab.Projects, "list-tab-projects", entries.Count),
-            TabButton(ListTab.Creators, "list-tab-creators", follows.Count)
+            TabButton(ListTab.Creators, "list-tab-creators", followCount)
         };
 
         var components = shownTab == ListTab.Creators
-            ? BuildPage(follows, page, ownerId, ListTab.Creators,
+            ? BuildPage(await followService.GetFollowsAsync(guildId), page, ownerId, ListTab.Creators,
                 loc.Get("follow-list-title", culture),
                 loc.Get("follow-list-description", culture),
                 SettingsPanelBuilder.FollowAccent,
@@ -96,7 +97,7 @@ public class ListInteractionModule(
                 loc.Get("list-subscriptions-empty", culture),
                 loc, culture, notice, tabs);
 
-        return (components, entries.Count == 0 && follows.Count == 0);
+        return (components, entries.Count == 0 && followCount == 0);
     }
 
     [ComponentInteraction(ListButtonId + ":*:*:*:*")]

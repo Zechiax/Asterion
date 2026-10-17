@@ -217,6 +217,9 @@ namespace Asterion.Migrations
                     b.Property<DateTime?>("LastSyncedAt")
                         .HasColumnType("TEXT");
 
+                    b.Property<ulong?>("NewProjectChannel")
+                        .HasColumnType("INTEGER");
+
                     b.Property<ulong?>("NewProjectPingRole")
                         .HasColumnType("INTEGER");
 

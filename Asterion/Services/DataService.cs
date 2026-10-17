@@ -99,6 +99,7 @@ public class DataService : IDataService
         guild.GuildSettings.ShowSubscribeButton = updatedGuild.GuildSettings.ShowSubscribeButton;
         guild.GuildSettings.ChangelogStyle = updatedGuild.GuildSettings.ChangelogStyle;
         guild.GuildSettings.ChangeLogMaxLength = updatedGuild.GuildSettings.ChangeLogMaxLength;
+        guild.GuildSettings.Language = updatedGuild.GuildSettings.Language;
 
         await db.SaveChangesAsync();
 
@@ -202,6 +203,25 @@ public class DataService : IDataService
         await ProjectCleanup.RemoveUnusedProjectsAsync(db, [projectId]);
 
         return true;
+    }
+
+    public async Task<int> RemoveAllModrinthProjectsFromGuildAsync(ulong guildId)
+    {
+        using var scope = _services.CreateScope();
+        await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
+
+        var guild = await db.Guilds.SingleOrDefaultAsync(x => x.GuildId == guildId);
+        if (guild is null) return 0;
+
+        var entries = await db.ModrinthEntries.Where(x => x.ArrayId == guild.ModrinthArrayId).ToListAsync();
+        if (entries.Count == 0) return 0;
+
+        db.ModrinthEntries.RemoveRange(entries);
+        await db.SaveChangesAsync();
+
+        await ProjectCleanup.RemoveUnusedProjectsAsync(db, entries.Select(e => e.ProjectId));
+
+        return entries.Count;
     }
 
     public async Task<ModrinthProject?> GetModrinthProjectByIdAsync(string projectId)

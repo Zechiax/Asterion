@@ -8,4 +8,7 @@ public interface ILocalizationService
     string Get(string key, CultureInfo? culture = null);
 
     string Get(string key, CultureInfo? culture, object args);
+
+    /// <summary>Locales with translations, e.g. "en-US"</summary>
+    IReadOnlyCollection<string> AvailableLocales { get; }
 }

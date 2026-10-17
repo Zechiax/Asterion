@@ -84,7 +84,7 @@ public class NotificationDispatchServiceTests
         return row.Id;
     }
 
-    private static NotificationDispatchService BuildService(IServiceProvider provider, RecordingNotificationSender sender)
+    internal static NotificationDispatchService BuildService(IServiceProvider provider, RecordingNotificationSender sender)
     {
         var reader = new NotificationReader(provider);
         var signal = new NotificationSignal();
@@ -140,7 +140,9 @@ public class NotificationDispatchServiceTests
         {
             Assert.That(row!.Status, Is.EqualTo(NotificationStatus.Failed));
             Assert.That(row.AttemptCount, Is.EqualTo(1));
+            Assert.That(row.LastError, Is.EqualTo("boom"));
             Assert.That(row.NextRetryAt, Is.Not.Null);
+            // Same row updated in place - never a second row created for the retry
             Assert.That(await db.PendingNotifications.CountAsync(), Is.EqualTo(1));
         }
     }

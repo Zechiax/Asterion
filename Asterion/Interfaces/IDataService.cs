@@ -56,6 +56,12 @@ public interface IDataService
     public Task<bool> RemoveModrinthProjectFromGuildAsync(ulong guildId, string projectId);
 
     /// <summary>
+    ///     Removes every subscribed project of the guild and every project nothing uses anymore
+    /// </summary>
+    /// <returns>Number of removed subscriptions</returns>
+    public Task<int> RemoveAllModrinthProjectsFromGuildAsync(ulong guildId);
+
+    /// <summary>
     ///     Gets Modrinth project stored in database
     /// </summary>
     /// <param name="projectId"></param>

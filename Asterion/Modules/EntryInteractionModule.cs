@@ -1,6 +1,5 @@
 ﻿using System.Globalization;
 using Asterion.Attributes;
-using Asterion.AutocompleteHandlers;
 using Asterion.Common;
 using Asterion.ComponentBuilders;
 using Asterion.Database.Models;
@@ -13,7 +12,7 @@ using Modrinth.Models;
 namespace Asterion.Modules
 {
     /// <summary>
-    ///     The subscription settings panel. The panel replaces the list message it was opened from,
+    ///     The subscription settings panel. The panel replaces the manage panel it was opened from,
     ///     the list page in the custom IDs lets it go back.
     /// </summary>
     [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
@@ -40,10 +39,12 @@ namespace Asterion.Modules
         /// <summary>
         ///     Settings panel of a subscription, send it with <see cref="MessageFlags.ComponentsV2" />
         /// </summary>
-        /// <param name="listPage">List page the panel was opened from, or <see cref="ListInteractionModule.NoList" /></param>
+        /// <param name="listPage">List page the panel was opened from</param>
         /// <param name="ownerId">The only user who can use the panel</param>
+        /// <param name="notice">Short note under the title, e.g. "Subscribed to X"</param>
         public static async Task<MessageComponent> BuildSettingsPanelAsync(ModrinthEntry entry, ulong ownerId,
-            int listPage, IDataService dataService, IModrinthClient modrinthClient, ILocalizationService loc, CultureInfo? culture)
+            int listPage, IDataService dataService, IModrinthClient modrinthClient, ILocalizationService loc,
+            CultureInfo? culture, string? notice = null)
         {
             string Id(string prefix) => $"{prefix}:{ownerId}:{entry.ProjectId}:{listPage}";
 
@@ -80,35 +81,15 @@ namespace Asterion.Modules
             if (loaderMenu is not null)
                 fields.Add(new SettingsField(loc.Get("settings-loader-filter", culture), loaderMenu));
 
-            var buttons = new List<ButtonBuilder>();
-            if (listPage != ListInteractionModule.NoList)
-                buttons.Add(ListInteractionModule.BackButton(ownerId, ListTab.Projects, listPage, loc, culture));
-            buttons.Add(new ButtonBuilder(loc.Get("button-unsubscribe", culture), Id(UnsubscribeButtonId),
-                ButtonStyle.Danger));
+            var buttons = new[]
+            {
+                ManageInteractionModule.BackButton(ownerId, ManageTab.Projects, listPage, loc, culture),
+                new ButtonBuilder(loc.Get("button-unsubscribe", culture), Id(UnsubscribeButtonId), ButtonStyle.Danger)
+            };
 
             return SettingsPanelBuilder.Build(
                 loc.Get("settings-subscription-title", culture, new { title, id = entry.ProjectId }),
-                SettingsPanelBuilder.SubscriptionAccent, fields, buttons);
-        }
-
-        [SlashCommand("entry", "Displays entry information and allows selection of release type filters.")]
-        public async Task ShowEntryAsync(
-            [Summary("project_id")] [Autocomplete(typeof(SubscribedIdAutocompletionHandler))]
-            string projectId)
-        {
-            await DeferAsync();
-
-            var entry = await dataService.GetModrinthEntryAsync(Context.Guild.Id, projectId);
-            if (entry == null)
-            {
-                await FollowupAsync(LocalizationService.Get("entry-not-found", CommandCultureInfo));
-                return;
-            }
-
-            var panel = await BuildSettingsPanelAsync(entry, Context.User.Id, ListInteractionModule.NoList, dataService,
-                modrinthClient, LocalizationService, CommandCultureInfo);
-
-            await FollowupAsync(components: panel, flags: MessageFlags.ComponentsV2);
+                SettingsPanelBuilder.SubscriptionAccent, fields, buttons, notice);
         }
 
         [DoUserCheck]
@@ -252,15 +233,13 @@ namespace Asterion.Modules
         }
 
         /// <summary>
-        ///     Goes back to the list with the text as a note, or replaces the panel with the text if it was not
-        ///     opened from the list
+        ///     Goes back to the list with the text as a note
         /// </summary>
         private async Task ShowResultAsync(ulong ownerId, int listPage, string text)
         {
-            var components = listPage == ListInteractionModule.NoList
-                ? SettingsPanelBuilder.BuildMessage(text, SettingsPanelBuilder.SubscriptionAccent)
-                : (await ListInteractionModule.BuildListAsync(dataService, followService, Context.Guild.Id,
-                    ownerId, ListTab.Projects, listPage, LocalizationService, CommandCultureInfo, text)).Components;
+            var components = await ManageInteractionModule.BuildPanelAsync(dataService, followService,
+                Context.Guild.Id, ownerId, ManageTab.Projects, listPage, CanManageServerHere, LocalizationService,
+                CommandCultureInfo, text);
 
             await ModifyOriginalResponseAsync(msg => msg.Components = components);
         }

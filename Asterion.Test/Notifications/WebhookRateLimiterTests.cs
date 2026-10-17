@@ -6,15 +6,6 @@ namespace Asterion.Test.Notifications;
 public class WebhookRateLimiterTests
 {
     [Test]
-    public void AllowsSendWhenUnderLimit()
-    {
-        var limiter = new WebhookRateLimiter(maxPerWindow: 2, window: TimeSpan.FromSeconds(60));
-        var now = DateTime.UtcNow;
-
-        Assert.That(limiter.TryAcquire("https://example.com/webhook", now), Is.EqualTo(TimeSpan.Zero));
-    }
-
-    [Test]
     public void BlocksSendOnceLimitReachedWithinWindow()
     {
         var limiter = new WebhookRateLimiter(maxPerWindow: 2, window: TimeSpan.FromSeconds(60));

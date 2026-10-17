@@ -11,8 +11,10 @@ public interface IFollowService
     /// <summary>
     ///     Creates a follow and runs its first sync without announcing anything
     /// </summary>
+    /// <param name="newProjectChannelId">Channel for new project messages, null to use <paramref name="channelId" /></param>
     public Task<AddFollowResult> AddFollowAsync(ulong guildId, FollowTargetType targetType, string targetId,
-        string targetName, ulong? channelId, FollowEvents events, CancellationToken ct = default);
+        string targetName, ulong? channelId, FollowEvents events, ulong? newProjectChannelId = null,
+        CancellationToken ct = default);
 
     /// <summary>
     ///     Removes the follow and every project only it was using
@@ -21,6 +23,12 @@ public interface IFollowService
     public Task<ModrinthFollow?> RemoveFollowAsync(ulong guildId, int followId, CancellationToken ct = default);
 
     public Task<int> CountFollowsAsync(ulong guildId, CancellationToken ct = default);
+
+    /// <summary>
+    ///     Removes every follow of the guild and every project only they were using
+    /// </summary>
+    /// <returns>Number of removed follows</returns>
+    public Task<int> RemoveAllFollowsAsync(ulong guildId, CancellationToken ct = default);
 
     public Task<bool> SetIgnoredAsync(ulong guildId, int followId, string projectId, bool ignored,
         CancellationToken ct = default);

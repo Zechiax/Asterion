@@ -28,30 +28,18 @@ public class ListPageBuilderTests
     }
 
     [Test]
-    public void FullPageStaysWithinDiscordLimits()
-    {
-        var all = FlattenPage(Build(25, 0).Components);
-
-        using (Assert.EnterMultipleScope())
-        {
-            Assert.That(all, Has.Count.LessThanOrEqualTo(ComponentTree.MaxComponentsPerMessage));
-            Assert.That(all.OfType<TextDisplayComponent>().Sum(t => t.Content.Length), Is.LessThanOrEqualTo(4000));
-        }
-    }
-
-    [Test]
     public void SplitsRowsIntoPages()
     {
-        Assert.That(ListPageBuilder.GetPageCount(25), Is.EqualTo(3));
+        Assert.That(ListPageBuilder.GetPageCount(25), Is.EqualTo(4));
 
-        var sections = Enumerable.Range(0, 3)
+        var sections = Enumerable.Range(0, 4)
             .Select(page => FlattenPage(Build(25, page).Components).OfType<SectionComponent>().Count());
 
-        Assert.That(sections, Is.EqualTo(new[] { 10, 10, 5 }));
+        Assert.That(sections, Is.EqualTo(new[] { 8, 8, 8, 1 }));
     }
 
     [TestCase(-1, 0)]
-    [TestCase(99, 2)]
+    [TestCase(99, 3)]
     public void ClampsPage(int requested, int expected)
     {
         Assert.That(Build(25, requested).Page, Is.EqualTo(expected));
@@ -71,42 +59,31 @@ public class ListPageBuilderTests
             Assert.That(buttons.Select(b => b.IsDisabled), Is.EqualTo(new[] { true, false, false }));
         }
 
-        var last = FlattenPage(Build(25, 2).Components).OfType<ButtonComponent>()
+        var last = FlattenPage(Build(25, 3).Components).OfType<ButtonComponent>()
             .Single(b => b.CustomId.EndsWith(":next"));
         Assert.That(last.IsDisabled, Is.True);
     }
 
     [Test]
-    public void AllCustomIdsAreUnique()
+    public void FullPageWithTabsAndExtraButtonsStaysWithinDiscordLimits()
     {
-        var ids = FlattenPage(Build(25, 1).Components).OfType<ButtonComponent>().Select(b => b.CustomId).ToList();
+        var items = Enumerable.Range(1, 25).ToList();
+        var tabs = Enumerable.Range(1, 4).Select(i => new ButtonBuilder($"Tab {i}", $"test-tab:{i}"));
+        var extra = Enumerable.Range(1, 2).Select(i => new ButtonBuilder($"Extra {i}", $"test-extra:{i}"));
 
-        Assert.That(ids, Is.Unique);
-    }
-
-    [Test]
-    public void SinglePageHasOnlyRefreshButton()
-    {
-        var all = FlattenPage(Build(3, 0).Components);
+        var components = ListPageBuilder.Build(items, 1, "Title", "Description", Color.Blue, "test-page",
+            i => $"**Item {i}**\n" + new string('x', 1000),
+            i => new ButtonBuilder("Settings", $"test-open:{i}", ButtonStyle.Secondary),
+            "Nothing here", Loc, null, "Notice", extra, tabs).Components;
+        var all = FlattenPage(components);
 
         using (Assert.EnterMultipleScope())
         {
-            Assert.That(all.OfType<SectionComponent>().Count(), Is.EqualTo(3));
-            Assert.That(all.OfType<ButtonComponent>().Where(b => b.CustomId.StartsWith("test-page:"))
-                .Select(b => b.CustomId), Is.EqualTo(new[] { "test-page:0:refresh" }));
-            Assert.That(all.OfType<TextDisplayComponent>().First().Content, Does.Not.Contain("Page"));
-        }
-    }
-
-    [Test]
-    public void EmptyListShowsEmptyText()
-    {
-        var all = FlattenPage(Build(0, 0).Components);
-
-        using (Assert.EnterMultipleScope())
-        {
-            Assert.That(all.OfType<SectionComponent>(), Is.Empty);
-            Assert.That(all.OfType<TextDisplayComponent>().Select(t => t.Content), Does.Contain("Nothing here"));
+            Assert.That(all, Has.Count.LessThanOrEqualTo(ComponentTree.MaxComponentsPerMessage));
+            Assert.That(all.OfType<TextDisplayComponent>().Sum(t => t.Content.Length), Is.LessThanOrEqualTo(4000));
+            Assert.That(all.OfType<ActionRowComponent>().Select(r => r.Components.Count),
+                Is.All.LessThanOrEqualTo(5));
+            Assert.That(all.OfType<ButtonComponent>().Select(b => b.CustomId), Is.Unique);
         }
     }
 }

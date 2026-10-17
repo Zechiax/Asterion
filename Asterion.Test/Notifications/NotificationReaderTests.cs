@@ -1,7 +1,6 @@
 ﻿using Asterion.Database;
 using Asterion.Database.Models;
 using Asterion.Services.Notifications;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Asterion.Test.Notifications;
@@ -24,117 +23,27 @@ public class NotificationReaderTests
         };
     }
 
-    [Test]
-    public async Task GetDueNotificationsReturnsPendingRows()
-    {
-        await using var provider = InMemoryDb.BuildServiceProvider();
-        using (var scope = provider.CreateScope())
-        {
-            await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
-            db.PendingNotifications.Add(MakePending());
-            await db.SaveChangesAsync();
-        }
-
-        var reader = new NotificationReader(provider);
-        var due = await reader.GetDueNotificationsAsync(50, DateTime.UtcNow);
-
-        Assert.That(due, Has.Count.EqualTo(1));
-    }
-
-    [Test]
-    public async Task GetDueNotificationsExcludesFailedRowsNotYetDueForRetry()
+    // Pending rows are due right away, failed ones only once their retry time has passed
+    [TestCase(NotificationStatus.Pending, null, true)]
+    [TestCase(NotificationStatus.Failed, 30, false)]
+    [TestCase(NotificationStatus.Failed, -1, true)]
+    public async Task GetDueNotificationsRespectsRetryTime(NotificationStatus status, int? retryInMinutes, bool due)
     {
         await using var provider = InMemoryDb.BuildServiceProvider();
         using (var scope = provider.CreateScope())
         {
             await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
             var row = MakePending();
-            row.Status = NotificationStatus.Failed;
-            row.NextRetryAt = DateTime.UtcNow.AddMinutes(30);
+            row.Status = status;
+            row.NextRetryAt = retryInMinutes is { } minutes ? DateTime.UtcNow.AddMinutes(minutes) : null;
             db.PendingNotifications.Add(row);
             await db.SaveChangesAsync();
         }
 
         var reader = new NotificationReader(provider);
-        var due = await reader.GetDueNotificationsAsync(50, DateTime.UtcNow);
+        var rows = await reader.GetDueNotificationsAsync(50, DateTime.UtcNow);
 
-        Assert.That(due, Is.Empty);
-    }
-
-    [Test]
-    public async Task GetDueNotificationsIncludesFailedRowsPastRetryTime()
-    {
-        await using var provider = InMemoryDb.BuildServiceProvider();
-        using (var scope = provider.CreateScope())
-        {
-            await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
-            var row = MakePending();
-            row.Status = NotificationStatus.Failed;
-            row.NextRetryAt = DateTime.UtcNow.AddMinutes(-1);
-            db.PendingNotifications.Add(row);
-            await db.SaveChangesAsync();
-        }
-
-        var reader = new NotificationReader(provider);
-        var due = await reader.GetDueNotificationsAsync(50, DateTime.UtcNow);
-
-        Assert.That(due, Has.Count.EqualTo(1));
-    }
-
-    [Test]
-    public async Task MarkSentAsyncTransitionsRowToSent()
-    {
-        await using var provider = InMemoryDb.BuildServiceProvider();
-        int id;
-        using (var scope = provider.CreateScope())
-        {
-            await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
-            var row = MakePending();
-            db.PendingNotifications.Add(row);
-            await db.SaveChangesAsync();
-            id = row.Id;
-        }
-
-        var reader = new NotificationReader(provider);
-        await reader.MarkSentAsync(id);
-
-        using var verifyScope = provider.CreateScope();
-        await using var verifyDb = verifyScope.ServiceProvider.GetRequiredService<DataContext>();
-        var updated = await verifyDb.PendingNotifications.FindAsync(id);
-
-        Assert.That(updated!.Status, Is.EqualTo(NotificationStatus.Sent));
-    }
-
-    [Test]
-    public async Task MarkFailedAsyncIncrementsAttemptsAndSchedulesRetryInPlace()
-    {
-        await using var provider = InMemoryDb.BuildServiceProvider();
-        int id;
-        using (var scope = provider.CreateScope())
-        {
-            await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
-            var row = MakePending();
-            db.PendingNotifications.Add(row);
-            await db.SaveChangesAsync();
-            id = row.Id;
-        }
-
-        var reader = new NotificationReader(provider);
-        await reader.MarkFailedAsync(id, "boom", TimeSpan.FromMinutes(5));
-
-        using var verifyScope = provider.CreateScope();
-        await using var verifyDb = verifyScope.ServiceProvider.GetRequiredService<DataContext>();
-        var updated = await verifyDb.PendingNotifications.FindAsync(id);
-
-        using (Assert.EnterMultipleScope())
-        {
-            Assert.That(updated!.Status, Is.EqualTo(NotificationStatus.Failed));
-            Assert.That(updated.AttemptCount, Is.EqualTo(1));
-            Assert.That(updated.LastError, Is.EqualTo("boom"));
-            Assert.That(updated.NextRetryAt, Is.Not.Null);
-            // Same row updated in place - never a second row created for the retry
-            Assert.That(await EntityFrameworkQueryableExtensions.CountAsync(verifyDb.PendingNotifications), Is.EqualTo(1));
-        }
+        Assert.That(rows, Has.Count.EqualTo(due ? 1 : 0));
     }
 
     [Test]

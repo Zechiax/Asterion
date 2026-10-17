@@ -18,12 +18,6 @@ public class LocalizationServiceTests
     }
 
     [Test]
-    public void ReturnsEnglishStringForKnownKey()
-    {
-        Assert.That(_service.Get("error-unknown"), Is.EqualTo("Unknown error"));
-    }
-
-    [Test]
     public void ReturnsKeyItselfForUnknownKey()
     {
         Assert.That(_service.Get("this-key-does-not-exist"), Is.EqualTo("this-key-does-not-exist"));

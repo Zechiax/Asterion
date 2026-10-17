@@ -9,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Modrinth.Models.Enums.Project;
 using static Asterion.Test.Follows.FollowTestData;
+using static Asterion.Test.Notifications.InMemoryDb;
 
 namespace Asterion.Test.Follows;
 
@@ -24,11 +25,6 @@ public class FollowSyncTests
 
         Assert.That(result.Status, Is.EqualTo(AddFollowStatus.Added));
         return result.Follow!.Id;
-    }
-
-    private static DataContext OpenDb(IServiceProvider provider)
-    {
-        return provider.CreateScope().ServiceProvider.GetRequiredService<DataContext>();
     }
 
     [Test]
@@ -181,44 +177,29 @@ public class FollowSyncTests
     }
 
     [Test]
-    public async Task ProjectThatLeavesTheListLosesItsFollowProjectRow()
+    public async Task ProjectThatLeavesTheListOrBecomesPrivateIsRemoved()
     {
         await using var provider = InMemoryDb.BuildServiceProvider();
         await SeedGuildAsync(provider);
         var source = new FakeFollowSource();
-        source.SetProjects(MakeProject("a", LongAgo), MakeProject("b", LongAgo));
+        source.SetProjects(MakeProject("a", LongAgo), MakeProject("b", LongAgo), MakeProject("c", LongAgo),
+            MakeProject("u", LongAgo, ProjectStatus.Unlisted));
         var service = BuildService(provider, source);
         var followId = await AddFollowAsync(service);
 
-        source.SetProjects(MakeProject("a", LongAgo));
+        source.SetProjects(MakeProject("a", LongAgo), MakeProject("c", LongAgo, ProjectStatus.Private),
+            MakeProject("u", LongAgo, ProjectStatus.Unlisted));
         var result = await service.SyncFollowAsync(followId, announceNew: true);
 
         await using var db = OpenDb(provider);
         using (Assert.EnterMultipleScope())
         {
-            Assert.That(result!.Removed, Is.EqualTo(new[] { "b" }));
-            Assert.That(await db.FollowProjects.Select(fp => fp.ProjectId).ToListAsync(), Is.EqualTo(new[] { "a" }));
+            Assert.That(result!.Removed, Is.EquivalentTo(new[] { "b", "c" }));
+            Assert.That(await db.FollowProjects.Select(fp => fp.ProjectId).ToListAsync(),
+                Is.EquivalentTo(new[] { "a", "u" }));
             // Nothing else uses the project, so the shared state is cleaned up too
             Assert.That(await db.ModrinthProjects.AnyAsync(p => p.ProjectId == "b"), Is.False);
         }
-    }
-
-    [Test]
-    public async Task ProjectThatBecomesPrivateIsRemoved()
-    {
-        await using var provider = InMemoryDb.BuildServiceProvider();
-        await SeedGuildAsync(provider);
-        var source = new FakeFollowSource();
-        source.SetProjects(MakeProject("a", LongAgo), MakeProject("u", LongAgo, ProjectStatus.Unlisted));
-        var service = BuildService(provider, source);
-        var followId = await AddFollowAsync(service);
-
-        source.SetProjects(MakeProject("a", LongAgo, ProjectStatus.Private),
-            MakeProject("u", LongAgo, ProjectStatus.Unlisted));
-        var result = await service.SyncFollowAsync(followId, announceNew: true);
-
-        Assert.That(result!.Removed, Is.EqualTo(new[] { "a" }));
-        Assert.That(result.TrackedCount, Is.EqualTo(1));
     }
 
     [Test]
@@ -349,6 +330,27 @@ public class FollowSyncTests
         {
             Assert.That(loaders, Is.EqualTo(new[] { "fabric" }));
             Assert.That(source.CallCount, Is.EqualTo(1));
+        }
+    }
+
+    [Test]
+    public async Task UpdatedFollowKeepsItsProjects()
+    {
+        await using var provider = InMemoryDb.BuildServiceProvider();
+        await SeedGuildAsync(provider);
+        var source = new FakeFollowSource();
+        source.SetProjects(MakeProject("a", LongAgo), MakeProject("b", LongAgo));
+        var service = BuildService(provider, source);
+        var followId = await AddFollowAsync(service);
+        await service.SetIgnoredAsync(GuildId, followId, "a", true);
+
+        var updated = await service.UpdateSettingsAsync(GuildId, followId, f => f.CustomPingRole = 666);
+
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(updated!.CustomPingRole, Is.EqualTo(666ul));
+            Assert.That(updated.Projects, Has.Count.EqualTo(2));
+            Assert.That(updated.Projects.Count(fp => fp.Ignored), Is.EqualTo(1));
         }
     }
 }

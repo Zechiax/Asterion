@@ -141,9 +141,13 @@ public class NotificationDispatchService : BackgroundService
                 content = new NotificationContent(PingText(delivery.PingRoleId), embed, components);
             }
 
+            var channelId = row.Kind == NotificationKind.NewProject
+                ? delivery.NewProjectChannelId
+                : delivery.ChannelId;
+
             DeliveryTarget target = delivery.WebhookUrl is not null
                 ? new WebhookDeliveryTarget(delivery.WebhookUrl)
-                : new BotDeliveryTarget(row.GuildId, delivery.ChannelId ?? 0);
+                : new BotDeliveryTarget(row.GuildId, channelId ?? 0);
 
             await _router.SendAsync(target, content, ct);
             await _reader.MarkSentAsync(row.Id, ct);
@@ -176,8 +180,8 @@ public class NotificationDispatchService : BackgroundService
                 return null;
 
             var pingRole = entry.CustomPingRole ?? entry.Guild.PingRole;
-            return new DeliverySettings(entry.Guild.GuildSettings, entry.CustomUpdateChannel, pingRole, pingRole,
-                entry.WebhookUrl);
+            return new DeliverySettings(entry.Guild.GuildSettings, entry.CustomUpdateChannel,
+                entry.CustomUpdateChannel, pingRole, pingRole, entry.WebhookUrl);
         }
 
         if (row.FollowId is { } followId)
@@ -193,8 +197,8 @@ public class NotificationDispatchService : BackgroundService
             var newProjectPingRole = follow.NewProjectPingRole ?? pingRole;
 
             // Follows have no webhook delivery (yet)
-            return new DeliverySettings(follow.Guild.GuildSettings, follow.CustomUpdateChannel, pingRole,
-                newProjectPingRole, null);
+            return new DeliverySettings(follow.Guild.GuildSettings, follow.CustomUpdateChannel,
+                follow.NewProjectChannel ?? follow.CustomUpdateChannel, pingRole, newProjectPingRole, null);
         }
 
         return null;
@@ -204,6 +208,7 @@ public class NotificationDispatchService : BackgroundService
     private sealed record DeliverySettings(
         GuildSettings GuildSettings,
         ulong? ChannelId,
+        ulong? NewProjectChannelId,
         ulong? PingRoleId,
         ulong? NewProjectPingRoleId,
         string? WebhookUrl);

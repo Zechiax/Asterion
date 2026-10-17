@@ -19,21 +19,56 @@ public static class SettingsPanelBuilder
     private const int MaxSelectOptions = 25;
 
     /// <param name="buttons">Buttons under the fields, e.g. back and unfollow</param>
+    /// <param name="notice">Short note under the title, e.g. the result of an action</param>
     public static MessageComponent Build(string title, Color accent, IEnumerable<SettingsField> fields,
-        IEnumerable<ButtonBuilder> buttons)
+        IEnumerable<ButtonBuilder> buttons, string? notice = null)
     {
+        return new ComponentBuilderV2().AddComponent(BuildContainer(title, accent, fields, buttons, notice)).Build();
+    }
+
+    /// <summary>
+    ///     The panel's container, for panels with more components around it (e.g. the manage tabs)
+    /// </summary>
+    public static ContainerBuilder BuildContainer(string title, Color accent, IEnumerable<SettingsField> fields,
+        IEnumerable<ButtonBuilder> buttons, string? notice = null)
+    {
+        var header = $"## {title}";
+        if (!string.IsNullOrEmpty(notice))
+            header += "\n" + notice;
+
         var container = new ContainerBuilder()
             .WithAccentColor(accent)
-            .AddComponent(new TextDisplayBuilder($"## {title}"));
+            .AddComponent(new TextDisplayBuilder(header));
 
         foreach (var field in fields)
-            container
-                .AddComponent(new TextDisplayBuilder($"**{field.Label}**"))
-                .AddComponent(new ActionRowBuilder().AddComponent(field.Menu));
+            AddField(container, field);
 
-        container.AddComponent(new ActionRowBuilder().AddComponents(buttons.ToArray()));
+        var buttonArray = buttons.ToArray();
+        if (buttonArray.Length > 0)
+            container.AddComponent(new ActionRowBuilder().AddComponents(buttonArray));
 
-        return new ComponentBuilderV2().AddComponent(container).Build();
+        return container;
+    }
+
+    /// <summary>
+    ///     Adds the field's label and menu to the container
+    /// </summary>
+    public static ContainerBuilder AddField(ContainerBuilder container, SettingsField field)
+    {
+        return container
+            .AddComponent(new TextDisplayBuilder($"**{field.Label}**"))
+            .AddComponent(new ActionRowBuilder().AddComponent(field.Menu));
+    }
+
+    /// <summary>
+    ///     Adds a setting that is changed with a button: its label and current value, with the button next to it
+    /// </summary>
+    public static ContainerBuilder AddButtonSetting(ContainerBuilder container, string label, string value,
+        ButtonBuilder button)
+    {
+        return container.AddComponent(new SectionBuilder()
+            .AddComponent(new TextDisplayBuilder($"**{label}**\n-# {value}"))
+            .WithAccessory(button));
     }
 
     /// <summary>
@@ -51,13 +86,15 @@ public static class SettingsPanelBuilder
         return new ComponentBuilderV2().AddComponent(container).Build();
     }
 
-    public static SelectMenuBuilder ChannelPicker(string customId, ulong? current, string placeholder)
+    /// <param name="optional">If the channel can be deselected, e.g. to fall back to another channel</param>
+    public static SelectMenuBuilder ChannelPicker(string customId, ulong? current, string placeholder,
+        bool optional = false)
     {
         var menu = new SelectMenuBuilder()
             .WithType(ComponentType.ChannelSelect)
             .WithCustomId(customId)
             .WithPlaceholder(placeholder)
-            .WithMinValues(1)
+            .WithMinValues(optional ? 0 : 1)
             .WithMaxValues(1)
             .WithChannelTypes(ChannelType.Text, ChannelType.News);
 

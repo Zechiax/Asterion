@@ -14,7 +14,7 @@ namespace Asterion.Test.Follows;
 public class FollowModuleTests
 {
     [Test]
-    public async Task FollowModulesBuildWithExpectedCommands()
+    public async Task ModulesBuildWithExpectedSlashCommands()
     {
         using var client = new DiscordSocketClient();
         using var interactions = new InteractionService(client);
@@ -31,23 +31,15 @@ public class FollowModuleTests
         var follow = await interactions.AddModuleAsync<FollowModule>(services);
         await interactions.AddModuleAsync<FollowInteractionModule>(services);
         await interactions.AddModuleAsync<EntryInteractionModule>(services);
-        await interactions.AddModuleAsync<ListInteractionModule>(services);
+        var manage = await interactions.AddModuleAsync<ManageInteractionModule>(services);
+        await interactions.AddModuleAsync<ServerSettingsInteractionModule>(services);
+        await interactions.AddModuleAsync<LegacySettingsInteractionModule>(services);
 
         using (Assert.EnterMultipleScope())
         {
             Assert.That(follow.SlashGroupName, Is.EqualTo("follow"));
-            Assert.That(follow.SlashCommands.Select(c => c.Name),
-                Is.EquivalentTo(new[] { "user", "remove", "ignore", "unignore", "settings" }));
-            Assert.That(interactions.ComponentCommands.Select(c => c.Name),
-                Is.SupersetOf(new[]
-                {
-                    "list:*:*:*:*",
-                    "follow-open:*:*:*", "follow_channel:*:*:*", "follow_ping:*:*:*", "follow_newping:*:*:*",
-                    "follow_events:*:*:*", "follow_release:*:*:*", "follow_loader:*:*:*",
-                    "follow-remove:*:*:*", "follow-remove-confirm:*:*:*", "follow-remove-cancel:*:*:*",
-                    "entry-open:*:*:*", "entry_channel:*:*:*", "entry_ping:*:*:*", "release_filter:*:*:*",
-                    "loader_filter:*:*:*", "entry-unsub:*:*:*", "entry-unsub-confirm:*:*:*", "entry-unsub-cancel:*:*:*"
-                }));
+            Assert.That(follow.SlashCommands.Select(c => c.Name), Is.EquivalentTo(new[] { "user" }));
+            Assert.That(manage.SlashCommands.Select(c => c.Name), Is.EquivalentTo(new[] { "manage" }));
         }
     }
 }

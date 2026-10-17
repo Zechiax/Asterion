@@ -1,5 +1,4 @@
-﻿using System.Text;
-using Asterion.Database.Models;
+﻿using Asterion.Database.Models;
 using Discord;
 using Modrinth.Models;
 using File = Modrinth.Models.File;
@@ -9,42 +8,6 @@ namespace Asterion.EmbedBuilders;
 
 public static class SettingsEmbedBuilder
 {
-    public static EmbedBuilder GetIntroEmbedBuilder()
-    {
-        var embed = new EmbedBuilder
-        {
-            Title = "Settings",
-            Description = "Hi!" +
-                          "\n\n" +
-                          "Here you'll find all the settings to setup the bot for your server needs. Use the buttons to navigate sections and changing the settings."
-        };
-
-        return embed;
-    }
-
-    private static Emoji GetEmojiByBool(bool success)
-    {
-        return success ? Emoji.Parse(":white_check_mark:") : Emoji.Parse(":no_entry_sign:");
-    }
-
-    public static EmbedBuilder GetMoreSettingsEmbedBuilder(Guild guild)
-    {
-        var description = new StringBuilder();
-
-        description.AppendLine(Format.Bold(Format.Underline("Overview of settings")));
-        description.AppendLine();
-        description.AppendLine(
-            $"**1. Show subscribe button in Modrinth project embeds:** {GetEmojiByBool((bool) guild.GuildSettings.ShowSubscribeButton!)}");
-
-        var embed = new EmbedBuilder
-        {
-            Title = "Settings | More",
-            Description = description.ToString()
-        };
-
-        return embed;
-    }
-
     public static EmbedBuilder GetViewSettingsEmbed(Guild guild)
     {
         var dummyProject = new Project

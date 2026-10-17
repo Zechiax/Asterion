@@ -56,6 +56,11 @@ public class SettingsPanelBuilderTests
         return client;
     }
 
+    private static ButtonBuilder Back()
+    {
+        return ManageInteractionModule.BackButton(42, ManageTab.Creators, 2, Loc, null);
+    }
+
     private static List<SelectMenuComponent> Menus(MessageComponent panel)
     {
         return ComponentTree.Flatten(panel).OfType<SelectMenuComponent>().ToList();
@@ -64,8 +69,8 @@ public class SettingsPanelBuilderTests
     [Test]
     public void FollowPanelHasAllSettingsWithinDiscordLimits()
     {
-        var panel = FollowComponentBuilder.GetSettingsPanel(MakeFollow(), ["fabric", "quilt"], 42, 2,
-            ListInteractionModule.BackButton(42, ListTab.Creators, 2, Loc, null), Loc, null);
+        var panel = FollowComponentBuilder.GetSettingsPanel(MakeFollow(), ["fabric", "quilt"], 42, 2, Back(), Loc,
+            null);
         var all = ComponentTree.Flatten(panel);
 
         using (Assert.EnterMultipleScope())
@@ -73,39 +78,23 @@ public class SettingsPanelBuilderTests
             Assert.That(all, Has.Count.LessThanOrEqualTo(ComponentTree.MaxComponentsPerMessage));
             Assert.That(Menus(panel).Select(m => m.CustomId), Is.EqualTo(new[]
             {
-                "follow_channel:42:7:2", "follow_ping:42:7:2", "follow_newping:42:7:2", "follow_events:42:7:2", "follow_release:42:7:2",
+                "follow_channel:42:7:2", "follow_newchannel:42:7:2", "follow_ping:42:7:2", "follow_newping:42:7:2", "follow_events:42:7:2", "follow_release:42:7:2",
                 "follow_loader:42:7:2"
             }));
             Assert.That(all.OfType<ButtonComponent>().Select(b => b.CustomId),
-                Is.EqualTo(new[] { "list:42:c:2:back", "follow-remove:42:7:2" }));
+                Is.EqualTo(new[] { "list:42:c:2:back", "follow-ign:42:7:2:0:open", "follow-remove:42:7:2" }));
             Assert.That(all.OfType<ButtonComponent>().Last().Label, Is.EqualTo("Unfollow"));
             Assert.That(all.OfType<TextDisplayComponent>().First().Content, Does.Contain("Zechiax (Modrinth user)"));
         }
     }
 
     [Test]
-    public async Task PanelOpenedByCommandHasNoBackButton()
-    {
-        var followPanel = FollowComponentBuilder.GetSettingsPanel(MakeFollow(), [], 42, ListInteractionModule.NoList,
-            null, Loc, null);
-        var entryPanel = await EntryInteractionModule.BuildSettingsPanelAsync(MakeEntry(), 42, ListInteractionModule.NoList,
-            Substitute.For<IDataService>(), MakeClient(), Loc, null);
-
-        using (Assert.EnterMultipleScope())
-        {
-            Assert.That(ComponentTree.Flatten(followPanel).OfType<ButtonComponent>().Select(b => b.CustomId),
-                Is.EqualTo(new[] { "follow-remove:42:7:-1" }));
-            Assert.That(ComponentTree.Flatten(entryPanel).OfType<ButtonComponent>().Select(b => b.CustomId),
-                Is.EqualTo(new[] { "entry-unsub:42:AANobbMI:-1" }));
-        }
-    }
-
-    [Test]
     public void PickersArePrefilledWithCurrentValues()
     {
-        var menus = Menus(FollowComponentBuilder.GetSettingsPanel(MakeFollow(), [], 42, 2, null, Loc, null));
+        var menus = Menus(FollowComponentBuilder.GetSettingsPanel(MakeFollow(), [], 42, 2, Back(), Loc, null));
 
         var channel = menus.Single(m => m.CustomId == "follow_channel:42:7:2");
+        var newProjectChannel = menus.Single(m => m.CustomId == "follow_newchannel:42:7:2");
         var pingRole = menus.Single(m => m.CustomId == "follow_ping:42:7:2");
         var newProjectRole = menus.Single(m => m.CustomId == "follow_newping:42:7:2");
 
@@ -114,6 +103,12 @@ public class SettingsPanelBuilderTests
             Assert.That(channel.Type, Is.EqualTo(ComponentType.ChannelSelect));
             Assert.That(channel.ChannelTypes, Is.EquivalentTo(new[] { ChannelType.Text, ChannelType.News }));
             Assert.That(channel.DefaultValues.Select(v => v.Id), Is.EqualTo(new[] { 555ul }));
+            Assert.That(channel.MinValues, Is.EqualTo(1));
+
+            // Can be deselected to use the update channel again
+            Assert.That(newProjectChannel.Type, Is.EqualTo(ComponentType.ChannelSelect));
+            Assert.That(newProjectChannel.MinValues, Is.EqualTo(0));
+            Assert.That(newProjectChannel.DefaultValues, Is.Empty);
 
             Assert.That(pingRole.Type, Is.EqualTo(ComponentType.RoleSelect));
             Assert.That(pingRole.MinValues, Is.EqualTo(0));
@@ -129,12 +124,12 @@ public class SettingsPanelBuilderTests
         var follow = MakeFollow();
 
         // The current filter stays selectable even if no project offers it
-        var loaderMenu = Menus(FollowComponentBuilder.GetSettingsPanel(follow, [], 42, 2, null, Loc, null))
+        var loaderMenu = Menus(FollowComponentBuilder.GetSettingsPanel(follow, [], 42, 2, Back(), Loc, null))
             .Single(m => m.CustomId == "follow_loader:42:7:2");
         Assert.That(loaderMenu.Options.Select(o => o.Value), Is.EqualTo(new[] { "fabric" }));
 
         follow.LoaderFilter = null;
-        Assert.That(Menus(FollowComponentBuilder.GetSettingsPanel(follow, [], 42, 2, null, Loc, null))
+        Assert.That(Menus(FollowComponentBuilder.GetSettingsPanel(follow, [], 42, 2, Back(), Loc, null))
             .Select(m => m.CustomId), Does.Not.Contain("follow_loader:42:7:2"));
     }
 
@@ -176,6 +171,55 @@ public class SettingsPanelBuilderTests
             Assert.That(Menus(panel).Select(m => m.CustomId), Does.Not.Contain("loader_filter:42:AANobbMI:2"));
             Assert.That(ComponentTree.Flatten(panel).OfType<TextDisplayComponent>().First().Content,
                 Does.Contain("Sodium"));
+        }
+    }
+
+    [Test]
+    public void PanelShowsNotice()
+    {
+        var panel = FollowComponentBuilder.GetSettingsPanel(MakeFollow(), [], 42, 2, Back(), Loc, null,
+            "Following Zechiax");
+
+        Assert.That(ComponentTree.Flatten(panel).OfType<TextDisplayComponent>().First().Content,
+            Does.Contain("Following Zechiax"));
+    }
+
+    [Test]
+    public void IgnoredProjectsPageTogglesEachProject()
+    {
+        var follow = MakeFollow();
+        follow.Projects =
+        [
+            new FollowProject
+            {
+                ProjectId = "AANobbMI", Ignored = true,
+                Project = new ModrinthProject { ProjectId = "AANobbMI", Title = "Sodium", LastCheckVersion = "v" }
+            },
+            new FollowProject
+            {
+                ProjectId = "gvQqBUqZ",
+                Project = new ModrinthProject { ProjectId = "gvQqBUqZ", Title = "Lithium", LastCheckVersion = "v" }
+            }
+        ];
+
+        var page = FollowInteractionModule.BuildIgnoredProjectsPage(follow, 42, 2, 0, Loc, null);
+        var all = ComponentTree.Flatten(page);
+        var buttons = all.OfType<ButtonComponent>().ToList();
+
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(all, Has.Count.LessThanOrEqualTo(ComponentTree.MaxComponentsPerMessage));
+            // Sorted by title, the button does the opposite of the current state
+            Assert.That(buttons.Take(2).Select(b => (b.CustomId, b.Label)), Is.EqualTo(new[]
+            {
+                ("follow-ign-t:42:7:2:0:gvQqBUqZ", "Ignore"),
+                ("follow-ign-t:42:7:2:0:AANobbMI", "Unignore")
+            }));
+            Assert.That(buttons.Select(b => b.CustomId),
+                Does.Contain("follow-ign:42:7:2:0:refresh").And.Contain("follow-open:42:7:2"));
+            Assert.That(ComponentTree.Flatten(FollowComponentBuilder.GetSettingsPanel(follow, [], 42, 2, Back(), Loc,
+                    null)).OfType<ButtonComponent>().Select(b => b.Label),
+                Does.Contain("Projects (1 of 2 ignored)"));
         }
     }
 

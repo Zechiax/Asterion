@@ -19,9 +19,11 @@ Access all of [Modrinth](https://modrinth.com/) within Discord
 - Follow Modrinth users with `/follow user` and get updates for all of their projects, including new ones
     - Get a message when a followed user publishes a new project, with its own ping role
     - Ignore single projects of a followed user, filter by release type and loader
+- Manage everything from one place with `/manage`: subscribed projects, followed users and the server settings
+  (manage role, ping role, language, look of the update messages)
 
 ## Images
-- Some things shown in these pictures can be changed using the `/settings` command (f.e. the subscribe button can be hidden from search embeds)
+- Some things shown in these pictures can be changed using the `/manage` command (f.e. the subscribe button can be hidden from search embeds)
 
 <div align="center">
 

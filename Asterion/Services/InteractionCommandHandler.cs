@@ -44,6 +44,7 @@ public class InteractionCommandHandler
         _commands.SlashCommandExecuted += ApplicationCommandExecuted;
         _commands.ContextCommandExecuted += ApplicationCommandExecuted;
         _commands.ComponentCommandExecuted += ApplicationCommandExecuted;
+        _commands.ModalCommandExecuted += ApplicationCommandExecuted;
     }
 
     # region Error Handling
@@ -69,6 +70,10 @@ public class InteractionCommandHandler
             case ComponentCommandInfo componentCommandInfo:
                 commandType = "Component";
                 commandName = componentCommandInfo.Name;
+                break;
+            case ModalCommandInfo modalCommandInfo:
+                commandType = "Modal";
+                commandName = modalCommandInfo.Name;
                 break;
         }
 

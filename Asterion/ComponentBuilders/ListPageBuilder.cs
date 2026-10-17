@@ -6,8 +6,8 @@ using Humanizer;
 namespace Asterion.ComponentBuilders;
 
 /// <summary>
-///     Builds one page of a list as a Components V2 message: a container with a header and one section per row,
-///     each with a button next to it, followed by previous/refresh/next buttons.
+///     Builds one page of a list as a Components V2 message: an optional row of tabs, a container with a header and
+///     one section per row, each with a button next to it, followed by previous/refresh/next buttons.
 ///     Pagination is stateless: the target page is in the button's custom ID (<c>{prefix}:{page}:{action}</c>)
 ///     and the handler reloads the list, so the buttons never time out and survive restarts.
 /// </summary>
@@ -15,9 +15,10 @@ public static class ListPageBuilder
 {
     /// <summary>
     ///     Rows per page. Discord allows 40 components per message (nested ones included); a full page uses
-    ///     3 per row (section, text, button) plus 7 (container, header, separator, action row, 3 buttons).
+    ///     3 per row (section, text, button) plus 3 (container, header, separator), at most 6 for the navigation
+    ///     row (action row, 5 buttons) and at most 5 for the tabs row (action row, 4 tabs).
     /// </summary>
-    public const int RowsPerPage = 10;
+    public const int RowsPerPage = 8;
 
     /// <summary>
     ///     Characters per row, Discord allows 4000 characters of text in all text displays of a message together
@@ -44,11 +45,12 @@ public static class ListPageBuilder
     /// <param name="emptyText">Text shown when there are no rows</param>
     /// <param name="notice">Short note under the header, e.g. the result of an action</param>
     /// <param name="extraButtons">Buttons after the navigation, at most 2 so the row has at most 5</param>
+    /// <param name="tabs">Buttons in a row above the list, at most 4</param>
     /// <returns>The components and the page actually shown</returns>
     public static (MessageComponent Components, int Page) Build<T>(IList<T> items, int page, string title,
         string description, Color accent, string navIdPrefix, Func<T, string> rowText, Func<T, ButtonBuilder> rowButton,
         string emptyText, ILocalizationService loc, CultureInfo? culture, string? notice = null,
-        IEnumerable<ButtonBuilder>? extraButtons = null)
+        IEnumerable<ButtonBuilder>? extraButtons = null, IEnumerable<ButtonBuilder>? tabs = null)
     {
         var pageCount = GetPageCount(items.Count);
         page = Math.Clamp(page, 0, pageCount - 1);
@@ -88,7 +90,13 @@ public static class ListPageBuilder
         foreach (var button in extraButtons ?? [])
             navigation.AddComponent(button);
 
-        var components = new ComponentBuilderV2()
+        var builder = new ComponentBuilderV2();
+
+        var tabButtons = tabs?.ToArray() ?? [];
+        if (tabButtons.Length > 0)
+            builder.AddComponent(new ActionRowBuilder().AddComponents(tabButtons));
+
+        var components = builder
             .AddComponent(container)
             .AddComponent(navigation)
             .Build();

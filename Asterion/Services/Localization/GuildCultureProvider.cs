@@ -35,9 +35,16 @@ public class GuildCultureProvider : IGuildCultureProvider
         return CultureInfo.GetCultureInfo(FluentBundleStore.DefaultLocale);
     }
 
+    public void Invalidate(ulong guildId)
+    {
+        _cache.Remove(CacheKey(guildId));
+    }
+
+    private static string CacheKey(ulong guildId) => $"guild-language-{guildId}";
+
     private Task<string?> GetGuildLanguageAsync(ulong guildId)
     {
-        return _cache.GetOrCreateAsync($"guild-language-{guildId}", async entry =>
+        return _cache.GetOrCreateAsync(CacheKey(guildId), async entry =>
         {
             entry.SlidingExpiration = CacheDuration;
             var guild = await _dataService.GetGuildByIdAsync(guildId);

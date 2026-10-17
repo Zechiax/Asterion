@@ -99,6 +99,7 @@ public class DataService : IDataService
         guild.GuildSettings.ShowSubscribeButton = updatedGuild.GuildSettings.ShowSubscribeButton;
         guild.GuildSettings.ChangelogStyle = updatedGuild.GuildSettings.ChangelogStyle;
         guild.GuildSettings.ChangeLogMaxLength = updatedGuild.GuildSettings.ChangeLogMaxLength;
+        guild.GuildSettings.Language = updatedGuild.GuildSettings.Language;
 
         await db.SaveChangesAsync();
 

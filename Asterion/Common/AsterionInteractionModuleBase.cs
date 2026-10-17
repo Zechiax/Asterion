@@ -64,6 +64,20 @@ public class AsterionInteractionModuleBase : InteractionModuleBase<SocketInterac
         return permissions.ViewChannel && permissions.SendMessages;
     }
 
+    /// <summary>
+    ///     If the user can change the server settings, other management needs only the manage role
+    /// </summary>
+    protected bool IsAdministrator => Context.User is IGuildUser { GuildPermissions.Administrator: true };
+
+    /// <summary>
+    ///     Reloads the culture of the responses, e.g. after the guild's language was changed
+    /// </summary>
+    protected async Task RefreshCultureAsync()
+    {
+        _cultureProvider.Invalidate(Context.Guild.Id);
+        CommandCultureInfo = await _cultureProvider.GetCultureAsync(Context.Interaction);
+    }
+
     public override async Task BeforeExecuteAsync(ICommandInfo command)
     {
         CommandCultureInfo = await _cultureProvider.GetCultureAsync(Context.Interaction);

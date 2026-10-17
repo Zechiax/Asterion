@@ -28,6 +28,9 @@ public class ModrinthFollow : IReleaseFilterable
 
     public ulong? CustomUpdateChannel { get; set; }
 
+    /// <summary>Channel for new project messages, falls back to <see cref="CustomUpdateChannel" />.</summary>
+    public ulong? NewProjectChannel { get; set; }
+
     /// <summary>Ping role for update messages.</summary>
     public ulong? CustomPingRole { get; set; }
 

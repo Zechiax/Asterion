@@ -213,6 +213,27 @@ public class FollowNotificationTests
         Assert.That((await db.PendingNotifications.FindAsync(id))!.Status, Is.EqualTo(NotificationStatus.Sent));
     }
 
+    [TestCase(NotificationKind.NewProject, 666ul, 666ul)]
+    [TestCase(NotificationKind.Update, 666ul, 555ul)]
+    [TestCase(NotificationKind.NewProject, null, 555ul)]
+    public async Task NewProjectsGoToTheirOwnChannelIfSet(NotificationKind kind, ulong? newProjectChannel,
+        ulong expectedChannel)
+    {
+        await using var provider = InMemoryDb.BuildServiceProvider();
+        await SeedFollowNotificationAsync(provider, kind, null, null, null);
+        await using (var db = OpenDb(provider))
+        {
+            var follow = await db.ModrinthFollows.SingleAsync();
+            follow.NewProjectChannel = newProjectChannel;
+            await db.SaveChangesAsync();
+        }
+
+        var sender = new RecordingNotificationSender();
+        await BuildDispatch(provider, sender).ProcessDueNotificationsAsync();
+
+        Assert.That(sender.Sent.Single().Target, Is.EqualTo(new BotDeliveryTarget(GuildId, expectedChannel)));
+    }
+
     [Test]
     public async Task MissingFollowDeadLettersImmediately()
     {

@@ -1,7 +1,6 @@
 ﻿using Asterion.Attributes;
 using Asterion.AutocompleteHandlers;
 using Asterion.Common;
-using Asterion.ComponentBuilders;
 using Asterion.Database.Models;
 using Asterion.EmbedBuilders;
 using Asterion.Interfaces;
@@ -23,6 +22,9 @@ public enum FollowEventsChoice
     NewProjects
 }
 
+/// <summary>
+///     Quick way to follow a creator, the follows are managed in <c>/manage</c>
+/// </summary>
 [Group("follow", "Follow Modrinth creators and get updates for all of their projects")]
 [RequireContext(ContextType.Guild)]
 [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
@@ -37,16 +39,19 @@ public class FollowModule(
 {
     [SlashCommand("user", "Follow a Modrinth user and get updates for all of their projects")]
     public async Task FollowUser(
-        [Summary("username", "Username or ID of the Modrinth user")] [MaxLength(60)]
+        [Summary("username", "Username, ID or link of the Modrinth user")] [MaxLength(60)]
         string username,
         [Summary("channel", "Channel for the messages, this channel if not set")] [AnnouncementChannelPrecondition]
         IGuildChannel? channel = null,
         [Summary("events", "Which events to send messages for")]
-        FollowEventsChoice events = FollowEventsChoice.All)
+        FollowEventsChoice events = FollowEventsChoice.All,
+        [Summary("new_project_channel", "Channel for new project messages, the channel above if not set")]
+        [AnnouncementChannelPrecondition]
+        IGuildChannel? newProjectChannel = null)
     {
         await DeferAsync();
 
-        var searchResult = await modrinthService.FindUser(username);
+        var searchResult = await modrinthService.FindUser(Subscriptions.ParseModrinthInput(username));
         if (!searchResult.Success)
         {
             await FollowupWithSearchResultErrorAsync(searchResult);
@@ -62,119 +67,17 @@ public class FollowModule(
 
         var user = searchResult.Payload.User;
         var result = await followService.AddFollowAsync(Context.Guild.Id, FollowTargetType.User, user.Id,
-            user.Username, textChannel.Id, ToFollowEvents(events));
+            user.Username, textChannel.Id, ToFollowEvents(events), newProjectChannel?.Id);
 
         await FollowupAsync(FollowEmbedBuilder.DescribeAddResult(result, user.Username, textChannel.Mention,
             LocalizationService, CommandCultureInfo));
 
-        if (result.Status == AddFollowStatus.Added)
-            await WarnIfCannotSendAsync(textChannel);
-    }
-
-    [SlashCommand("remove", "Stop following a creator")]
-    public async Task RemoveFollow(
-        [Summary("follow", "The followed creator")] [Autocomplete(typeof(FollowAutocompletionHandler))]
-        int follow)
-    {
-        await DeferAsync();
-
-        var existing = await followService.GetFollowAsync(Context.Guild.Id, follow);
-        if (existing is null || !await followService.RemoveFollowAsync(Context.Guild.Id, follow))
-        {
-            await FollowupAsync(Loc("follow-not-found"));
+        if (result.Status != AddFollowStatus.Added)
             return;
-        }
 
-        await FollowupAsync(Loc("follow-removed", new { name = existing.TargetName }));
-    }
-
-    [SlashCommand("ignore", "Stop sending updates for one project of a followed creator")]
-    public Task Ignore(
-        [Summary("follow", "The followed creator")] [Autocomplete(typeof(FollowAutocompletionHandler))]
-        int follow,
-        [Summary("project", "The project to ignore")] [Autocomplete(typeof(FollowProjectAutocompletionHandler))]
-        string project)
-    {
-        return SetIgnoredAsync(follow, project, true);
-    }
-
-    [SlashCommand("unignore", "Send updates again for an ignored project of a followed creator")]
-    public Task Unignore(
-        [Summary("follow", "The followed creator")] [Autocomplete(typeof(FollowAutocompletionHandler))]
-        int follow,
-        [Summary("project", "The project to stop ignoring")]
-        [Autocomplete(typeof(FollowProjectAutocompletionHandler))]
-        string project)
-    {
-        return SetIgnoredAsync(follow, project, false);
-    }
-
-    [SlashCommand("settings", "Show and change the settings of a followed creator")]
-    public async Task Settings(
-        [Summary("follow", "The followed creator")] [Autocomplete(typeof(FollowAutocompletionHandler))]
-        int follow,
-        [Summary("channel", "New channel for the messages")] [AnnouncementChannelPrecondition]
-        IGuildChannel? channel = null,
-        [Summary("ping_role", "Role to ping for update messages")]
-        IRole? pingRole = null,
-        [Summary("new_project_ping_role", "Role to ping for new project messages, the update ping role if not set")]
-        IRole? newProjectPingRole = null,
-        [Summary("reset_ping_roles", "Remove both ping roles of this follow")]
-        bool resetPingRoles = false)
-    {
-        await DeferAsync();
-
-        var changed = channel is not null || pingRole is not null || newProjectPingRole is not null || resetPingRoles;
-
-        var updated = changed
-            ? await followService.UpdateSettingsAsync(Context.Guild.Id, follow, f =>
-            {
-                if (channel is not null) f.CustomUpdateChannel = channel.Id;
-
-                if (resetPingRoles)
-                {
-                    f.CustomPingRole = null;
-                    f.NewProjectPingRole = null;
-                }
-
-                if (pingRole is not null) f.CustomPingRole = pingRole.Id;
-                if (newProjectPingRole is not null) f.NewProjectPingRole = newProjectPingRole.Id;
-            })
-            : await followService.GetFollowAsync(Context.Guild.Id, follow);
-
-        if (updated is null)
-        {
-            await FollowupAsync(Loc("follow-not-found"));
-            return;
-        }
-
-        var panel = await FollowInteractionModule.BuildSettingsPanelAsync(followService, updated, Context.User.Id, ListInteractionModule.NoList,
-            LocalizationService, CommandCultureInfo);
-
-        await FollowupAsync(components: panel, flags: MessageFlags.ComponentsV2);
-    }
-
-    private async Task SetIgnoredAsync(int followId, string projectId, bool ignored)
-    {
-        await DeferAsync();
-
-        var follow = await followService.GetFollowAsync(Context.Guild.Id, followId);
-        if (follow is null)
-        {
-            await FollowupAsync(Loc("follow-not-found"));
-            return;
-        }
-
-        var followProject = follow.Projects.FirstOrDefault(fp => fp.ProjectId == projectId);
-        if (followProject is null ||
-            !await followService.SetIgnoredAsync(Context.Guild.Id, followId, projectId, ignored))
-        {
-            await FollowupAsync(Loc("follow-project-not-found", new { name = follow.TargetName, project = projectId }));
-            return;
-        }
-
-        var args = new { name = follow.TargetName, project = followProject.Project.Title ?? projectId };
-        await FollowupAsync(Loc(ignored ? "follow-project-ignored" : "follow-project-unignored", args));
+        await WarnIfCannotSendAsync(textChannel);
+        if (newProjectChannel is ITextChannel newProjectTextChannel && newProjectTextChannel.Id != textChannel.Id)
+            await WarnIfCannotSendAsync(newProjectTextChannel);
     }
 
     private async Task WarnIfCannotSendAsync(ITextChannel channel)

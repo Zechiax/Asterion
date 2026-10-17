@@ -10,9 +10,9 @@ using Discord.Interactions;
 namespace Asterion.Modules;
 
 /// <summary>
-///     Buttons and menus of the follow settings panel. The panel replaces the list message it was opened from,
-///     the list page in the custom IDs lets it go back. Only the owner (who ran the command) can use it. Kept outside the "follow" group so the custom IDs are
-///     not prefixed with the group name.
+///     Buttons and menus of the follow settings panel and its page of projects to ignore. The panel replaces the
+///     manage panel it was opened from, the list page in the custom IDs lets it go back. Only the owner (who ran the
+///     command) can use it. Kept outside the "follow" group so the custom IDs are not prefixed with the group name.
 /// </summary>
 [RequireContext(ContextType.Guild)]
 [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
@@ -37,17 +37,97 @@ public class FollowInteractionModule(
     /// <summary>
     ///     Settings panel of a follow, send it with <see cref="MessageFlags.ComponentsV2" />
     /// </summary>
-    /// <param name="listPage">List page the panel was opened from, or <see cref="ListInteractionModule.NoList" /></param>
+    /// <param name="listPage">List page the panel was opened from</param>
     /// <param name="ownerId">The only user who can use the panel</param>
+    /// <param name="notice">Short note under the title, e.g. "Following X"</param>
     public static async Task<MessageComponent> BuildSettingsPanelAsync(IFollowService followService,
-        ModrinthFollow follow, ulong ownerId, int listPage, ILocalizationService loc, CultureInfo? culture)
+        ModrinthFollow follow, ulong ownerId, int listPage, ILocalizationService loc, CultureInfo? culture,
+        string? notice = null)
     {
         var loaders = await GetLoaderOptionsAsync(followService, follow);
-        var backButton = listPage == ListInteractionModule.NoList
-            ? null
-            : ListInteractionModule.BackButton(ownerId, ListTab.Creators, listPage, loc, culture);
+        var backButton = ManageInteractionModule.BackButton(ownerId, ManageTab.Creators, listPage, loc, culture);
 
-        return FollowComponentBuilder.GetSettingsPanel(follow, loaders, ownerId, listPage, backButton, loc, culture);
+        return FollowComponentBuilder.GetSettingsPanel(follow, loaders, ownerId, listPage, backButton, loc, culture,
+            notice);
+    }
+
+    /// <summary>
+    ///     Page of the follow's projects with a button to ignore or unignore each,
+    ///     send it with <see cref="MessageFlags.ComponentsV2" />
+    /// </summary>
+    /// <param name="listPage">List page the follow's panel was opened from, to go back to it</param>
+    /// <param name="page">Page of the projects</param>
+    public static MessageComponent BuildIgnoredProjectsPage(ModrinthFollow follow, ulong ownerId, int listPage,
+        int page, ILocalizationService loc, CultureInfo? culture, string? notice = null)
+    {
+        var projects = follow.Projects
+            .OrderBy(fp => fp.Project?.Title ?? fp.ProjectId, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(fp => fp.ProjectId)
+            .ToList();
+
+        // Clamp here too, the toggle buttons need the page actually shown to come back to it
+        var shownPage = Math.Clamp(page, 0, ListPageBuilder.GetPageCount(projects.Count) - 1);
+
+        return ListPageBuilder.Build(projects, shownPage,
+            loc.Get("follow-projects-title", culture, new { name = follow.TargetName }),
+            loc.Get("follow-projects-description", culture),
+            SettingsPanelBuilder.FollowAccent,
+            $"{FollowComponentBuilder.IgnoredProjectsButtonId}:{ownerId}:{follow.Id}:{listPage}",
+            fp => loc.Get(fp.Ignored ? "follow-project-entry-ignored" : "follow-project-entry", culture,
+                new { title = fp.Project?.Title ?? fp.ProjectId, id = fp.ProjectId }),
+            fp => new ButtonBuilder(loc.Get(fp.Ignored ? "button-unignore" : "button-ignore", culture),
+                $"{FollowComponentBuilder.IgnoreToggleButtonId}:{ownerId}:{follow.Id}:{listPage}:{shownPage}:{fp.ProjectId}",
+                fp.Ignored ? ButtonStyle.Success : ButtonStyle.Secondary),
+            loc.Get("follow-projects-empty", culture), loc, culture, notice,
+            [
+                new ButtonBuilder(loc.Get("button-back", culture),
+                    $"{FollowComponentBuilder.OpenButtonId}:{ownerId}:{follow.Id}:{listPage}", ButtonStyle.Secondary)
+            ]).Components;
+    }
+
+    [ComponentInteraction(FollowComponentBuilder.IgnoredProjectsButtonId + ":*:*:*:*:*")]
+    public async Task HandleIgnoredProjectsAsync(ulong ownerId, int followId, int listPage, int page, string _)
+    {
+        await DeferAsync();
+
+        var follow = await followService.GetFollowAsync(Context.Guild.Id, followId);
+        if (follow is null)
+        {
+            await ShowResultAsync(ownerId, listPage, LocalizationService.Get("follow-not-found", CommandCultureInfo));
+            return;
+        }
+
+        await ModifyOriginalResponseAsync(msg => msg.Components = BuildIgnoredProjectsPage(follow, ownerId, listPage,
+            page, LocalizationService, CommandCultureInfo));
+    }
+
+    [ComponentInteraction(FollowComponentBuilder.IgnoreToggleButtonId + ":*:*:*:*:*")]
+    public async Task HandleIgnoreToggleAsync(ulong ownerId, int followId, int listPage, int page, string projectId)
+    {
+        await DeferAsync();
+
+        var follow = await followService.GetFollowAsync(Context.Guild.Id, followId);
+        if (follow is null)
+        {
+            await ShowResultAsync(ownerId, listPage, LocalizationService.Get("follow-not-found", CommandCultureInfo));
+            return;
+        }
+
+        var followProject = follow.Projects.FirstOrDefault(fp => fp.ProjectId == projectId);
+        string? notice = null;
+        if (followProject is null ||
+            !await followService.SetIgnoredAsync(Context.Guild.Id, followId, projectId, !followProject.Ignored))
+        {
+            // The project was removed from the follow since the page was shown
+            notice = LocalizationService.Get("follow-project-not-found", CommandCultureInfo,
+                new { name = follow.TargetName, project = projectId });
+        }
+
+        // Reload, the follow service saves through its own context
+        follow = await followService.GetFollowAsync(Context.Guild.Id, followId) ?? follow;
+
+        await ModifyOriginalResponseAsync(msg => msg.Components = BuildIgnoredProjectsPage(follow, ownerId, listPage,
+            page, LocalizationService, CommandCultureInfo, notice));
     }
 
     [ComponentInteraction(FollowComponentBuilder.OpenButtonId + ":*:*:*")]
@@ -111,16 +191,41 @@ public class FollowInteractionModule(
         if (channelId is null)
             return;
 
-        if (!BotCanSendIn(channelId.Value))
+        await SetChannelAsync(ownerId, followId, listPage, channelId.Value, f => f.CustomUpdateChannel = channelId);
+    }
+
+    [ComponentInteraction(FollowComponentBuilder.NewProjectChannelMenuId + ":*:*:*")]
+    public async Task HandleNewProjectChannelSelectionAsync(ulong ownerId, int followId, int listPage,
+        string[] selectedValues)
+    {
+        var channelId = SettingsPanelBuilder.ParseSelectedId(selectedValues);
+
+        // Deselecting sends new projects to the update channel again
+        if (channelId is null)
+        {
+            await UpdateAsync(ownerId, followId, listPage, f => f.NewProjectChannel = null);
+            return;
+        }
+
+        await SetChannelAsync(ownerId, followId, listPage, channelId.Value, f => f.NewProjectChannel = channelId);
+    }
+
+    /// <summary>
+    ///     Saves the channel if the bot can send messages there, otherwise shows the saved state with a warning
+    /// </summary>
+    private async Task SetChannelAsync(ulong ownerId, int followId, int listPage, ulong channelId,
+        Action<ModrinthFollow> update)
+    {
+        if (!BotCanSendIn(channelId))
         {
             // Show the panel again, so the picker goes back to the saved channel
             await UpdateAsync(ownerId, followId, listPage, _ => { });
             await FollowupAsync(LocalizationService.Get("follow-no-send-permission", CommandCultureInfo,
-                new { channel = MentionUtils.MentionChannel(channelId.Value) }), ephemeral: true);
+                new { channel = MentionUtils.MentionChannel(channelId) }), ephemeral: true);
             return;
         }
 
-        await UpdateAsync(ownerId, followId, listPage, f => f.CustomUpdateChannel = channelId);
+        await UpdateAsync(ownerId, followId, listPage, update);
     }
 
     [ComponentInteraction(FollowComponentBuilder.PingRoleMenuId + ":*:*:*")]
@@ -195,15 +300,12 @@ public class FollowInteractionModule(
     }
 
     /// <summary>
-    ///     Goes back to the list with the text as a note, or replaces the panel with the text if it was not
-    ///     opened from the list
+    ///     Goes back to the list with the text as a note
     /// </summary>
     private async Task ShowResultAsync(ulong ownerId, int listPage, string text)
     {
-        var components = listPage == ListInteractionModule.NoList
-            ? SettingsPanelBuilder.BuildMessage(text, SettingsPanelBuilder.FollowAccent)
-            : (await ListInteractionModule.BuildListAsync(dataService, followService, Context.Guild.Id,
-                ownerId, ListTab.Creators, listPage, LocalizationService, CommandCultureInfo, text)).Components;
+        var components = await ManageInteractionModule.BuildPanelAsync(dataService, followService, Context.Guild.Id,
+            ownerId, ManageTab.Creators, listPage, IsAdministrator, LocalizationService, CommandCultureInfo, text);
 
         await ModifyOriginalResponseAsync(msg => msg.Components = components);
     }

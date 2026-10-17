@@ -21,6 +21,8 @@ public class LocalizationService : ILocalizationService
         _logger = logger;
     }
 
+    public IReadOnlyCollection<string> AvailableLocales => _store.AvailableLocales;
+
     public string Get(string key, CultureInfo? culture = null) => Get(key, culture, null!);
 
     public string Get(string key, CultureInfo? culture, object args)

@@ -11,8 +11,10 @@ public interface IFollowService
     /// <summary>
     ///     Creates a follow and runs its first sync without announcing anything
     /// </summary>
+    /// <param name="newProjectChannelId">Channel for new project messages, null to use <paramref name="channelId" /></param>
     public Task<AddFollowResult> AddFollowAsync(ulong guildId, FollowTargetType targetType, string targetId,
-        string targetName, ulong? channelId, FollowEvents events, CancellationToken ct = default);
+        string targetName, ulong? channelId, FollowEvents events, ulong? newProjectChannelId = null,
+        CancellationToken ct = default);
 
     /// <summary>
     ///     Removes the follow and every project only it was using

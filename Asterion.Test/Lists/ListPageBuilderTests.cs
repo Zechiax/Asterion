@@ -42,16 +42,16 @@ public class ListPageBuilderTests
     [Test]
     public void SplitsRowsIntoPages()
     {
-        Assert.That(ListPageBuilder.GetPageCount(25), Is.EqualTo(3));
+        Assert.That(ListPageBuilder.GetPageCount(25), Is.EqualTo(4));
 
-        var sections = Enumerable.Range(0, 3)
+        var sections = Enumerable.Range(0, 4)
             .Select(page => FlattenPage(Build(25, page).Components).OfType<SectionComponent>().Count());
 
-        Assert.That(sections, Is.EqualTo(new[] { 10, 10, 5 }));
+        Assert.That(sections, Is.EqualTo(new[] { 8, 8, 8, 1 }));
     }
 
     [TestCase(-1, 0)]
-    [TestCase(99, 2)]
+    [TestCase(99, 3)]
     public void ClampsPage(int requested, int expected)
     {
         Assert.That(Build(25, requested).Page, Is.EqualTo(expected));
@@ -71,9 +71,31 @@ public class ListPageBuilderTests
             Assert.That(buttons.Select(b => b.IsDisabled), Is.EqualTo(new[] { true, false, false }));
         }
 
-        var last = FlattenPage(Build(25, 2).Components).OfType<ButtonComponent>()
+        var last = FlattenPage(Build(25, 3).Components).OfType<ButtonComponent>()
             .Single(b => b.CustomId.EndsWith(":next"));
         Assert.That(last.IsDisabled, Is.True);
+    }
+
+    [Test]
+    public void FullPageWithTabsAndExtraButtonsStaysWithinDiscordLimits()
+    {
+        var items = Enumerable.Range(1, 25).ToList();
+        var tabs = Enumerable.Range(1, 4).Select(i => new ButtonBuilder($"Tab {i}", $"test-tab:{i}"));
+        var extra = Enumerable.Range(1, 2).Select(i => new ButtonBuilder($"Extra {i}", $"test-extra:{i}"));
+
+        var components = ListPageBuilder.Build(items, 1, "Title", "Description", Color.Blue, "test-page",
+            i => $"**Item {i}**", i => new ButtonBuilder("Settings", $"test-open:{i}", ButtonStyle.Secondary),
+            "Nothing here", Loc, null, "Notice", extra, tabs).Components;
+        var all = FlattenPage(components);
+
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(all, Has.Count.LessThanOrEqualTo(ComponentTree.MaxComponentsPerMessage));
+            // Tabs on top, navigation at the bottom
+            Assert.That(components.Components.First(), Is.InstanceOf<ActionRowComponent>());
+            Assert.That(((ActionRowComponent)components.Components.First()).Components, Has.Count.EqualTo(4));
+            Assert.That(((ActionRowComponent)components.Components.Last()).Components, Has.Count.EqualTo(5));
+        }
     }
 
     [Test]

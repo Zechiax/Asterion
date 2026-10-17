@@ -10,7 +10,6 @@ using Asterion.Services.Modrinth;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
-using Fergun.Interactive;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Modrinth;
@@ -27,12 +26,10 @@ public class ModrinthModule : AsterionInteractionModuleBase
 {
     private readonly DiscordSocketClient _client;
     private readonly IDataService _dataService;
-    private readonly InteractiveService _interactive;
     private readonly ILogger<ModrinthModule> _logger;
     private readonly ModrinthService _modrinthService;
     private readonly ILocalizationService _localizationService;
     private readonly IModrinthClient _modrinthClient;
-    private readonly IFollowService _followService;
 
     public ModrinthModule(IModrinthClient modrinthClient, IServiceProvider serviceProvider, ILocalizationService localizationService, IGuildCultureProvider cultureProvider) : base(localizationService, cultureProvider)
     {
@@ -40,10 +37,8 @@ public class ModrinthModule : AsterionInteractionModuleBase
         _localizationService = serviceProvider.GetRequiredService<ILocalizationService>();
         _dataService = serviceProvider.GetRequiredService<IDataService>();
         _modrinthService = serviceProvider.GetRequiredService<ModrinthService>();
-        _interactive = serviceProvider.GetRequiredService<InteractiveService>();
         _client = serviceProvider.GetRequiredService<DiscordSocketClient>();
         _logger = serviceProvider.GetRequiredService<ILogger<ModrinthModule>>();
-        _followService = serviceProvider.GetRequiredService<IFollowService>();
     }
 
     public ButtonBuilder GetSubscribeButtons(string projectId, bool subEnabled = true)
@@ -155,46 +150,10 @@ public class ModrinthModule : AsterionInteractionModuleBase
     public async Task Subscribe(string projectId, [AnnouncementChannelPrecondition] IGuildChannel? customChannel = null)
     {
         await DeferAsync();
-        var project = await _modrinthService.GetProject(projectId);
 
         var channel = customChannel is null
             ? Context.Guild.GetTextChannel(Context.Channel.Id)
             : customChannel as ITextChannel;
-
-        if (project == null)
-        {
-            await ModifyOriginalResponseAsync(x =>
-            {
-                x.Content =
-                    "There was an error processing your request, check if the ID is correct or try again later";
-            });
-            return;
-        }
-        
-        var subscribed = await _dataService.IsGuildSubscribedToProjectAsync(Context.Guild.Id, project.Id);
-        
-        if (subscribed)
-        {
-            await ModifyOriginalResponseAsync(x =>
-            {
-                x.Content = $"You're already subscribed to project ID {project.Id}";
-            });
-            return;
-        }
-
-        var versions = await _modrinthService.GetVersionListAsync(project.Id);
-        if (versions == null)
-        {
-            await ModifyOriginalResponseAsync(x =>
-            {
-                x.Content =
-                    "There was an error processing your request, check if the ID is correct or try again later";
-            });
-            return;
-        }
-
-        // Get last version ID
-        var lastVersion = versions.OrderByDescending(x => x.DatePublished).First().Id;
 
         if (channel is null)
         {
@@ -205,14 +164,22 @@ public class ModrinthModule : AsterionInteractionModuleBase
             return;
         }
 
-        await _dataService.AddModrinthProjectToGuildAsync(Context.Guild.Id, project.Id, lastVersion, project.Updated, channel.Id,
-            project.Title);
+        var result = await Subscriptions.SubscribeAsync(_modrinthService, _dataService, Context.Guild.Id,
+            Subscriptions.ParseModrinthInput(projectId), channel.Id);
 
         await ModifyOriginalResponseAsync(x =>
         {
-            x.Content =
-                $@"Subscribed to updates for project **{project.Title}** with ID **{project.Id}** updates will be send to channel {channel.Mention} :white_check_mark:";
+            x.Content = result.Status switch
+            {
+                SubscribeStatus.Subscribed =>
+                    $@"Subscribed to updates for project **{result.Project!.Title}** with ID **{result.Project.Id}** updates will be send to channel {channel.Mention} :white_check_mark:",
+                SubscribeStatus.AlreadySubscribed => $"You're already subscribed to project ID {result.Project!.Id}",
+                _ => "There was an error processing your request, check if the ID is correct or try again later"
+            };
         });
+
+        if (result.Status != SubscribeStatus.Subscribed)
+            return;
 
         // Check permissions, if the bot can send messages in the channel
         if (Context.Channel is ITextChannel textChannel && textChannel.Guild.GetUserAsync(Context.Client.CurrentUser.Id)
@@ -220,124 +187,6 @@ public class ModrinthModule : AsterionInteractionModuleBase
             await FollowupAsync(
                 ":warning: I don't have permission to send messages in this channel, please give me the required permissions :warning:",
                 ephemeral: true);
-    }
-
-    [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
-    [DoManageSubsRoleCheck(Group = "ManageSubs")]
-    [SlashCommand("change-channel", "Change channel for one of your subscribed projects")]
-    public async Task ChangeChannel(
-        [Summary("project_id")] [Autocomplete(typeof(SubscribedIdAutocompletionHandler))]
-        string projectId,
-        [AnnouncementChannelPrecondition] IGuildChannel newChannel)
-    {
-        await DeferAsync();
-
-        var subscribed = await _dataService.IsGuildSubscribedToProjectAsync(Context.Guild.Id, projectId);
-
-        if (!subscribed)
-        {
-            await ModifyOriginalResponseAsync(x => { x.Content = $"You're now subscribed to project ID {projectId}"; });
-            return;
-        }
-
-        var success = await _dataService.ChangeModrinthEntryChannel(Context.Guild.Id, projectId, newChannel.Id);
-
-        if (success)
-        {
-            var forMention = Context.Guild.GetTextChannel(newChannel.Id);
-            await ModifyOriginalResponseAsync(x =>
-            {
-                x.Content =
-                    $"New updates for project {projectId} will be send to channel {forMention.Mention} :white_check_mark:";
-            });
-        }
-        else
-        {
-            await ModifyOriginalResponseAsync(x =>
-            {
-                x.Content = "Something went wrong while changing the update channel, please try again later";
-            });
-        }
-    }
-
-    [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
-    [DoManageSubsRoleCheck(Group = "ManageSubs")]
-    [SlashCommand("unsubscribe", "Remove Modrinth project from your watched list")]
-    public async Task Unsubscribe(
-        [Summary("project_id")] [Autocomplete(typeof(SubscribedIdAutocompletionHandler))]
-        string projectId)
-    {
-        await DeferAsync();
-        var removed = await _dataService.RemoveModrinthProjectFromGuildAsync(Context.Guild.Id, projectId);
-
-        if (removed == false)
-        {
-            await ModifyOriginalResponseAsync(x => { x.Content = $"Project with ID {projectId} is not subscribed"; });
-            return;
-        }
-
-        await ModifyOriginalResponseAsync(x =>
-        {
-            x.Content = $"Unsubscribed from updates for project ID **{projectId}** :white_check_mark:";
-        });
-    }
-
-    [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
-    [DoManageSubsRoleCheck(Group = "ManageSubs")]
-    [SlashCommand("unsubscribe-all", "Removes all subscribed projects")]
-    public async Task UnsubscribeAll()
-    {
-        var builder = new ComponentBuilder()
-            .WithButton("Yes", "remove-all-data-yes", ButtonStyle.Danger);
-
-        await RespondAsync(
-            "**Are you sure you want to remove all projects?** \n\n**Click the button if Yes, if not, just wait**",
-            components: builder.Build());
-
-        // Wait for a user to press the button
-        var result = await _interactive.NextMessageComponentAsync(x => x.Data.Type == ComponentType.Button
-                                                                       && x.Data.CustomId == "remove-all-data-yes"
-                                                                       && Context.User.Id == x.User.Id
-                                                                       && x.Message.Interaction.Id ==
-                                                                       Context.Interaction.Id,
-            timeout: TimeSpan.FromSeconds(15));
-
-
-        if (result.IsSuccess)
-        {
-            // Acknowledge the interaction
-            await result.Value!.DeferAsync();
-
-            foreach (var versions in (await _dataService.GetAllGuildsSubscribedProjectsAsync(Context.Guild.Id))!)
-                await _dataService.RemoveModrinthProjectFromGuildAsync(Context.Guild.Id, versions.ProjectId);
-        }
-
-        await ModifyOriginalResponseAsync(x =>
-        {
-            x.Content = result.IsSuccess ? "All data cleared" : "Action cancelled";
-            x.Components = new ComponentBuilder().Build(); // No components
-            x.AllowedMentions = AllowedMentions.None;
-        });
-    }
-
-    [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
-    [DoManageSubsRoleCheck(Group = "ManageSubs")]
-    [SlashCommand("list", "Lists all your subscribed projects and followed creators")]
-    public async Task ListSubscribed()
-    {
-        await DeferAsync();
-
-        // Public, but only the user who ran the command can use it; settings panels open in place of the list
-        var (components, isEmpty) = await ListInteractionModule.BuildListAsync(_dataService, _followService,
-            Context.Guild.Id, Context.User.Id, null, 0, LocalizationService, CommandCultureInfo);
-
-        if (isEmpty)
-        {
-            await FollowupAsync(LocalizationService.Get("list-empty", CommandCultureInfo));
-            return;
-        }
-
-        await FollowupAsync(components: components, flags: MessageFlags.ComponentsV2);
     }
 
     [SlashCommand("latest-release", "Gets the latest release of project")]

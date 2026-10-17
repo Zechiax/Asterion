@@ -46,7 +46,8 @@ public class FollowService : IFollowService
     }
 
     public async Task<AddFollowResult> AddFollowAsync(ulong guildId, FollowTargetType targetType, string targetId,
-        string targetName, ulong? channelId, FollowEvents events, CancellationToken ct = default)
+        string targetName, ulong? channelId, FollowEvents events, ulong? newProjectChannelId = null,
+        CancellationToken ct = default)
     {
         using var scope = _services.CreateScope();
         await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
@@ -73,6 +74,7 @@ public class FollowService : IFollowService
             TargetName = targetName,
             Events = events,
             CustomUpdateChannel = channelId,
+            NewProjectChannel = newProjectChannelId,
             Created = DateTime.UtcNow
         };
 

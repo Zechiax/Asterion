@@ -1,0 +1,15 @@
+services:
+  asterion:
+    image: ghcr.io/zechiax/asterion:latest
+    # Uncomment to build the image from this checkout instead
+    # build: .
+    container_name: asterion
+    restart: unless-stopped
+    environment:
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+      ASTERION_TOKEN: ${ASTERION_TOKEN:?Set ASTERION_TOKEN in .env}
+      # Optional; an empty variable would override the value in config.toml, so it's off by default
+      # ASTERION_TOP_GG_TOKEN: ${ASTERION_TOP_GG_TOKEN}
+    volumes:
+      - ./data:/data

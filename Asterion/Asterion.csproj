@@ -8,7 +8,7 @@
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
         <IsPackable>false</IsPackable>
         <LangVersion>13</LangVersion>
-        <Version>2.0.1</Version>
+        <Version>4.0.0-dev</Version>
     </PropertyGroup>
 
     <ItemGroup>

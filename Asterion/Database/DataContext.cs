@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using Asterion.Configuration;
 using Asterion.Database.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -34,7 +35,7 @@ public class DataContext : DbContext
     {
         if (optionsBuilder.IsConfigured) return;
 
-        optionsBuilder.UseSqlite("DataSource=data.sqlite");
+        optionsBuilder.UseSqlite($"DataSource={DataPaths.Database}");
         optionsBuilder.LogTo(Log.Logger.Error, LogLevel.Error);
 
         // Disables DbContext initialized messages

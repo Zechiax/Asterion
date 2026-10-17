@@ -1,0 +1,31 @@
+name: PR title
+
+# PR titles become the squash commit message and drive Release Drafter's categories and version,
+# so they must follow Conventional Commits, e.g. "feat: add follows", "fix(lists): ...", "feat!: ..."
+on:
+  pull_request_target:
+    types: [ opened, edited, synchronize, reopened ]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  conventional-title:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+    - uses: amannn/action-semantic-pull-request@v6
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        types: |
+          feat
+          fix
+          chore
+          refactor
+          perf
+          ci
+          build
+          docs
+          test

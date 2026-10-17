@@ -32,7 +32,7 @@ public static class ModrinthEmbedBuilder
     /// <summary>
     ///     The main color of the Modrinth logo
     /// </summary>
-    private static readonly Color ModrinthColor = new(27, 217, 106);
+    public static readonly Color ModrinthColor = new(27, 217, 106);
 
     public static EmbedAuthorBuilder GetUserAuthor(User user)
     {

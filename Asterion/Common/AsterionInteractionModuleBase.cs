@@ -51,6 +51,19 @@ public class AsterionInteractionModuleBase : InteractionModuleBase<SocketInterac
         await FollowupAsync(embeds: new[] {embed});
     }
 
+    /// <summary>
+    ///     If the bot can see and send messages in the guild's text channel
+    /// </summary>
+    protected bool BotCanSendIn(ulong channelId)
+    {
+        var channel = Context.Guild?.GetTextChannel(channelId);
+        if (channel is null)
+            return false;
+
+        var permissions = Context.Guild!.CurrentUser.GetPermissions(channel);
+        return permissions.ViewChannel && permissions.SendMessages;
+    }
+
     public override async Task BeforeExecuteAsync(ICommandInfo command)
     {
         CommandCultureInfo = await _cultureProvider.GetCultureAsync(Context.Interaction);

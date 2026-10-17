@@ -28,18 +28,6 @@ public class ListPageBuilderTests
     }
 
     [Test]
-    public void FullPageStaysWithinDiscordLimits()
-    {
-        var all = FlattenPage(Build(25, 0).Components);
-
-        using (Assert.EnterMultipleScope())
-        {
-            Assert.That(all, Has.Count.LessThanOrEqualTo(ComponentTree.MaxComponentsPerMessage));
-            Assert.That(all.OfType<TextDisplayComponent>().Sum(t => t.Content.Length), Is.LessThanOrEqualTo(4000));
-        }
-    }
-
-    [Test]
     public void SplitsRowsIntoPages()
     {
         Assert.That(ListPageBuilder.GetPageCount(25), Is.EqualTo(4));
@@ -84,24 +72,18 @@ public class ListPageBuilderTests
         var extra = Enumerable.Range(1, 2).Select(i => new ButtonBuilder($"Extra {i}", $"test-extra:{i}"));
 
         var components = ListPageBuilder.Build(items, 1, "Title", "Description", Color.Blue, "test-page",
-            i => $"**Item {i}**", i => new ButtonBuilder("Settings", $"test-open:{i}", ButtonStyle.Secondary),
+            i => $"**Item {i}**\n" + new string('x', 1000),
+            i => new ButtonBuilder("Settings", $"test-open:{i}", ButtonStyle.Secondary),
             "Nothing here", Loc, null, "Notice", extra, tabs).Components;
         var all = FlattenPage(components);
 
         using (Assert.EnterMultipleScope())
         {
             Assert.That(all, Has.Count.LessThanOrEqualTo(ComponentTree.MaxComponentsPerMessage));
+            Assert.That(all.OfType<TextDisplayComponent>().Sum(t => t.Content.Length), Is.LessThanOrEqualTo(4000));
             Assert.That(all.OfType<ActionRowComponent>().Select(r => r.Components.Count),
                 Is.All.LessThanOrEqualTo(5));
+            Assert.That(all.OfType<ButtonComponent>().Select(b => b.CustomId), Is.Unique);
         }
     }
-
-    [Test]
-    public void AllCustomIdsAreUnique()
-    {
-        var ids = FlattenPage(Build(25, 1).Components).OfType<ButtonComponent>().Select(b => b.CustomId).ToList();
-
-        Assert.That(ids, Is.Unique);
-    }
-
 }

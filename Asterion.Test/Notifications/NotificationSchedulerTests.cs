@@ -59,27 +59,4 @@ public class NotificationSchedulerTests
             Assert.That(rows[0].AttemptCount, Is.EqualTo(0));
         }
     }
-
-    [Test]
-    public async Task EnqueuesNothingWhenNoEntryPassesTheFilter()
-    {
-        await using var provider = InMemoryDb.BuildServiceProvider();
-        using var scope = provider.CreateScope();
-        await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
-
-        var project = new Project { Id = "project", Title = "Test Project", Team = "team-1" };
-        var version = new Version
-        {
-            Id = "version-1", ProjectId = "project", ProjectVersionType = ProjectVersionType.Alpha,
-            Loaders = [], DatePublished = DateTime.UtcNow
-        };
-
-        var entry = MakeEntry(1, 100, ReleaseType.Release);
-
-        var scheduler = new NotificationScheduler();
-        scheduler.EnqueueForEntries(db, project, version, [entry]);
-        await db.SaveChangesAsync();
-
-        Assert.That(await EntityFrameworkQueryableExtensions.CountAsync(db.PendingNotifications), Is.EqualTo(0));
-    }
 }

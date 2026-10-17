@@ -7,14 +7,6 @@ namespace Asterion.Test.Localization;
 public class FluentBundleStoreTests
 {
     [Test]
-    public void LoadsDefaultLocale()
-    {
-        var store = new FluentBundleStore(NullLogger<FluentBundleStore>.Instance);
-
-        Assert.That(store.AvailableLocales, Does.Contain(FluentBundleStore.DefaultLocale));
-    }
-
-    [Test]
     public void EveryLocaleDefinesTheSameMessageIdsAsTheDefault()
     {
         var store = new FluentBundleStore(NullLogger<FluentBundleStore>.Instance);

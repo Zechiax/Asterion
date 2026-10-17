@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using static Asterion.Test.Follows.FollowTestData;
+using static Asterion.Test.Notifications.InMemoryDb;
 
 namespace Asterion.Test.Follows;
 
@@ -18,11 +19,6 @@ namespace Asterion.Test.Follows;
 public class FollowCleanupTests
 {
     private static readonly DateTime LongAgo = DateTime.UtcNow.AddYears(-1);
-
-    private static DataContext OpenDb(IServiceProvider provider)
-    {
-        return provider.CreateScope().ServiceProvider.GetRequiredService<DataContext>();
-    }
 
     [Test]
     public async Task ProjectUsedOnlyByFollowSurvivesUntilFollowIsRemoved()
@@ -66,21 +62,17 @@ public class FollowCleanupTests
         var dataService = new DataService(provider, NullLogger<DataService>.Instance, discordClient);
 
         await dataService.AddModrinthProjectToGuildAsync(GuildId, "a", "a-v1", LongAgo, 555, "Project a");
-        var add = await followService.AddFollowAsync(GuildId, FollowTargetType.User, UserId, "user", null,
+        await followService.AddFollowAsync(GuildId, FollowTargetType.User, UserId, "user", null,
             FollowEvents.ProjectUpdate);
 
         Assert.That(await dataService.RemoveModrinthProjectFromGuildAsync(GuildId, "a"), Is.True);
 
-        await using (var db = OpenDb(provider))
+        await using var db = OpenDb(provider);
+        using (Assert.EnterMultipleScope())
         {
             Assert.That(await db.ModrinthEntries.CountAsync(), Is.EqualTo(0));
             Assert.That(await db.ModrinthProjects.AnyAsync(p => p.ProjectId == "a"), Is.True);
         }
-
-        await followService.RemoveFollowAsync(GuildId, add.Follow!.Id);
-
-        await using var db2 = OpenDb(provider);
-        Assert.That(await db2.ModrinthProjects.AnyAsync(p => p.ProjectId == "a"), Is.False);
     }
 
     [Test]

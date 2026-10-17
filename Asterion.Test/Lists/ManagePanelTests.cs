@@ -1,4 +1,4 @@
-using Asterion.ComponentBuilders;
+﻿using Asterion.ComponentBuilders;
 using Asterion.Database.Models;
 using Asterion.Interfaces;
 using Asterion.Modules;
@@ -87,31 +87,14 @@ public class ManagePanelTests
         }
     }
 
-    [Test]
-    public async Task FullPageWithTabsStaysWithinDiscordLimits()
+    // Settings buttons carry the shown page (clamped), so the panel can go back to it
+    [TestCase(1, "entry-open:42:p09:1")]
+    [TestCase(99, "entry-open:42:p25:3")]
+    public async Task SettingsButtonsCarryTheShownPage(int page, string expectedId)
     {
-        var components = await Build(25, 0, ManageTab.Projects, 1, notice: "Unsubscribed from something");
+        var components = await Build(25, 0, ManageTab.Projects, page);
 
-        var all = ComponentTree.Flatten(components);
-        var ids = Buttons(components).Select(b => b.CustomId).ToList();
-
-        using (Assert.EnterMultipleScope())
-        {
-            Assert.That(all, Has.Count.LessThanOrEqualTo(ComponentTree.MaxComponentsPerMessage));
-            Assert.That(ids, Is.Unique);
-            Assert.That(all.OfType<ActionRowComponent>().Select(r => r.Components.Count),
-                Is.All.LessThanOrEqualTo(5));
-            // Settings buttons carry the shown page, so the panel can go back to it
-            Assert.That(ids, Does.Contain("entry-open:42:p09:1"));
-        }
-    }
-
-    [Test]
-    public async Task ClampedPageIsUsedInSettingsButtons()
-    {
-        var components = await Build(3, 0, ManageTab.Projects, 5);
-
-        Assert.That(Buttons(components).Select(b => b.CustomId), Does.Contain("entry-open:42:p01:0"));
+        Assert.That(Buttons(components).Select(b => b.CustomId), Does.Contain(expectedId));
     }
 
     [TestCase(ManageTab.Projects)]
@@ -120,7 +103,7 @@ public class ManagePanelTests
     [TestCase(ManageTab.Notifications)]
     public async Task EveryComponentCarriesTheOwnerForDoUserCheck(ManageTab tab)
     {
-        var components = await Build(25, 2, tab, 1);
+        var components = await Build(25, 2, tab, 1, notice: "Unsubscribed from something");
         var all = ComponentTree.Flatten(components);
         var ids = all.OfType<ButtonComponent>().Select(b => b.CustomId)
             .Concat(all.OfType<SelectMenuComponent>().Select(m => m.CustomId))
@@ -133,7 +116,8 @@ public class ManagePanelTests
             Assert.That(ids, Is.Unique);
             Assert.That(ids.Select(id => id.Length), Is.All.LessThanOrEqualTo(100));
             Assert.That(all, Has.Count.LessThanOrEqualTo(ComponentTree.MaxComponentsPerMessage));
+            Assert.That(all.OfType<ActionRowComponent>().Select(r => r.Components.Count),
+                Is.All.LessThanOrEqualTo(5));
         }
     }
-
 }

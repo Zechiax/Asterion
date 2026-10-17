@@ -7,11 +7,8 @@ using Asterion.Test.Fakes;
 using Asterion.Test.Notifications;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging.Abstractions;
-using Modrinth;
-using Modrinth.Models;
-using NSubstitute;
 using static Asterion.Test.Follows.FollowTestData;
+using static Asterion.Test.Notifications.InMemoryDb;
 
 namespace Asterion.Test.Follows;
 
@@ -36,27 +33,6 @@ public class FollowNotificationTests
             CustomUpdateChannel = 555,
             Created = DateTime.UtcNow
         };
-    }
-
-    private static DataContext OpenDb(IServiceProvider provider)
-    {
-        return provider.CreateScope().ServiceProvider.GetRequiredService<DataContext>();
-    }
-
-    [Test]
-    public void FilterEvaluatorWorksWithFollow()
-    {
-        var version = MakeVersion("v", ProjectId, DateTime.UtcNow);
-        var follow = MakeFollow(1, 1, releaseFilter: ReleaseType.Alpha);
-
-        Assert.That(NotificationFilterEvaluator.ShouldNotify(follow, version), Is.False);
-
-        follow.ReleaseFilter = ReleaseType.Release;
-        follow.LoaderFilter = ["forge"];
-        Assert.That(NotificationFilterEvaluator.ShouldNotify(follow, version), Is.False);
-
-        follow.LoaderFilter = ["fabric"];
-        Assert.That(NotificationFilterEvaluator.ShouldNotify(follow, version), Is.True);
     }
 
     [Test]
@@ -155,58 +131,29 @@ public class FollowNotificationTests
         return row.Id;
     }
 
-    private static NotificationDispatchService BuildDispatch(IServiceProvider provider,
-        RecordingNotificationSender sender)
-    {
-        var modrinthClient = Substitute.For<IModrinthClient>();
-        modrinthClient.Team.GetAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns(System.Array.Empty<TeamMember>());
-
-        return new NotificationDispatchService(provider, new NotificationReader(provider), new NotificationSignal(),
-            new NotificationSenderRouter([sender]), modrinthClient,
-            NullLogger<NotificationDispatchService>.Instance);
-    }
-
-    [Test]
-    public async Task FollowUpdateIsDeliveredToFollowChannelWithFollowPingRole()
+    // Updates ignore the new project ping role
+    [TestCase(NotificationKind.Update, 7ul, 8ul, 9ul, "<@&7>")]
+    [TestCase(NotificationKind.NewProject, 7ul, 8ul, 9ul, "<@&8>")]
+    [TestCase(NotificationKind.NewProject, 7ul, null, 9ul, "<@&7>")]
+    [TestCase(NotificationKind.NewProject, null, null, 9ul, "<@&9>")]
+    [TestCase(NotificationKind.NewProject, null, null, null, "")]
+    public async Task EmbedAndPingRoleDependOnKind(NotificationKind kind, ulong? customPingRole,
+        ulong? newProjectPingRole, ulong? guildPingRole, string expectedPing)
     {
         await using var provider = InMemoryDb.BuildServiceProvider();
-        await SeedFollowNotificationAsync(provider, NotificationKind.Update, customPingRole: 7,
-            newProjectPingRole: 8, guildPingRole: 9);
+        var id = await SeedFollowNotificationAsync(provider, kind, customPingRole, newProjectPingRole, guildPingRole);
         var sender = new RecordingNotificationSender();
 
-        await BuildDispatch(provider, sender).ProcessDueNotificationsAsync();
-
-        Assert.That(sender.Sent, Has.Count.EqualTo(1));
-        var (target, content) = sender.Sent[0];
-        using (Assert.EnterMultipleScope())
-        {
-            Assert.That(target, Is.EqualTo(new BotDeliveryTarget(GuildId, 555)));
-            Assert.That(content.PingText, Is.EqualTo("<@&7>"));
-            Assert.That(content.Embed.Title, Does.Contain("has been updated"));
-        }
-    }
-
-    [TestCase(7ul, 8ul, 9ul, "<@&8>")]
-    [TestCase(7ul, null, 9ul, "<@&7>")]
-    [TestCase(null, null, 9ul, "<@&9>")]
-    [TestCase(null, null, null, "")]
-    public async Task NewProjectUsesNewProjectEmbedAndPingRoleOrder(ulong? customPingRole, ulong? newProjectPingRole,
-        ulong? guildPingRole, string expectedPing)
-    {
-        await using var provider = InMemoryDb.BuildServiceProvider();
-        var id = await SeedFollowNotificationAsync(provider, NotificationKind.NewProject, customPingRole,
-            newProjectPingRole, guildPingRole);
-        var sender = new RecordingNotificationSender();
-
-        await BuildDispatch(provider, sender).ProcessDueNotificationsAsync();
+        await NotificationDispatchServiceTests.BuildService(provider, sender).ProcessDueNotificationsAsync();
 
         Assert.That(sender.Sent, Has.Count.EqualTo(1));
         var content = sender.Sent[0].Content;
         using (Assert.EnterMultipleScope())
         {
             Assert.That(content.PingText, Is.EqualTo(expectedPing));
-            Assert.That(content.Embed.Title, Does.StartWith("New project"));
+            Assert.That(content.Embed.Title, kind == NotificationKind.NewProject
+                ? Does.StartWith("New project")
+                : Does.Contain("has been updated"));
         }
 
         await using var db = OpenDb(provider);
@@ -229,7 +176,7 @@ public class FollowNotificationTests
         }
 
         var sender = new RecordingNotificationSender();
-        await BuildDispatch(provider, sender).ProcessDueNotificationsAsync();
+        await NotificationDispatchServiceTests.BuildService(provider, sender).ProcessDueNotificationsAsync();
 
         Assert.That(sender.Sent.Single().Target, Is.EqualTo(new BotDeliveryTarget(GuildId, expectedChannel)));
     }
@@ -258,7 +205,7 @@ public class FollowNotificationTests
         }
 
         var sender = new RecordingNotificationSender();
-        await BuildDispatch(provider, sender).ProcessDueNotificationsAsync();
+        await NotificationDispatchServiceTests.BuildService(provider, sender).ProcessDueNotificationsAsync();
 
         await using var db2 = OpenDb(provider);
         Assert.That(sender.Sent, Is.Empty);

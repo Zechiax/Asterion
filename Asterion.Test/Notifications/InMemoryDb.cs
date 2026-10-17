@@ -20,4 +20,9 @@ internal static class InMemoryDb
         services.AddDbContext<DataContext>(options => options.UseInMemoryDatabase(name));
         return services.BuildServiceProvider();
     }
+
+    public static DataContext OpenDb(IServiceProvider provider)
+    {
+        return provider.CreateScope().ServiceProvider.GetRequiredService<DataContext>();
+    }
 }

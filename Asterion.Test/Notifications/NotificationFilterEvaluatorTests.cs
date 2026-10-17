@@ -35,48 +35,20 @@ public class NotificationFilterEvaluatorTests
         };
     }
 
-    [Test]
-    public void AllowsReleaseWhenReleaseFilterIncludesIt()
+    private const ReleaseType AllReleases = ReleaseType.Alpha | ReleaseType.Beta | ReleaseType.Release;
+
+    [TestCase(ReleaseType.Release, ProjectVersionType.Release, null, true)]
+    [TestCase(ReleaseType.Release | ReleaseType.Beta, ProjectVersionType.Alpha, null, false)]
+    // No loader filter allows any loader
+    [TestCase(AllReleases, ProjectVersionType.Release, null, true)]
+    [TestCase(AllReleases, ProjectVersionType.Release, new[] { "forge" }, false)]
+    [TestCase(AllReleases, ProjectVersionType.Release, new[] { "forge", "fabric" }, true)]
+    public void ShouldNotify(ReleaseType releaseFilter, ProjectVersionType versionType, string[]? loaderFilter,
+        bool expected)
     {
-        var entry = MakeEntry(ReleaseType.Release);
-        var version = MakeVersion(ProjectVersionType.Release);
+        var entry = MakeEntry(releaseFilter, loaderFilter);
+        var version = MakeVersion(versionType, "fabric", "quilt");
 
-        Assert.That(NotificationFilterEvaluator.ShouldNotify(entry, version), Is.True);
-    }
-
-    [Test]
-    public void SkipsAlphaWhenReleaseFilterExcludesIt()
-    {
-        var entry = MakeEntry(ReleaseType.Release | ReleaseType.Beta);
-        var version = MakeVersion(ProjectVersionType.Alpha);
-
-        Assert.That(NotificationFilterEvaluator.ShouldNotify(entry, version), Is.False);
-    }
-
-    [Test]
-    public void AllowsAnyLoaderWhenNoLoaderFilterSet()
-    {
-        var entry = MakeEntry(ReleaseType.Alpha | ReleaseType.Beta | ReleaseType.Release);
-        var version = MakeVersion(ProjectVersionType.Release, "fabric");
-
-        Assert.That(NotificationFilterEvaluator.ShouldNotify(entry, version), Is.True);
-    }
-
-    [Test]
-    public void SkipsVersionWhenNoLoaderMatchesFilter()
-    {
-        var entry = MakeEntry(ReleaseType.Alpha | ReleaseType.Beta | ReleaseType.Release, new[] { "forge" });
-        var version = MakeVersion(ProjectVersionType.Release, "fabric", "quilt");
-
-        Assert.That(NotificationFilterEvaluator.ShouldNotify(entry, version), Is.False);
-    }
-
-    [Test]
-    public void AllowsVersionWhenAnyLoaderMatchesFilter()
-    {
-        var entry = MakeEntry(ReleaseType.Alpha | ReleaseType.Beta | ReleaseType.Release, new[] { "forge", "fabric" });
-        var version = MakeVersion(ProjectVersionType.Release, "fabric");
-
-        Assert.That(NotificationFilterEvaluator.ShouldNotify(entry, version), Is.True);
+        Assert.That(NotificationFilterEvaluator.ShouldNotify(entry, version), Is.EqualTo(expected));
     }
 }

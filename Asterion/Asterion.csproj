@@ -8,7 +8,7 @@
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
         <IsPackable>false</IsPackable>
         <LangVersion>13</LangVersion>
-        <Version>4.0.0-dev</Version>
+        <Version>0.0.0-dev</Version>
     </PropertyGroup>
 
     <ItemGroup>
@@ -30,14 +30,18 @@
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.13" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.0.13" />
         <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.13" />
+        <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.13" />
+        <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.13" />
         <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.13" />
         <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.13" />
         <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.13" />
         <PackageReference Include="Modrinth.Net" Version="3.8.1" />
         <PackageReference Include="Serilog" Version="4.4.0" />
-        <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
+        <PackageReference Include="Serilog.Extensions.Logging" Version="10.0.0" />
         <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
+        <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
         <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="4.153.1" />
         <PackageReference Include="System.Data.SQLite" Version="2.0.4" />
         <PackageReference Include="Tomlyn" Version="2.10.1" />

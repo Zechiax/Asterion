@@ -79,11 +79,10 @@ public class FollowModule(
 
     private async Task WarnIfCannotSendAsync(ITextChannel channel)
     {
-        var botUser = await channel.Guild.GetCurrentUserAsync();
-        if (botUser.GetPermissions(channel).SendMessages)
+        if (BotCanSendIn(channel.Id))
             return;
 
-        await FollowupAsync(Loc("follow-no-send-permission", new { channel = channel.Mention }), ephemeral: true);
+        await FollowupAsync(Loc("no-send-permission", new { channel = channel.Mention }), ephemeral: true);
     }
 
     private string Loc(string key)

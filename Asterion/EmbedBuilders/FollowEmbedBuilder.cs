@@ -23,6 +23,8 @@ public static class FollowEmbedBuilder
     public static string DescribeAddResult(AddFollowResult result, string targetName, string channelMention,
         ILocalizationService loc, CultureInfo? culture)
     {
+        targetName = Format.Sanitize(targetName);
+
         return result.Status switch
         {
             AddFollowStatus.Added when result.Sync is { Success: false } sync =>
@@ -47,7 +49,7 @@ public static class FollowEmbedBuilder
 
     public static string FormatListEntry(ModrinthFollow follow, ILocalizationService loc, CultureInfo? culture)
     {
-        return $"**{follow.TargetName}**\n" + loc.Get("follow-list-entry", culture, new
+        return $"**{Format.Sanitize(follow.TargetName)}**\n" + loc.Get("follow-list-entry", culture, new
         {
             type = FormatTargetType(follow.TargetType, loc, culture),
             events = FormatEvents(follow.Events, loc, culture),

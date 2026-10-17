@@ -26,7 +26,6 @@ follow-added-sync-failed = Following **{ $name }**, but the projects could not b
 follow-already-following = This server already follows **{ $name }**
 follow-limit-reached = This server already follows the maximum of { $max } creators
 follow-channel-invalid = There was an error processing your request, check if the channel is correct
-follow-no-send-permission = :warning: I don't have permission to send messages in { $channel }, please give me the required permissions :warning:
 follow-not-found = This server does not follow this creator
 follow-removed = Stopped following **{ $name }** :white_check_mark:
 follow-project-not-found = **{ $name }** has no project with ID { $project }
@@ -55,6 +54,7 @@ entry-not-found = This server is not subscribed to this project
 entry-unsub-confirm-question = Unsubscribe from **{ $title }** ({ $id })?
 entry-unsubscribed = Unsubscribed from updates for **{ $title }** ({ $id }) :white_check_mark:
 follow-remove-confirm-question = Stop following **{ $name }**?
+no-send-permission = :warning: I don't have permission to send messages in { $channel }, please give me the required permissions :warning:
 
 ## Settings panel
 settings-follow-title = Follow settings: { $name } ({ $type })
@@ -74,7 +74,6 @@ settings-release-placeholder = Select release types
 settings-loader-filter = Loaders
 settings-loader-placeholder = All loaders
 settings-none = None
-settings-release-required = Please select at least one release type
 
 ## Manage panel
 manage-tab-general = General

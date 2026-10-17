@@ -310,4 +310,45 @@ public class FollowSyncTests
             Assert.That(await db.FollowProjects.CountAsync(fp => fp.ProjectId == "b"), Is.EqualTo(2));
         }
     }
+
+    [Test]
+    public async Task LoadersComeFromTheLastSyncWithoutCallingModrinth()
+    {
+        await using var provider = InMemoryDb.BuildServiceProvider();
+        await SeedGuildAsync(provider);
+        var source = new FakeFollowSource();
+        var project = MakeProject("a", LongAgo);
+        project.Loaders = ["fabric", "Fabric", "quilt"];
+        source.SetProjects(project);
+        var service = BuildService(provider, source);
+
+        await AddFollowAsync(service);
+        var callsAfterAdd = source.CallCount;
+
+        var loaders = await service.GetTargetLoadersAsync(FollowTargetType.User, UserId);
+
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(loaders, Is.EquivalentTo(new[] { "fabric", "quilt" }));
+            Assert.That(source.CallCount, Is.EqualTo(callsAfterAdd));
+        }
+    }
+
+    [Test]
+    public async Task LoadersOfUnknownTargetAreFetchedOnce()
+    {
+        await using var provider = InMemoryDb.BuildServiceProvider();
+        var source = new FakeFollowSource();
+        source.SetProjects(MakeProject("a", LongAgo));
+        var service = BuildService(provider, source);
+
+        await service.GetTargetLoadersAsync(FollowTargetType.User, UserId);
+        var loaders = await service.GetTargetLoadersAsync(FollowTargetType.User, UserId);
+
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(loaders, Is.EqualTo(new[] { "fabric" }));
+            Assert.That(source.CallCount, Is.EqualTo(1));
+        }
+    }
 }

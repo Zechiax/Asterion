@@ -203,6 +203,14 @@ public class ModrinthInteractionModule : AsterionInteractionModuleBase
             return;
         }
 
+        // Every message of the follow would fail to send, don't add it
+        if (!BotCanSendIn(channel.Id))
+        {
+            await FollowupAsync(LocalizationService.Get("no-send-permission", CommandCultureInfo,
+                new { channel = channel.Mention }), ephemeral: true);
+            return;
+        }
+
         var user = findUser.Payload.User;
         var result = await _followService.AddFollowAsync(Context.Guild.Id, FollowTargetType.User, user.Id,
             user.Username, channel.Id, FollowEvents.ProjectUpdate | FollowEvents.NewProject);

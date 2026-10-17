@@ -26,12 +26,10 @@ public class FollowInteractionModule(
     IDataService dataService)
     : AsterionInteractionModuleBase(localizationService, cultureProvider)
 {
-    public static async Task<IEnumerable<string>> GetLoaderOptionsAsync(IFollowService followService,
+    public static Task<IReadOnlyList<string>> GetLoaderOptionsAsync(IFollowService followService,
         ModrinthFollow follow)
     {
-        var source = await followService.FetchTargetAsync(follow.TargetType, follow.TargetId);
-
-        return source.Projects?.SelectMany(p => p.Loaders ?? []) ?? [];
+        return followService.GetTargetLoadersAsync(follow.TargetType, follow.TargetId);
     }
 
     /// <summary>
@@ -167,15 +165,15 @@ public class FollowInteractionModule(
     {
         await DeferAsync();
 
-        var follow = await followService.GetFollowAsync(Context.Guild.Id, followId);
-        if (follow is null || !await followService.RemoveFollowAsync(Context.Guild.Id, followId))
+        var removed = await followService.RemoveFollowAsync(Context.Guild.Id, followId);
+        if (removed is null)
         {
             await ShowResultAsync(ownerId, listPage, LocalizationService.Get("follow-not-found", CommandCultureInfo));
             return;
         }
 
         await ShowResultAsync(ownerId, listPage, LocalizationService.Get("follow-removed", CommandCultureInfo,
-            new { name = follow.TargetName }));
+            new { name = Format.Sanitize(removed.TargetName) }));
     }
 
     [ComponentInteraction(FollowComponentBuilder.RemoveCancelButtonId + ":*:*:*")]
@@ -187,9 +185,13 @@ public class FollowInteractionModule(
     [ComponentInteraction(FollowComponentBuilder.ChannelMenuId + ":*:*:*")]
     public async Task HandleChannelSelectionAsync(ulong ownerId, int followId, int listPage, string[] selectedValues)
     {
+        // The picker requires a channel, redraw the saved state in case nothing was selected
         var channelId = SettingsPanelBuilder.ParseSelectedId(selectedValues);
         if (channelId is null)
+        {
+            await UpdateAsync(ownerId, followId, listPage, _ => { });
             return;
+        }
 
         await SetChannelAsync(ownerId, followId, listPage, channelId.Value, f => f.CustomUpdateChannel = channelId);
     }
@@ -220,7 +222,7 @@ public class FollowInteractionModule(
         {
             // Show the panel again, so the picker goes back to the saved channel
             await UpdateAsync(ownerId, followId, listPage, _ => { });
-            await FollowupAsync(LocalizationService.Get("follow-no-send-permission", CommandCultureInfo,
+            await FollowupAsync(LocalizationService.Get("no-send-permission", CommandCultureInfo,
                 new { channel = MentionUtils.MentionChannel(channelId) }), ephemeral: true);
             return;
         }
@@ -254,21 +256,15 @@ public class FollowInteractionModule(
     }
 
     [ComponentInteraction(FollowComponentBuilder.ReleaseMenuId + ":*:*:*")]
-    public async Task HandleReleaseFilterSelectionAsync(ulong ownerId, int followId, int listPage, string[] selectedValues)
+    public Task HandleReleaseFilterSelectionAsync(ulong ownerId, int followId, int listPage, string[] selectedValues)
     {
+        // The menu requires at least one release type
         ReleaseType releaseFilter = 0;
         foreach (var value in selectedValues)
             if (int.TryParse(value, out var flag))
                 releaseFilter |= (ReleaseType)flag;
 
-        if (releaseFilter == 0)
-        {
-            await RespondAsync(LocalizationService.Get("settings-release-required", CommandCultureInfo),
-                ephemeral: true);
-            return;
-        }
-
-        await UpdateAsync(ownerId, followId, listPage, f => f.ReleaseFilter = releaseFilter);
+        return UpdateAsync(ownerId, followId, listPage, f => f.ReleaseFilter = releaseFilter);
     }
 
     [ComponentInteraction(FollowComponentBuilder.LoaderMenuId + ":*:*:*")]

@@ -148,10 +148,7 @@ public class ServerSettingsInteractionModule(
 
         await DeferAsync();
 
-        var count = 0;
-        foreach (var entry in (await dataService.GetAllGuildsSubscribedProjectsAsync(Context.Guild.Id)) ?? [])
-            if (await dataService.RemoveModrinthProjectFromGuildAsync(Context.Guild.Id, entry.ProjectId))
-                count++;
+        var count = await dataService.RemoveAllModrinthProjectsFromGuildAsync(Context.Guild.Id);
 
         // Only the owner of the panel could open the modal
         await ShowPanelAsync(Context.User.Id, ManageTab.General, Loc("server-unsubscribed-all", new { count }));
@@ -176,10 +173,7 @@ public class ServerSettingsInteractionModule(
 
         await DeferAsync();
 
-        var count = 0;
-        foreach (var follow in await followService.GetFollowsAsync(Context.Guild.Id))
-            if (await followService.RemoveFollowAsync(Context.Guild.Id, follow.Id))
-                count++;
+        var count = await followService.RemoveAllFollowsAsync(Context.Guild.Id);
 
         // Only the owner of the panel could open the modal
         await ShowPanelAsync(Context.User.Id, ManageTab.General, Loc("server-unfollowed-all", new { count }));

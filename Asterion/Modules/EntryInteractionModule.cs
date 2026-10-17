@@ -239,7 +239,7 @@ namespace Asterion.Modules
         private async Task ShowResultAsync(ulong ownerId, int listPage, string text)
         {
             var components = await ManageInteractionModule.BuildPanelAsync(dataService, followService,
-                Context.Guild.Id, ownerId, ManageTab.Projects, listPage, IsAdministrator, LocalizationService,
+                Context.Guild.Id, ownerId, ManageTab.Projects, listPage, CanManageServerHere, LocalizationService,
                 CommandCultureInfo, text);
 
             await ModifyOriginalResponseAsync(msg => msg.Components = components);

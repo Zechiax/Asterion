@@ -181,9 +181,7 @@ public class ModrinthModule : AsterionInteractionModuleBase
         if (result.Status != SubscribeStatus.Subscribed)
             return;
 
-        // Check permissions, if the bot can send messages in the channel
-        if (Context.Channel is ITextChannel textChannel && textChannel.Guild.GetUserAsync(Context.Client.CurrentUser.Id)
-                .Result.GetPermissions(textChannel).SendMessages == false)
+        if (!BotCanSendIn(channel.Id))
             await FollowupAsync(
                 ":warning: I don't have permission to send messages in this channel, please give me the required permissions :warning:",
                 ephemeral: true);

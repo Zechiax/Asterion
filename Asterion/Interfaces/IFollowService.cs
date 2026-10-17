@@ -22,6 +22,12 @@ public interface IFollowService
     /// <returns>False if the guild has no such follow</returns>
     public Task<bool> RemoveFollowAsync(ulong guildId, int followId, CancellationToken ct = default);
 
+    /// <summary>
+    ///     Removes every follow of the guild and every project only they were using
+    /// </summary>
+    /// <returns>Number of removed follows</returns>
+    public Task<int> RemoveAllFollowsAsync(ulong guildId, CancellationToken ct = default);
+
     public Task<bool> SetIgnoredAsync(ulong guildId, int followId, string projectId, bool ignored,
         CancellationToken ct = default);
 

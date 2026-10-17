@@ -110,6 +110,30 @@ public class FollowService : IFollowService
         return true;
     }
 
+    public async Task<int> RemoveAllFollowsAsync(ulong guildId, CancellationToken ct = default)
+    {
+        using var scope = _services.CreateScope();
+        await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
+
+        var follows = await db.ModrinthFollows
+            .Include(f => f.Projects)
+            .Where(f => f.GuildId == guildId)
+            .ToListAsync(ct);
+
+        if (follows.Count == 0)
+            return 0;
+
+        var projectIds = follows.SelectMany(f => f.Projects).Select(fp => fp.ProjectId).ToList();
+
+        // Cascades to the follows' FollowProject and PendingNotification rows
+        db.ModrinthFollows.RemoveRange(follows);
+        await db.SaveChangesAsync(ct);
+
+        await ProjectCleanup.RemoveUnusedProjectsAsync(db, projectIds, ct);
+
+        return follows.Count;
+    }
+
     public async Task<bool> SetIgnoredAsync(ulong guildId, int followId, string projectId, bool ignored,
         CancellationToken ct = default)
     {

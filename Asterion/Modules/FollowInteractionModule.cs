@@ -305,7 +305,7 @@ public class FollowInteractionModule(
     private async Task ShowResultAsync(ulong ownerId, int listPage, string text)
     {
         var components = await ManageInteractionModule.BuildPanelAsync(dataService, followService, Context.Guild.Id,
-            ownerId, ManageTab.Creators, listPage, IsAdministrator, LocalizationService, CommandCultureInfo, text);
+            ownerId, ManageTab.Creators, listPage, CanManageServerHere, LocalizationService, CommandCultureInfo, text);
 
         await ModifyOriginalResponseAsync(msg => msg.Components = components);
     }

@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using Asterion.Database.Models;
 using Asterion.Interfaces;
 using Asterion.Services.Modrinth;
 using Modrinth.Helpers;
@@ -17,8 +18,11 @@ public enum SubscribeStatus
 /// <param name="Project">The project, null if it was not found</param>
 public sealed record SubscribeResult(SubscribeStatus Status, Project? Project = null);
 
+/// <param name="Result">Result of adding the follow, null if the user was not found</param>
+public sealed record FollowUserResult(SearchResult<UserDto> Search, AddFollowResult? Result = null);
+
 /// <summary>
-///     Subscribing shared by <c>/subscribe</c> and the manage panel
+///     Subscribing and following shared by the commands and the manage panel
 /// </summary>
 public static partial class Subscriptions
 {
@@ -45,6 +49,24 @@ public static partial class Subscriptions
             project.Updated, channelId, project.Title);
 
         return new SubscribeResult(added ? SubscribeStatus.Subscribed : SubscribeStatus.Failed, project);
+    }
+
+    /// <summary>
+    ///     Finds the Modrinth user by username, ID or link and follows them
+    /// </summary>
+    public static async Task<FollowUserResult> FollowUserAsync(ModrinthService modrinthService,
+        IFollowService followService, ulong guildId, string query, ulong channelId, FollowEvents events,
+        ulong? newProjectChannelId)
+    {
+        var search = await modrinthService.FindUser(ParseModrinthInput(query));
+        if (!search.Success)
+            return new FollowUserResult(search);
+
+        var user = search.Payload.User;
+        var result = await followService.AddFollowAsync(guildId, FollowTargetType.User, user.Id, user.Username,
+            channelId, events, newProjectChannelId);
+
+        return new FollowUserResult(search, result);
     }
     
     public static string ParseModrinthInput(string input)

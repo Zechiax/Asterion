@@ -157,7 +157,7 @@ public class ManageInteractionModule(
         await DeferAsync(true);
 
         var components = await BuildPanelAsync(dataService, followService, Context.Guild.Id, Context.User.Id, null,
-            0, IsAdministrator, LocalizationService, CommandCultureInfo);
+            0, CanManageServerHere, LocalizationService, CommandCultureInfo);
 
         await FollowupAsync(components: components, ephemeral: true,
             flags: MessageFlags.ComponentsV2 | MessageFlags.Ephemeral);
@@ -269,7 +269,7 @@ public class ManageInteractionModule(
         await DeferAsync();
 
         var modal = (SocketModal)Context.Interaction;
-        var query = Subscriptions.ParseModrinthInput(modal.GetText(UsernameInputId) ?? string.Empty);
+        var query = modal.GetText(UsernameInputId) ?? string.Empty;
         var channelId = SettingsPanelBuilder.ParseSelectedId(modal.GetSelected(ChannelInputId));
         var newProjectChannelId = SettingsPanelBuilder.ParseSelectedId(modal.GetSelected(NewProjectChannelInputId));
 
@@ -290,25 +290,16 @@ public class ManageInteractionModule(
             return;
         }
 
-        var searchResult = await modrinthService.FindUser(query);
-        if (!searchResult.Success)
+        var (search, result) = await Subscriptions.FollowUserAsync(modrinthService, followService, Context.Guild.Id,
+            query, channelId.Value, events == FollowEvents.None ? FollowEvents.ProjectUpdate : events,
+            newProjectChannelId);
+        if (result is null)
         {
-            var error = searchResult.SearchStatus switch
-            {
-                SearchStatus.NoResult => Loc("modrinth-search-no-result", new { query }),
-                SearchStatus.ApiDown => Loc("error-modrinth-api-unavailable"),
-                _ => Loc("error-unknown")
-            };
-            await ShowPanelAsync(Context.User.Id, ManageTab.Creators, 0, error);
+            await ShowPanelAsync(Context.User.Id, ManageTab.Creators, 0, SearchErrorDescription(search));
             return;
         }
 
-        var user = searchResult.Payload.User;
-        var result = await followService.AddFollowAsync(Context.Guild.Id, FollowTargetType.User, user.Id,
-            user.Username, channelId.Value, events == FollowEvents.None ? FollowEvents.ProjectUpdate : events,
-            newProjectChannelId);
-
-        var notice = FollowEmbedBuilder.DescribeAddResult(result, user.Username,
+        var notice = FollowEmbedBuilder.DescribeAddResult(result, search.Payload.User.Username,
             MentionUtils.MentionChannel(channelId.Value), LocalizationService, CommandCultureInfo);
 
         // Open the follow's settings, so the new follow can be set up right away
@@ -327,7 +318,7 @@ public class ManageInteractionModule(
     private async Task ShowPanelAsync(ulong ownerId, ManageTab tab, int page, string? notice = null)
     {
         var components = await BuildPanelAsync(dataService, followService, Context.Guild.Id, ownerId, tab, page,
-            IsAdministrator, LocalizationService, CommandCultureInfo, notice);
+            CanManageServerHere, LocalizationService, CommandCultureInfo, notice);
 
         await ModifyOriginalResponseAsync(msg => msg.Components = components);
     }

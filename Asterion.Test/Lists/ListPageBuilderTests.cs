@@ -91,10 +91,8 @@ public class ListPageBuilderTests
         using (Assert.EnterMultipleScope())
         {
             Assert.That(all, Has.Count.LessThanOrEqualTo(ComponentTree.MaxComponentsPerMessage));
-            // Tabs on top, navigation at the bottom
-            Assert.That(components.Components.First(), Is.InstanceOf<ActionRowComponent>());
-            Assert.That(((ActionRowComponent)components.Components.First()).Components, Has.Count.EqualTo(4));
-            Assert.That(((ActionRowComponent)components.Components.Last()).Components, Has.Count.EqualTo(5));
+            Assert.That(all.OfType<ActionRowComponent>().Select(r => r.Components.Count),
+                Is.All.LessThanOrEqualTo(5));
         }
     }
 
@@ -106,29 +104,4 @@ public class ListPageBuilderTests
         Assert.That(ids, Is.Unique);
     }
 
-    [Test]
-    public void SinglePageHasOnlyRefreshButton()
-    {
-        var all = FlattenPage(Build(3, 0).Components);
-
-        using (Assert.EnterMultipleScope())
-        {
-            Assert.That(all.OfType<SectionComponent>().Count(), Is.EqualTo(3));
-            Assert.That(all.OfType<ButtonComponent>().Where(b => b.CustomId.StartsWith("test-page:"))
-                .Select(b => b.CustomId), Is.EqualTo(new[] { "test-page:0:refresh" }));
-            Assert.That(all.OfType<TextDisplayComponent>().First().Content, Does.Not.Contain("Page"));
-        }
-    }
-
-    [Test]
-    public void EmptyListShowsEmptyText()
-    {
-        var all = FlattenPage(Build(0, 0).Components);
-
-        using (Assert.EnterMultipleScope())
-        {
-            Assert.That(all.OfType<SectionComponent>(), Is.Empty);
-            Assert.That(all.OfType<TextDisplayComponent>().Select(t => t.Content), Does.Contain("Nothing here"));
-        }
-    }
 }

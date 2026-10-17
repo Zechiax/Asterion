@@ -9,7 +9,6 @@ using Asterion.Services.Modrinth;
 using Discord;
 using Discord.Interactions;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Modrinth.Models;
 
 namespace Asterion.Modules;
@@ -20,7 +19,6 @@ public class ModrinthInteractionModule : AsterionInteractionModuleBase
     private const string RequestError = "Sorry, there was an error processing your request, try again later";
     private readonly IDataService _dataService;
     private readonly IFollowService _followService;
-    private readonly ILogger<ModrinthInteractionModule> _logger;
     private readonly ModrinthService _modrinthService;
 
     public ModrinthInteractionModule(IServiceProvider serviceProvider, ILocalizationService localizationService, IGuildCultureProvider cultureProvider) :
@@ -29,7 +27,6 @@ public class ModrinthInteractionModule : AsterionInteractionModuleBase
         _dataService = serviceProvider.GetRequiredService<IDataService>();
         _followService = serviceProvider.GetRequiredService<IFollowService>();
         _modrinthService = serviceProvider.GetRequiredService<ModrinthService>();
-        _logger = serviceProvider.GetRequiredService<ILogger<ModrinthInteractionModule>>();
     }
 
     private ComponentBuilder GetButtons(Project project, GuildSettings guildSettings, bool subEnabled = true,
@@ -57,125 +54,44 @@ public class ModrinthInteractionModule : AsterionInteractionModuleBase
 
         var guildId = Context.Guild.Id;
         var channel = Context.Guild.GetTextChannel(Context.Channel.Id);
-
-        var subscribed = await _dataService.IsGuildSubscribedToProjectAsync(guildId, projectId);
-
-        var project = await _modrinthService.GetProject(projectId);
-
-        if (project == null)
-        {
-            await FollowupAsync(RequestError, ephemeral: true);
-            return;
-        }
-
-        var team = await _modrinthService.GetProjectsTeamMembersAsync(project.Id);
         var guild = await _dataService.GetGuildByIdAsync(guildId);
 
-        if (guild is null)
-        {
-            // Try again later
-            await FollowupAsync(RequestError, ephemeral: true);
-            return;
-        }
-
-        // Already subscribed
-        if (subscribed)
-        {
-            await ModifyOriginalResponseAsync(x =>
-            {
-                x.Components = GetButtons(project, guild.GuildSettings, false, team).Build();
-            });
-            await FollowupAsync("You're already subscribed to updates for this project", ephemeral: true);
-            return;
-        }
-
-        var latestVersion = await _modrinthService.GetProjectsLatestVersion(project);
-
-        if (latestVersion == null)
+        if (channel is null || guild is null)
         {
             await FollowupAsync(RequestError, ephemeral: true);
             return;
         }
+
+        var result = await Subscriptions.SubscribeAsync(_modrinthService, _dataService, guildId, projectId, channel.Id);
+
+        if (result.Status is SubscribeStatus.ProjectNotFound or SubscribeStatus.Failed)
+        {
+            await FollowupAsync(RequestError, ephemeral: true);
+            return;
+        }
+
+        var project = result.Project!;
+        var team = await _modrinthService.GetProjectsTeamMembersAsync(project.Id);
 
         await ModifyOriginalResponseAsync(x =>
         {
             x.Components = GetButtons(project, guild.GuildSettings, false, team).Build();
         });
 
-        await _dataService.AddModrinthProjectToGuildAsync(guildId, project.Id, latestVersion.Id, project.Updated, channel.Id,
-            project.Title);
+        if (result.Status == SubscribeStatus.AlreadySubscribed)
+        {
+            await FollowupAsync("You're already subscribed to updates for this project", ephemeral: true);
+            return;
+        }
 
         await FollowupAsync(
             $"Subscribed to updates for project **{project.Title}** with ID **{project.Id}** :white_check_mark: Updates will be send to this channel {channel.Mention}",
             ephemeral: true);
 
-
-        var guildChannels = Context.Guild.TextChannels;
-
-        var options = new SelectMenuBuilder
-        {
-            CustomId = $"project_channels_{project.Id}",
-            Placeholder = "Select update channel",
-            Options = (await GetSelectMenuChannelList(Context.Guild, guildChannels, Context.Channel as ITextChannel))
-                .Take(25).ToList(),
-            MinValues = 1,
-            MaxValues = 1
-        };
-
-        // Check permissions, if the bot can send messages in the channel
-        if (Context.Channel is ITextChannel textChannel && textChannel.Guild.GetUserAsync(Context.Client.CurrentUser.Id)
-                .Result.GetPermissions(textChannel).SendMessages == false)
+        if (!BotCanSendIn(channel.Id))
             await FollowupAsync(
                 ":warning: I don't have permission to send messages in this channel, please give me the required permissions :warning:",
                 ephemeral: true);
-
-        /*var component = new ComponentBuilder().WithSelectMenu(options);
-        await FollowupAsync(
-                embed: GeneralEmbedBuilder.GetChangeChannelEmbed(project, guildChannels.Count > 25).Build(),
-                ephemeral: true, components: component.Build());*/
-    }
-
-    [ComponentInteraction("project_channels_*")]
-    public async Task ChannelSelection(string projectId, string[] selectedChannels)
-    {
-        if (ulong.TryParse(selectedChannels.First(), out var channelId) == false)
-        {
-            _logger.LogError("Could not convert {Id} to ulong", selectedChannels.First());
-            return;
-        }
-
-        await _dataService.ChangeModrinthEntryChannel(Context.Guild.Id, projectId, channelId);
-
-        await DeferAsync();
-    }
-
-    /// <summary>
-    ///     Returns list of all channels for Select Menu to be used
-    /// </summary>
-    /// <param name="guild"></param>
-    /// <param name="guildChannels"></param>
-    /// <param name="defaultChannel">Default selected option</param>
-    /// <returns></returns>
-    public static async Task<List<SelectMenuOptionBuilder>> GetSelectMenuChannelList(IGuild guild,
-        IReadOnlyCollection<ITextChannel>? guildChannels = null, ITextChannel? defaultChannel = null)
-    {
-        var channels = new List<SelectMenuOptionBuilder>();
-
-        guildChannels ??= await guild.GetTextChannelsAsync();
-
-        if (defaultChannel is not null)
-            channels.Add(new SelectMenuOptionBuilder($"{defaultChannel.Name} (here)", defaultChannel.Id.ToString(),
-                emote: Emoji.Parse(":hash:"), isDefault: true));
-
-        foreach (var channel in guildChannels)
-        {
-            if (defaultChannel != null && channel.Id == defaultChannel.Id) continue;
-
-            channels.Add(new SelectMenuOptionBuilder(channel.Name, channel.Id.ToString(),
-                emote: Emoji.Parse(":hash:")));
-        }
-
-        return channels;
     }
 
     [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]

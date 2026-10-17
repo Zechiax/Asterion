@@ -51,13 +51,6 @@ public class FollowModule(
     {
         await DeferAsync();
 
-        var searchResult = await modrinthService.FindUser(Subscriptions.ParseModrinthInput(username));
-        if (!searchResult.Success)
-        {
-            await FollowupWithSearchResultErrorAsync(searchResult);
-            return;
-        }
-
         var textChannel = channel as ITextChannel ?? Context.Channel as ITextChannel;
         if (textChannel is null)
         {
@@ -65,12 +58,16 @@ public class FollowModule(
             return;
         }
 
-        var user = searchResult.Payload.User;
-        var result = await followService.AddFollowAsync(Context.Guild.Id, FollowTargetType.User, user.Id,
-            user.Username, textChannel.Id, ToFollowEvents(events), newProjectChannel?.Id);
+        var (search, result) = await Subscriptions.FollowUserAsync(modrinthService, followService, Context.Guild.Id,
+            username, textChannel.Id, ToFollowEvents(events), newProjectChannel?.Id);
+        if (result is null)
+        {
+            await FollowupWithSearchResultErrorAsync(search);
+            return;
+        }
 
-        await FollowupAsync(FollowEmbedBuilder.DescribeAddResult(result, user.Username, textChannel.Mention,
-            LocalizationService, CommandCultureInfo));
+        await FollowupAsync(FollowEmbedBuilder.DescribeAddResult(result, search.Payload.User.Username,
+            textChannel.Mention, LocalizationService, CommandCultureInfo));
 
         if (result.Status != AddFollowStatus.Added)
             return;

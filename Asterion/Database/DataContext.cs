@@ -95,6 +95,10 @@ public class DataContext : DbContext
         modelBuilder.Entity<FollowProject>()
             .HasIndex(fp => fp.ProjectId);
 
+        // Used by the statistics lookups and the maintenance trim of old rows
+        modelBuilder.Entity<TotalDownloads>()
+            .HasIndex(t => new { t.ProjectId, t.Timestamp });
+
         modelBuilder.Entity<PendingNotification>()
             .HasOne(p => p.Entry)
             .WithMany()

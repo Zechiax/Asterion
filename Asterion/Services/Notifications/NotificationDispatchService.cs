@@ -45,8 +45,6 @@ public class NotificationDispatchService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        using var timer = new PeriodicTimer(SafetyNetPollInterval);
-
         while (!stoppingToken.IsCancellationRequested)
         {
             try
@@ -57,10 +55,8 @@ public class NotificationDispatchService : BackgroundService
             {
                 _logger.LogError(ex, "Dispatch pass failed");
             }
-
-            var timerTick = timer.WaitForNextTickAsync(stoppingToken).AsTask();
-            var signalTick = _signal.WaitAsync(stoppingToken);
-            await Task.WhenAny(timerTick, signalTick);
+            
+            await _signal.WaitAsync(SafetyNetPollInterval, stoppingToken);
         }
     }
 

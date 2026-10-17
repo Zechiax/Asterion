@@ -14,5 +14,5 @@ public class NotificationSignal : INotificationSignal
             _semaphore.Release();
     }
 
-    public Task WaitAsync(CancellationToken ct) => _semaphore.WaitAsync(ct);
+    public Task<bool> WaitAsync(TimeSpan timeout, CancellationToken ct) => _semaphore.WaitAsync(timeout, ct);
 }

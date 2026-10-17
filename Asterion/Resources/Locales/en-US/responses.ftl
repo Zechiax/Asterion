@@ -24,7 +24,7 @@ list-subscription-entry = **{ $title }** ({ $id })
 entry-not-found = This server is not subscribed to this project
 entry-unsub-confirm-question = Unsubscribe from **{ $title }** ({ $id })?
 entry-unsubscribed = Unsubscribed from updates for **{ $title }** ({ $id }) :white_check_mark:
-follow-no-send-permission = :warning: I don't have permission to send messages in { $channel }, please give me the required permissions :warning:
+no-send-permission = :warning: I don't have permission to send messages in { $channel }, please give me the required permissions :warning:
 
 ## Settings panel
 settings-subscription-title = Subscription settings: { $title } ({ $id })
@@ -37,7 +37,6 @@ settings-release-placeholder = Select release type(s)
 settings-loader-filter = Loaders
 settings-loader-placeholder = All loaders
 settings-none = None
-settings-release-required = Please select at least one release type
 
 ## Buttons
 button-settings = Settings

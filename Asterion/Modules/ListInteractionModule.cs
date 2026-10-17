@@ -98,7 +98,7 @@ public class ListInteractionModule(
     {
         return loc.Get("list-subscription-entry", culture, new
         {
-            title = entry.Project.Title ?? entry.ProjectId,
+            title = Format.Sanitize(entry.Project.Title ?? entry.ProjectId),
             id = entry.ProjectId,
             channel = entry.CustomUpdateChannel.HasValue
                 ? MentionUtils.MentionChannel(entry.CustomUpdateChannel.Value)

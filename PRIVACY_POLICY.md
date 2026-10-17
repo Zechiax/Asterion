@@ -12,6 +12,7 @@ To provide you with update notifications, Asterion collects and stores the follo
 *    Date Joined: The date when Asterion was added to your server.
 *    Channel IDs: The IDs of channels where you have configured Asterion to send updates.
 *    Subscribed Projects: A list of projects you have subscribed to for updates, including the subscription date.
+*    Followed Modrinth Users: The Modrinth user ID and username of the users you follow, including the follow date, the projects of each followed user and which of them you ignore. This is public data from Modrinth.
 *    Bot Preferences: Any preferences set by you for the bot's behavior.
 
 
@@ -21,6 +22,7 @@ The information we collect is used solely to provide the update notification ser
 
 *    Identify your server and channels to send notifications.
 *    Manage your subscriptions to project updates.
+*    Find new and removed projects of the Modrinth users you follow.
 *    Customize the bot’s behavior based on your preferences.
 
 

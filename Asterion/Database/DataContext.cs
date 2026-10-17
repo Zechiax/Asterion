@@ -27,6 +27,8 @@ public class DataContext : DbContext
     public virtual DbSet<TotalDownloads> TotalDownloads { get; set; } = null!;
     public virtual DbSet<ModrinthInstanceStatistics> ModrinthInstanceStatistics { get; set; } = null!;
     public virtual DbSet<PendingNotification> PendingNotifications { get; set; } = null!;
+    public virtual DbSet<ModrinthFollow> ModrinthFollows { get; set; } = null!;
+    public virtual DbSet<FollowProject> FollowProjects { get; set; } = null!;
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -62,6 +64,51 @@ public class DataContext : DbContext
         // Ignore the LoaderFilter property
         modelBuilder.Entity<ModrinthEntry>()
             .Ignore(e => e.LoaderFilter);
+
+        modelBuilder.Entity<ModrinthFollow>()
+            .Property(f => f.ReleaseFilter)
+            .HasDefaultValue(ReleaseType.Alpha | ReleaseType.Beta | ReleaseType.Release);
+
+        modelBuilder.Entity<ModrinthFollow>()
+            .Ignore(f => f.LoaderFilter);
+
+        // A guild can follow a target only once
+        modelBuilder.Entity<ModrinthFollow>()
+            .HasIndex(f => new { f.GuildId, f.TargetType, f.TargetId })
+            .IsUnique();
+
+        // Used by the sync to group follows of the same target
+        modelBuilder.Entity<ModrinthFollow>()
+            .HasIndex(f => new { f.TargetType, f.TargetId });
+
+        modelBuilder.Entity<FollowProject>()
+            .HasKey(fp => new { fp.FollowId, fp.ProjectId });
+
+        modelBuilder.Entity<FollowProject>()
+            .HasOne(fp => fp.Follow)
+            .WithMany(f => f.Projects)
+            .HasForeignKey(fp => fp.FollowId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Used by update detection to find follows of a project
+        modelBuilder.Entity<FollowProject>()
+            .HasIndex(fp => fp.ProjectId);
+
+        modelBuilder.Entity<PendingNotification>()
+            .HasOne(p => p.Entry)
+            .WithMany()
+            .HasForeignKey(p => p.EntryId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<PendingNotification>()
+            .HasOne(p => p.Follow)
+            .WithMany()
+            .HasForeignKey(p => p.FollowId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<PendingNotification>()
+            .ToTable(t => t.HasCheckConstraint("CK_PendingNotifications_Target",
+                "(\"EntryId\" IS NOT NULL) <> (\"FollowId\" IS NOT NULL)"));
 
         // Used by the dispatch poll to find due notifications
         modelBuilder.Entity<PendingNotification>()

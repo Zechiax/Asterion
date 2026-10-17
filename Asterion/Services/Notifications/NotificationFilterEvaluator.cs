@@ -7,7 +7,7 @@ namespace Asterion.Services.Notifications;
 
 public static class NotificationFilterEvaluator
 {
-    public static bool ShouldNotify(ModrinthEntry entry, Version version)
+    public static bool ShouldNotify(IReleaseFilterable entry, Version version)
     {
         var releaseFilter = entry.ReleaseFilter;
 

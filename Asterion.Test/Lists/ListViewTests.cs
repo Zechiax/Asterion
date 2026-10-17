@@ -33,37 +33,67 @@ public class ListViewTests
         return dataService;
     }
 
+    private static IFollowService MakeFollowService(int followCount)
+    {
+        var follows = Enumerable.Range(1, followCount).Select(i => new ModrinthFollow
+        {
+            Id = i,
+            GuildId = GuildId,
+            TargetId = $"u{i}",
+            TargetName = $"user{i}",
+            Created = DateTime.UtcNow
+        }).ToList();
+
+        var followService = Substitute.For<IFollowService>();
+        followService.GetFollowsAsync(GuildId).Returns(follows);
+        followService.CountFollowsAsync(GuildId).Returns(followCount);
+        return followService;
+    }
+
     private static List<ButtonComponent> Buttons(MessageComponent components)
     {
         return ComponentTree.Flatten(components).OfType<ButtonComponent>().ToList();
     }
 
     [Test]
-    public async Task OpensOnProjects()
+    public async Task OpensOnProjectsWithTabsForBoth()
     {
         var (components, isEmpty) = await ListInteractionModule.BuildListAsync(MakeDataService(3),
-            GuildId, Owner, null, 0, Loc, null);
+            MakeFollowService(2), GuildId, Owner, null, 0, Loc, null);
+
+        var tabs = Buttons(components).Where(b => b.CustomId.EndsWith(":tab")).ToList();
 
         using (Assert.EnterMultipleScope())
         {
             Assert.That(isEmpty, Is.False);
+            Assert.That(tabs.Select(b => b.Label), Is.EqualTo(new[] { "Projects (3)", "Creators (2)" }));
+            Assert.That(tabs.Select(b => b.IsDisabled), Is.EqualTo(new[] { true, false }));
             Assert.That(Buttons(components).Select(b => b.CustomId), Does.Contain("entry-open:42:p01:0"));
         }
     }
 
     [Test]
-    public async Task EmptyWhenNothingIsSubscribed()
+    public async Task OpensOnCreatorsWithoutProjects()
     {
-        var (_, isEmpty) = await ListInteractionModule.BuildListAsync(MakeDataService(0),
+        var (components, _) = await ListInteractionModule.BuildListAsync(MakeDataService(0), MakeFollowService(2),
+            GuildId, Owner, null, 0, Loc, null);
+
+        Assert.That(Buttons(components).Select(b => b.CustomId), Does.Contain("follow-open:42:1:0"));
+    }
+
+    [Test]
+    public async Task EmptyWhenNothingIsSubscribedOrFollowed()
+    {
+        var (_, isEmpty) = await ListInteractionModule.BuildListAsync(MakeDataService(0), MakeFollowService(0),
             GuildId, Owner, null, 0, Loc, null);
 
         Assert.That(isEmpty, Is.True);
     }
 
     [Test]
-    public async Task FullPageStaysWithinDiscordLimits()
+    public async Task FullPageWithTabsStaysWithinDiscordLimits()
     {
-        var (components, _) = await ListInteractionModule.BuildListAsync(MakeDataService(25),
+        var (components, _) = await ListInteractionModule.BuildListAsync(MakeDataService(25), MakeFollowService(0),
             GuildId, Owner, ListTab.Projects, 1, Loc, null, "Unsubscribed from something");
 
         var all = ComponentTree.Flatten(components);
@@ -73,7 +103,7 @@ public class ListViewTests
         {
             Assert.That(all, Has.Count.LessThanOrEqualTo(ComponentTree.MaxComponentsPerMessage));
             Assert.That(ids, Is.Unique);
-            Assert.That(all.OfType<ActionRowComponent>().Single().Components, Has.Count.EqualTo(3));
+            Assert.That(all.OfType<ActionRowComponent>().Single().Components, Has.Count.EqualTo(5));
             // Settings buttons carry the shown page, so the panel can go back to it
             Assert.That(ids, Does.Contain("entry-open:42:p11:1"));
             Assert.That(all.OfType<TextDisplayComponent>().First().Content,
@@ -84,7 +114,7 @@ public class ListViewTests
     [Test]
     public async Task ClampedPageIsUsedInSettingsButtons()
     {
-        var (components, _) = await ListInteractionModule.BuildListAsync(MakeDataService(3),
+        var (components, _) = await ListInteractionModule.BuildListAsync(MakeDataService(3), MakeFollowService(0),
             GuildId, Owner, ListTab.Projects, 5, Loc, null);
 
         Assert.That(Buttons(components).Select(b => b.CustomId), Does.Contain("entry-open:42:p01:0"));
@@ -93,7 +123,7 @@ public class ListViewTests
     [Test]
     public async Task EveryButtonCarriesTheOwnerForDoUserCheck()
     {
-        var (components, _) = await ListInteractionModule.BuildListAsync(MakeDataService(25),
+        var (components, _) = await ListInteractionModule.BuildListAsync(MakeDataService(25), MakeFollowService(2),
             GuildId, Owner, ListTab.Projects, 1, Loc, null);
 
         // DoUserCheck reads the user ID right after the first ':'

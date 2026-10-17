@@ -15,7 +15,7 @@ namespace Asterion.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "10.0.9");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.12");
 
             modelBuilder.Entity("Asterion.Database.Models.Array", b =>
                 {
@@ -32,6 +32,27 @@ namespace Asterion.Migrations
                     b.HasKey("ArrayId");
 
                     b.ToTable("Arrays");
+                });
+
+            modelBuilder.Entity("Asterion.Database.Models.FollowProject", b =>
+                {
+                    b.Property<int>("FollowId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ProjectId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("FirstSeen")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("Ignored")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("FollowId", "ProjectId");
+
+                    b.HasIndex("ProjectId");
+
+                    b.ToTable("FollowProjects");
                 });
 
             modelBuilder.Entity("Asterion.Database.Models.Guild", b =>
@@ -169,6 +190,65 @@ namespace Asterion.Migrations
                     b.ToTable("ModrinthEntries");
                 });
 
+            modelBuilder.Entity("Asterion.Database.Models.ModrinthFollow", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("Created")
+                        .HasColumnType("TEXT");
+
+                    b.Property<ulong?>("CustomPingRole")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<ulong?>("CustomUpdateChannel")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Events")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<ulong>("GuildId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("LastSyncError")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("LastSyncedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<ulong?>("NewProjectPingRole")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ReleaseFilter")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(7);
+
+                    b.Property<string>("SerializedLoaderFilter")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TargetId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TargetName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("TargetType")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TargetType", "TargetId");
+
+                    b.HasIndex("GuildId", "TargetType", "TargetId")
+                        .IsUnique();
+
+                    b.ToTable("ModrinthFollows");
+                });
+
             modelBuilder.Entity("Asterion.Database.Models.ModrinthInstanceStatistics", b =>
                 {
                     b.Property<int>("Id")
@@ -227,10 +307,16 @@ namespace Asterion.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
-                    b.Property<ulong>("EntryId")
+                    b.Property<ulong?>("EntryId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("FollowId")
                         .HasColumnType("INTEGER");
 
                     b.Property<ulong>("GuildId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Kind")
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTime?>("LastAttemptAt")
@@ -265,13 +351,18 @@ namespace Asterion.Migrations
 
                     b.HasIndex("EntryId");
 
+                    b.HasIndex("FollowId");
+
                     b.HasIndex("ProjectId");
 
                     b.HasIndex("Status", "LastAttemptAt");
 
                     b.HasIndex("Status", "NextRetryAt");
 
-                    b.ToTable("PendingNotifications");
+                    b.ToTable("PendingNotifications", t =>
+                        {
+                            t.HasCheckConstraint("CK_PendingNotifications_Target", "(\"EntryId\" IS NOT NULL) <> (\"FollowId\" IS NOT NULL)");
+                        });
                 });
 
             modelBuilder.Entity("Asterion.Database.Models.TotalDownloads", b =>
@@ -298,6 +389,25 @@ namespace Asterion.Migrations
                     b.HasIndex("ProjectId");
 
                     b.ToTable("TotalDownloads");
+                });
+
+            modelBuilder.Entity("Asterion.Database.Models.FollowProject", b =>
+                {
+                    b.HasOne("Asterion.Database.Models.ModrinthFollow", "Follow")
+                        .WithMany("Projects")
+                        .HasForeignKey("FollowId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Asterion.Database.Models.ModrinthProject", "Project")
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Follow");
+
+                    b.Navigation("Project");
                 });
 
             modelBuilder.Entity("Asterion.Database.Models.Guild", b =>
@@ -349,13 +459,28 @@ namespace Asterion.Migrations
                     b.Navigation("Project");
                 });
 
+            modelBuilder.Entity("Asterion.Database.Models.ModrinthFollow", b =>
+                {
+                    b.HasOne("Asterion.Database.Models.Guild", "Guild")
+                        .WithMany()
+                        .HasForeignKey("GuildId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Guild");
+                });
+
             modelBuilder.Entity("Asterion.Database.Models.PendingNotification", b =>
                 {
                     b.HasOne("Asterion.Database.Models.ModrinthEntry", "Entry")
                         .WithMany()
                         .HasForeignKey("EntryId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("Asterion.Database.Models.ModrinthFollow", "Follow")
+                        .WithMany()
+                        .HasForeignKey("FollowId")
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("Asterion.Database.Models.ModrinthProject", "Project")
                         .WithMany()
@@ -364,6 +489,8 @@ namespace Asterion.Migrations
                         .IsRequired();
 
                     b.Navigation("Entry");
+
+                    b.Navigation("Follow");
 
                     b.Navigation("Project");
                 });
@@ -389,6 +516,11 @@ namespace Asterion.Migrations
                 {
                     b.Navigation("GuildSettings")
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Asterion.Database.Models.ModrinthFollow", b =>
+                {
+                    b.Navigation("Projects");
                 });
 
             modelBuilder.Entity("Asterion.Database.Models.ModrinthProject", b =>

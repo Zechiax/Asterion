@@ -174,6 +174,56 @@ public static class ModrinthEmbedBuilder
         };
     }
 
+    public static EmbedBuilder NewProjectEmbed(Project project, Version latestVersion,
+        IEnumerable<TeamMember>? teamMembers = null)
+    {
+        var embed = new EmbedBuilder
+        {
+            Author = GetEmbedAuthor(project, teamMembers),
+            Title = $"New project: {Format.Bold(project.Title)}",
+            Url = project.Url,
+            Description = project.Description.Truncate(DescriptionLimit),
+            ThumbnailUrl = project.IconUrl,
+            Color = project.Color is null ? ModrinthColor : project.Color.Value.ToDiscordColor(),
+            Fields = new List<EmbedFieldBuilder>
+            {
+                new() {Name = "Type", Value = project.ProjectType.Humanize(), IsInline = true},
+                new()
+                {
+                    Name = "Categories", Value = project.Categories.Length > 0
+                        ? string.Join(", ", project.Categories).Transform(To.TitleCase)
+                        : Format.Italics("No categories"),
+                    IsInline = true
+                },
+                new()
+                {
+                    Name = "Loaders",
+                    Value = project.Loaders.Length > 0
+                        ? string.Join(", ", project.Loaders).Transform(To.TitleCase).Truncate(EmbedFieldLimit)
+                        : Format.Italics("None"),
+                    IsInline = true
+                },
+                new()
+                {
+                    Name = "Latest version",
+                    Value = Format.Url(latestVersion.VersionNumber, project.GetVersionUrl(latestVersion)),
+                    IsInline = true
+                },
+                new() {Name = "ID", Value = project.Id, IsInline = true}
+            },
+            ImageUrl = project.Gallery is {Length: > 0}
+                ? project.Gallery.FirstOrDefault(g => g.Featured)?.Url ?? project.Gallery[0].Url
+                : null,
+            Footer = new EmbedFooterBuilder
+            {
+                Text = "Published"
+            },
+            Timestamp = project.Approved ?? project.Published
+        };
+
+        return embed;
+    }
+
     private static EmbedBuilder GetCompactVersionUpdateEmbed(Project project, Version version,
         IEnumerable<TeamMember>? teamMembers = null)
     {

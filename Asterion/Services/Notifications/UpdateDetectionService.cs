@@ -129,9 +129,15 @@ public class UpdateDetectionService : BackgroundService
             .ToList();
 
         var entries = await db.ModrinthEntries.Where(e => e.ProjectId == project.Id).ToListAsync(ct);
+        var guildIdsWithEntry = entries.Select(e => e.GuildId).ToHashSet();
+
+        var follows = await GetFollowTargetsAsync(db, project.Id, ct);
 
         foreach (var version in keepVersions)
+        {
             _notificationScheduler.EnqueueForEntries(db, project, version, entries);
+            _notificationScheduler.EnqueueForFollows(db, project, version, follows, guildIdsWithEntry);
+        }
 
         dbProject.LastUpdated = DateTime.UtcNow;
         dbProject.LastCheckVersion = latestVersion.Id;
@@ -144,6 +150,20 @@ public class UpdateDetectionService : BackgroundService
             keepVersions.Count, project.Id);
 
         _notificationSignal.Signal();
+    }
+
+    /// <summary>
+    ///     Returns the follows that want update messages for the project: they have the ProjectUpdate event
+    ///     and a FollowProject row for the project that is not ignored.
+    /// </summary>
+    public static Task<List<ModrinthFollow>> GetFollowTargetsAsync(DataContext db, string projectId,
+        CancellationToken ct = default)
+    {
+        return db.FollowProjects
+            .Where(fp => fp.ProjectId == projectId && !fp.Ignored)
+            .Select(fp => fp.Follow)
+            .Where(f => (f.Events & FollowEvents.ProjectUpdate) != 0)
+            .ToListAsync(ct);
     }
 
     private async Task<IList<Version>> GetAllVersionsAsync(string[] versionIds)

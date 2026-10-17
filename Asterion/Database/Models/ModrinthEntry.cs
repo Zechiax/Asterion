@@ -5,7 +5,7 @@ using System.Text.Json;
 namespace Asterion.Database.Models;
 
 [Table("ModrinthEntries")]
-public class ModrinthEntry
+public class ModrinthEntry : IReleaseFilterable
 {
     [Key] public ulong EntryId { get; set; }
 

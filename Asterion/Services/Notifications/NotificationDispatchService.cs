@@ -89,16 +89,14 @@ public class NotificationDispatchService : BackgroundService
         using var scope = _services.CreateScope();
         await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
 
-        var entry = await db.ModrinthEntries
-            .Include(e => e.Guild).ThenInclude(g => g.GuildSettings)
-            .FirstOrDefaultAsync(e => e.EntryId == row.EntryId, ct);
+        var delivery = await ResolveDeliveryAsync(db, row, ct);
 
-        if (entry is null)
+        if (delivery is null)
         {
             _logger.LogWarning(
-                "Entry {EntryId} no longer exists for pending notification {Id} (guild likely unsubscribed)",
-                row.EntryId, row.Id);
-            await _reader.MarkDeadLetteredAsync(row.Id, "Entry no longer exists (guild unsubscribed)", ct);
+                "Entry {EntryId} / follow {FollowId} no longer exists for pending notification {Id} (guild likely unsubscribed)",
+                row.EntryId, row.FollowId, row.Id);
+            await _reader.MarkDeadLetteredAsync(row.Id, "Entry or follow no longer exists (guild unsubscribed)", ct);
             return;
         }
 
@@ -124,19 +122,28 @@ public class NotificationDispatchService : BackgroundService
                 teamCache[project.Team] = team;
             }
 
-            var embed = ModrinthEmbedBuilder.VersionUpdateEmbed(entry.Guild.GuildSettings, project, version, team)
-                .Build();
-            var components = new ComponentBuilder()
-                .WithButton(ModrinthComponentBuilder.GetVersionUrlButton(project, version)).Build();
+            NotificationContent content;
+            if (row.Kind == NotificationKind.NewProject)
+            {
+                var embed = ModrinthEmbedBuilder.NewProjectEmbed(project, version, team).Build();
+                var components = new ComponentBuilder()
+                    .WithButton(ModrinthComponentBuilder.GetProjectLinkButton(project)).Build();
 
-            var pingRoleId = entry.CustomPingRole ?? entry.Guild.PingRole;
-            var pingText = pingRoleId.HasValue ? MentionUtils.MentionRole(pingRoleId.Value) : string.Empty;
+                content = new NotificationContent(PingText(delivery.NewProjectPingRoleId), embed, components);
+            }
+            else
+            {
+                var embed = ModrinthEmbedBuilder.VersionUpdateEmbed(delivery.GuildSettings, project, version, team)
+                    .Build();
+                var components = new ComponentBuilder()
+                    .WithButton(ModrinthComponentBuilder.GetVersionUrlButton(project, version)).Build();
 
-            var content = new NotificationContent(pingText, embed, components);
+                content = new NotificationContent(PingText(delivery.PingRoleId), embed, components);
+            }
 
-            DeliveryTarget target = entry.WebhookUrl is not null
-                ? new WebhookDeliveryTarget(entry.WebhookUrl)
-                : new BotDeliveryTarget(row.GuildId, entry.CustomUpdateChannel ?? 0);
+            DeliveryTarget target = delivery.WebhookUrl is not null
+                ? new WebhookDeliveryTarget(delivery.WebhookUrl)
+                : new BotDeliveryTarget(row.GuildId, delivery.ChannelId ?? 0);
 
             await _router.SendAsync(target, content, ct);
             await _reader.MarkSentAsync(row.Id, ct);
@@ -147,11 +154,65 @@ public class NotificationDispatchService : BackgroundService
         }
     }
 
+    private static string PingText(ulong? roleId)
+    {
+        return roleId.HasValue ? MentionUtils.MentionRole(roleId.Value) : string.Empty;
+    }
+
+    /// <summary>
+    ///     Loads the entry or the follow the row belongs to and resolves where and how to deliver it.
+    ///     Returns null if neither exists anymore.
+    /// </summary>
+    private static async Task<DeliverySettings?> ResolveDeliveryAsync(DataContext db, PendingNotification row,
+        CancellationToken ct)
+    {
+        if (row.EntryId is { } entryId)
+        {
+            var entry = await db.ModrinthEntries
+                .Include(e => e.Guild).ThenInclude(g => g.GuildSettings)
+                .FirstOrDefaultAsync(e => e.EntryId == entryId, ct);
+
+            if (entry is null)
+                return null;
+
+            var pingRole = entry.CustomPingRole ?? entry.Guild.PingRole;
+            return new DeliverySettings(entry.Guild.GuildSettings, entry.CustomUpdateChannel, pingRole, pingRole,
+                entry.WebhookUrl);
+        }
+
+        if (row.FollowId is { } followId)
+        {
+            var follow = await db.ModrinthFollows
+                .Include(f => f.Guild).ThenInclude(g => g.GuildSettings)
+                .FirstOrDefaultAsync(f => f.Id == followId, ct);
+
+            if (follow is null)
+                return null;
+
+            var pingRole = follow.CustomPingRole ?? follow.Guild.PingRole;
+            var newProjectPingRole = follow.NewProjectPingRole ?? pingRole;
+
+            // Follows have no webhook delivery (yet)
+            return new DeliverySettings(follow.Guild.GuildSettings, follow.CustomUpdateChannel, pingRole,
+                newProjectPingRole, null);
+        }
+
+        return null;
+    }
+
+    /// <summary>Delivery settings resolved from either an entry or a follow.</summary>
+    private sealed record DeliverySettings(
+        GuildSettings GuildSettings,
+        ulong? ChannelId,
+        ulong? PingRoleId,
+        ulong? NewProjectPingRoleId,
+        string? WebhookUrl);
+
     private async Task HandleFailureAsync(PendingNotification row, Exception ex, CancellationToken ct)
     {
         _logger.LogError(ex,
-            "Failed to dispatch pending notification {Id} to guild {GuildId} entry {EntryId} (attempt {Attempt})",
-            row.Id, row.GuildId, row.EntryId, row.AttemptCount + 1);
+            "Failed to dispatch pending notification {Id} to guild {GuildId} entry {EntryId} follow {FollowId} (attempt {Attempt})",
+            row.Id, row.GuildId, row.EntryId, row.FollowId, row.AttemptCount + 1);
 
         if (ex is RateLimitedException rateLimited)
         {

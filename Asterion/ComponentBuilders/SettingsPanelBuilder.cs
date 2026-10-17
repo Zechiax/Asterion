@@ -7,17 +7,18 @@ namespace Asterion.ComponentBuilders;
 public sealed record SettingsField(string Label, SelectMenuBuilder Menu);
 
 /// <summary>
-///     Settings panel as a Components V2 message.
+///     Settings panel shared by subscriptions and follows, as a Components V2 message.
 ///     Each field gets a label, as a picker with a value hides its placeholder.
 /// </summary>
 public static class SettingsPanelBuilder
 {
     public static readonly Color SubscriptionAccent = ModrinthEmbedBuilder.ModrinthColor;
+    public static readonly Color FollowAccent = Color.Blue;
 
     // Discord limit of options in one select menu
     private const int MaxSelectOptions = 25;
 
-    /// <param name="buttons">Buttons under the fields, e.g. back and unsubscribe</param>
+    /// <param name="buttons">Buttons under the fields, e.g. back and unfollow</param>
     public static MessageComponent Build(string title, Color accent, IEnumerable<SettingsField> fields,
         IEnumerable<ButtonBuilder> buttons)
     {

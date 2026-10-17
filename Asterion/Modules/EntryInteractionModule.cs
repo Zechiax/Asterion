@@ -58,8 +58,9 @@ namespace Asterion.Modules
                 // Modrinth API unavailable
             }
 
-            var title = project?.Title ?? (await dataService.GetModrinthProjectByIdAsync(entry.ProjectId))?.Title ??
-                entry.ProjectId;
+            var title = Format.Sanitize(project?.Title ??
+                                        (await dataService.GetModrinthProjectByIdAsync(entry.ProjectId))?.Title ??
+                                        entry.ProjectId);
 
             var fields = new List<SettingsField>
             {
@@ -132,7 +133,7 @@ namespace Asterion.Modules
 
             var project = await dataService.GetModrinthProjectByIdAsync(projectId);
             var question = LocalizationService.Get("entry-unsub-confirm-question", CommandCultureInfo,
-                new { title = project?.Title ?? projectId, id = projectId });
+                new { title = Format.Sanitize(project?.Title ?? projectId), id = projectId });
 
             await ModifyOriginalResponseAsync(msg => msg.Components = SettingsPanelBuilder.BuildMessage(question,
                 SettingsPanelBuilder.SubscriptionAccent,
@@ -158,7 +159,7 @@ namespace Asterion.Modules
             }
 
             await ShowResultAsync(ownerId, listPage, LocalizationService.Get("entry-unsubscribed", CommandCultureInfo,
-                new { title = project?.Title ?? projectId, id = projectId }));
+                new { title = Format.Sanitize(project?.Title ?? projectId), id = projectId }));
         }
 
         [DoUserCheck]
@@ -172,15 +173,19 @@ namespace Asterion.Modules
         [ComponentInteraction(ChannelMenuId + ":*:*:*")]
         public async Task HandleChannelSelectionAsync(ulong ownerId, string projectId, int listPage, string[] selectedValues)
         {
+            // The picker requires a channel, redraw the saved state in case nothing was selected
             var channelId = SettingsPanelBuilder.ParseSelectedId(selectedValues);
             if (channelId is null)
+            {
+                await UpdateAsync(ownerId, projectId, listPage, _ => Task.CompletedTask);
                 return;
+            }
 
             if (!BotCanSendIn(channelId.Value))
             {
                 // Show the panel again, so the picker goes back to the saved channel
                 await UpdateAsync(ownerId, projectId, listPage, _ => Task.CompletedTask);
-                await FollowupAsync(LocalizationService.Get("follow-no-send-permission", CommandCultureInfo,
+                await FollowupAsync(LocalizationService.Get("no-send-permission", CommandCultureInfo,
                     new { channel = MentionUtils.MentionChannel(channelId.Value) }), ephemeral: true);
                 return;
             }
@@ -200,21 +205,15 @@ namespace Asterion.Modules
 
         [DoUserCheck]
         [ComponentInteraction(ReleaseMenuId + ":*:*:*")]
-        public async Task HandleReleaseFilterSelectionAsync(ulong ownerId, string projectId, int listPage, string[] selectedValues)
+        public Task HandleReleaseFilterSelectionAsync(ulong ownerId, string projectId, int listPage, string[] selectedValues)
         {
+            // The menu requires at least one release type
             ReleaseType releaseFilter = 0;
             foreach (var value in selectedValues)
                 if (int.TryParse(value, out var flag))
                     releaseFilter |= (ReleaseType)flag;
 
-            if (releaseFilter == 0)
-            {
-                await RespondAsync(LocalizationService.Get("settings-release-required", CommandCultureInfo),
-                    ephemeral: true);
-                return;
-            }
-
-            await UpdateAsync(ownerId, projectId, listPage,
+            return UpdateAsync(ownerId, projectId, listPage,
                 entry => dataService.SetReleaseFilterAsync(entry.EntryId, releaseFilter));
         }
 

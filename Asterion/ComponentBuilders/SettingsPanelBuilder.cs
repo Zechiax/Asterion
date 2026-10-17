@@ -104,12 +104,13 @@ public static class SettingsPanelBuilder
     public static SelectMenuBuilder? LoaderFilterMenu(string customId, IEnumerable<string> loaders,
         string[]? current, string placeholder)
     {
-        // Keep loaders of the current filter selectable even if no project uses them anymore
-        var options = loaders
-            .Concat(current ?? [])
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .Order(StringComparer.OrdinalIgnoreCase)
+        // Loaders of the current filter are kept first, so they stay selectable even past the option limit
+        // or when no project uses them anymore; saving the menu would drop them otherwise
+        var selected = (current ?? []).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+        var options = selected
+            .Concat(loaders.Except(selected, StringComparer.OrdinalIgnoreCase).Order(StringComparer.OrdinalIgnoreCase))
             .Take(MaxSelectOptions)
+            .Order(StringComparer.OrdinalIgnoreCase)
             .ToArray();
 
         if (options.Length == 0)
@@ -122,7 +123,7 @@ public static class SettingsPanelBuilder
             .WithMaxValues(options.Length);
 
         foreach (var loader in options)
-            menu.AddOption(loader, loader, isDefault: current != null && current.Contains(loader));
+            menu.AddOption(loader, loader, isDefault: selected.Contains(loader, StringComparer.OrdinalIgnoreCase));
 
         return menu;
     }

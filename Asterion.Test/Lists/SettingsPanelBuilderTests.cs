@@ -195,6 +195,32 @@ public class SettingsPanelBuilderTests
         Assert.That(FollowEmbedBuilder.FormatListEntry(follow, Loc, null), Does.Contain("Type: Modrinth user"));
     }
 
+    [Test]
+    public void LoaderMenuKeepsCurrentFilterPastOptionLimit()
+    {
+        var loaders = Enumerable.Range(0, 30).Select(i => $"loader{i:D2}");
+
+        var menu = SettingsPanelBuilder.LoaderFilterMenu("loader", loaders, ["zzz"], "All")!.Build();
+
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(menu.Options, Has.Count.EqualTo(25));
+            Assert.That(menu.Options.Where(o => o.IsDefault == true).Select(o => o.Value),
+                Is.EqualTo(new[] { "zzz" }));
+            Assert.That(menu.Options.Select(o => o.Value), Is.Ordered.Using((IComparer<string>)StringComparer.OrdinalIgnoreCase));
+        }
+    }
+
+    [Test]
+    public void LoaderMenuSelectsCurrentFilterIgnoringCase()
+    {
+        var menu = SettingsPanelBuilder.LoaderFilterMenu("loader", ["fabric", "forge"], ["Fabric"], "All")!.Build();
+
+        Assert.That(menu.Options.Where(o => o.IsDefault == true).Select(o => o.Value),
+            Is.EqualTo(new[] { "Fabric" }));
+        Assert.That(menu.Options, Has.Count.EqualTo(2));
+    }
+
     [TestCase(new string[0], null)]
     [TestCase(new[] { "123" }, 123ul)]
     [TestCase(new[] { "x" }, null)]

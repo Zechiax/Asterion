@@ -1,0 +1,51 @@
+# Release Drafter keeps a draft release up to date with the PRs merged since the last release.
+# Categories and the next version come from Conventional Commit PR titles (enforced by pr-title.yml),
+# labels work as a manual override, e.g. `major` to force a major version.
+name-template: 'v$RESOLVED_VERSION'
+tag-template: 'v$RESOLVED_VERSION'
+
+categories:
+  - type: 'pre-exclude'
+    when:
+      label: 'skip-changelog'
+  - title: '💥 Breaking changes'
+    semver-increment: 'major'
+    exclusive: true
+    when:
+      - conventional:
+          breaking: true
+      - labels: [ 'major', 'breaking' ]
+  - title: '⬆️ Dependencies'
+    collapse-after: 3
+    exclusive: true
+    when:
+      label: 'dependencies'
+  - title: '🚀 Features'
+    semver-increment: 'minor'
+    exclusive: true
+    when:
+      - conventional:
+          type: 'feat'
+      - labels: [ 'feature', 'enhancement', 'minor' ]
+  - title: '🐛 Fixes'
+    exclusive: true
+    when:
+      - conventional:
+          type: 'fix'
+      - labels: [ 'fix', 'bug' ]
+  - title: '🧰 Maintenance'
+    exclusive: true
+    when:
+      conventional:
+        types: [ 'chore', 'refactor', 'perf', 'ci', 'build', 'docs', 'test' ]
+  # Everything not matched above, e.g. PRs from before the Conventional Commit titles
+  - title: '📝 Other changes'
+  - type: 'version-resolver'
+    semver-increment: 'patch'
+
+change-template: '- $TITLE (#$NUMBER) $AUTHORS'
+change-title-escapes: '\<*_&'
+template: |
+  ## What's changed
+
+  $CHANGES

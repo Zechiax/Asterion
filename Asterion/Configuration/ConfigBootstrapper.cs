@@ -57,6 +57,7 @@ public static class ConfigBootstrapper
         # Asterion configuration
         #
         # The bot will NOT start until the values below are filled in.
+        # Any value can also be set by an environment variable, e.g. {ConfigKeys.EnvPrefix}TOKEN for '{ConfigKeys.Token}'.
 
         # Discord bot token (https://discord.com/developers/applications -> Bot -> Token). Required.
         {ConfigKeys.Token} = {Quote(token)}

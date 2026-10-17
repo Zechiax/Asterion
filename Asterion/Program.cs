@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using System.Reflection;
 using Asterion.Configuration;
 using Figgle.Fonts;
 using Microsoft.Extensions.Configuration;
@@ -13,13 +14,13 @@ public class Program
     {
         if (args.Length > 0 && args[0] == "migration") return;
 
-        Console.WriteLine(FiggleFonts.Slant.Render("Asterion v3"));
-        
+        Console.WriteLine(FiggleFonts.Slant.Render("Asterion"));
+        Console.WriteLine($"v{GetVersion()}");
+
         Thread.CurrentThread.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
 
         Log.Logger = new LoggerConfiguration()
-            .WriteTo.File(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs/asterion.log"),
-                rollingInterval: RollingInterval.Day)
+            .WriteTo.File(DataPaths.Logs, rollingInterval: RollingInterval.Day)
 #if DEBUG
             .MinimumLevel.Debug()
 #else
@@ -31,12 +32,15 @@ public class Program
             .WriteTo.Console()
             .CreateLogger();
 
-        var configPath = Path.Combine(AppContext.BaseDirectory, ConfigKeys.FileName);
+        var configPath = DataPaths.Config;
         IConfiguration config;
         try
         {
-            ConfigBootstrapper.EnsureConfigFile(AppContext.BaseDirectory, new SerilogLoggerFactory(Log.Logger).CreateLogger("Config"));
-            config = new ConfigurationBuilder().AddTomlFile(configPath).Build();
+            ConfigBootstrapper.EnsureConfigFile(DataPaths.Root, new SerilogLoggerFactory(Log.Logger).CreateLogger("Config"));
+            config = new ConfigurationBuilder()
+                .AddTomlFile(configPath)
+                .AddEnvironmentVariables(ConfigKeys.EnvPrefix)
+                .Build();
         }
         catch (Exception e)
         {
@@ -58,5 +62,14 @@ public class Program
         }
 
         new Asterion(0, config).MainAsync().GetAwaiter().GetResult();
+    }
+    
+    private static string GetVersion()
+    {
+        var version = typeof(Program).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+            ?.InformationalVersion ?? "unknown";
+
+        var plus = version.IndexOf('+');
+        return plus >= 0 && version.Length > plus + 8 ? version[..(plus + 8)] : version;
     }
 }

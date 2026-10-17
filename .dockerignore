@@ -1,0 +1,17 @@
+**/bin
+**/obj
+.git
+.github
+.idea
+.claude
+.env
+data/
+logs/
+**/*.sqlite*
+**/config.json*
+**/config.toml
+Asterion.Test
+Seeder
+Test
+assets
+compose.yml

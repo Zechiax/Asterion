@@ -64,4 +64,45 @@ public class ConfigurationTests
         Assert.That(errors, Has.Count.EqualTo(2));
         Assert.That(ConfigValidator.Validate(Load(), isDebug: false), Has.Count.EqualTo(1));
     }
+
+    [Test]
+    public void EnvironmentTokenOverridesTemplate()
+    {
+        ConfigBootstrapper.EnsureConfigFile(_dir);
+        var variable = ConfigKeys.EnvPrefix + "TOKEN";
+        var previous = Environment.GetEnvironmentVariable(variable);
+        Environment.SetEnvironmentVariable(variable, "from-env");
+        try
+        {
+            var config = new ConfigurationBuilder()
+                .AddTomlFile(Path.Combine(_dir, ConfigKeys.FileName))
+                .AddEnvironmentVariables(ConfigKeys.EnvPrefix)
+                .Build();
+
+            Assert.That(config[ConfigKeys.Token], Is.EqualTo("from-env"));
+            Assert.That(ConfigValidator.Validate(config, isDebug: false), Is.Empty);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(variable, previous);
+        }
+    }
+
+    [Test]
+    public void DataDirDefaultsToAppDirectory()
+    {
+        Assert.That(DataPaths.Resolve(null), Is.EqualTo(AppContext.BaseDirectory));
+        Assert.That(DataPaths.Resolve(" "), Is.EqualTo(AppContext.BaseDirectory));
+    }
+
+    [Test]
+    public void DataDirIsCreatedWhenSet()
+    {
+        var dataDir = Path.Combine(_dir, "data");
+
+        var resolved = DataPaths.Resolve(dataDir);
+
+        Assert.That(resolved, Is.EqualTo(Path.GetFullPath(dataDir)));
+        Assert.That(Directory.Exists(dataDir), Is.True);
+    }
 }

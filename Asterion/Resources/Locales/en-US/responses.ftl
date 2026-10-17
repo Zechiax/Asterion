@@ -27,6 +27,7 @@ follow-already-following = This server already follows **{ $name }**
 follow-limit-reached = This server already follows the maximum of { $max } creators
 follow-channel-invalid = There was an error processing your request, check if the channel is correct
 follow-not-found = This server does not follow this creator
+follow-input-is-project = That is a link to a project, not to a user. Subscribe to the project instead, or use the link of the user's profile.
 follow-removed = Stopped following **{ $name }** :white_check_mark:
 follow-project-not-found = **{ $name }** has no project with ID { $project }
 follow-list-empty = This server does not follow any creators. Use **Follow creator** to follow a Modrinth user.

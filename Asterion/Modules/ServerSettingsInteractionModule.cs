@@ -158,7 +158,7 @@ public class ServerSettingsInteractionModule(
     [ComponentInteraction(ServerSettingsPanelBuilder.UnfollowAllButtonId + ":*")]
     public async Task HandleUnfollowAllAsync(ulong ownerId)
     {
-        var count = (await followService.GetFollowsAsync(Context.Guild.Id)).Count;
+        var count = await followService.CountFollowsAsync(Context.Guild.Id);
 
         await RespondWithModalAsync(ServerSettingsPanelBuilder.BuildDangerModal(
             ServerSettingsPanelBuilder.UnfollowAllModalId, "server-unfollow-all", count, LocalizationService,
@@ -187,7 +187,7 @@ public class ServerSettingsInteractionModule(
         var word = Loc($"{keyPrefix}-word");
         var input = ((SocketModal)Context.Interaction).GetText(ServerSettingsPanelBuilder.ConfirmInputId);
 
-        if (ServerSettingsPanelBuilder.IsConfirmed(input, word))
+        if (ServerSettingsPanelBuilder.IsConfirmed(input, word, CommandCultureInfo))
             return true;
 
         await RespondAsync(Loc("server-danger-not-confirmed", new { word }), ephemeral: true);

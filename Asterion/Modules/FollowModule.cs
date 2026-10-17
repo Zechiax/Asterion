@@ -58,8 +58,15 @@ public class FollowModule(
             return;
         }
 
+        var user = Subscriptions.ParseUserInput(username);
+        if (user is null)
+        {
+            await FollowupAsync(Loc("follow-input-is-project"));
+            return;
+        }
+
         var (search, result) = await Subscriptions.FollowUserAsync(modrinthService, followService, Context.Guild.Id,
-            username, textChannel.Id, ToFollowEvents(events), newProjectChannel?.Id);
+            user, textChannel.Id, ToFollowEvents(events), newProjectChannel?.Id);
         if (result is null)
         {
             await FollowupWithSearchResultErrorAsync(search);

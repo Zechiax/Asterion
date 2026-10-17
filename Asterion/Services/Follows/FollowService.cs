@@ -205,7 +205,9 @@ public class FollowService : IFollowService
         using var scope = _services.CreateScope();
         await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
 
+        // With the projects, the settings panel shows how many are ignored
         var follow = await db.ModrinthFollows
+            .Include(f => f.Projects)
             .FirstOrDefaultAsync(f => f.Id == followId && f.GuildId == guildId, ct);
 
         if (follow is null)

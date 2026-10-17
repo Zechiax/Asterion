@@ -351,4 +351,25 @@ public class FollowSyncTests
             Assert.That(source.CallCount, Is.EqualTo(1));
         }
     }
+
+    [Test]
+    public async Task UpdatedFollowKeepsItsProjects()
+    {
+        await using var provider = InMemoryDb.BuildServiceProvider();
+        await SeedGuildAsync(provider);
+        var source = new FakeFollowSource();
+        source.SetProjects(MakeProject("a", LongAgo), MakeProject("b", LongAgo));
+        var service = BuildService(provider, source);
+        var followId = await AddFollowAsync(service);
+        await service.SetIgnoredAsync(GuildId, followId, "a", true);
+
+        var updated = await service.UpdateSettingsAsync(GuildId, followId, f => f.CustomPingRole = 666);
+
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(updated!.CustomPingRole, Is.EqualTo(666ul));
+            Assert.That(updated.Projects, Has.Count.EqualTo(2));
+            Assert.That(updated.Projects.Count(fp => fp.Ignored), Is.EqualTo(1));
+        }
+    }
 }

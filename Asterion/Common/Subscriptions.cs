@@ -52,33 +52,52 @@ public static partial class Subscriptions
     }
 
     /// <summary>
-    ///     Finds the Modrinth user by username, ID or link and follows them
+    ///     Finds the Modrinth user and follows them
     /// </summary>
+    /// <param name="user">Username or ID, see <see cref="ParseUserInput" /></param>
     public static async Task<FollowUserResult> FollowUserAsync(ModrinthService modrinthService,
-        IFollowService followService, ulong guildId, string query, ulong channelId, FollowEvents events,
+        IFollowService followService, ulong guildId, string user, ulong channelId, FollowEvents events,
         ulong? newProjectChannelId)
     {
-        var search = await modrinthService.FindUser(ParseModrinthInput(query));
+        var search = await modrinthService.FindUser(user);
         if (!search.Success)
             return new FollowUserResult(search);
 
-        var user = search.Payload.User;
-        var result = await followService.AddFollowAsync(guildId, FollowTargetType.User, user.Id, user.Username,
+        var found = search.Payload.User;
+        var result = await followService.AddFollowAsync(guildId, FollowTargetType.User, found.Id, found.Username,
             channelId, events, newProjectChannelId);
 
         return new FollowUserResult(search, result);
     }
     
-    public static string ParseModrinthInput(string input)
+    /// <summary>
+    ///     The project's slug or ID from a slug, ID or link
+    /// </summary>
+    public static string ParseProjectInput(string input)
     {
         input = input.Trim();
-        
-        var url = "https://" + SchemeRegex().Replace(input, string.Empty);
-        if (UrlParser.TryParseModrinthUrl(url, out var slug) && slug is not null)
-            return slug;
+
+        return UrlParser.TryParseModrinthUrl(ToUrl(input), out var slug) && slug is not null ? slug : input;
+    }
+
+    /// <summary>
+    ///     The username or ID from a username, ID or user link, null if it is a link to a project
+    /// </summary>
+    public static string? ParseUserInput(string input)
+    {
+        input = input.Trim();
+        var url = ToUrl(input);
 
         var userMatch = UserUrlRegex().Match(url);
-        return userMatch.Success ? userMatch.Groups[1].Value : input;
+        if (userMatch.Success)
+            return userMatch.Groups[1].Value;
+
+        return UrlParser.TryParseModrinthUrl(url, out _) ? null : input;
+    }
+
+    private static string ToUrl(string input)
+    {
+        return "https://" + SchemeRegex().Replace(input, string.Empty);
     }
 
     [GeneratedRegex("^https?://", RegexOptions.IgnoreCase)]

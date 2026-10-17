@@ -17,7 +17,7 @@ public class FollowLocalizationTests
         "error-internal",
         "follow-event-project-update", "follow-event-new-project", "follow-event-none",
         "follow-added", "follow-added-sync-failed", "follow-already-following", "follow-limit-reached",
-        "follow-channel-invalid", "no-send-permission", "follow-not-found", "follow-removed",
+        "follow-channel-invalid", "follow-input-is-project", "no-send-permission", "follow-not-found", "follow-removed",
         "follow-project-not-found",
         "follow-list-empty", "follow-list-title", "follow-list-description", "follow-list-entry",
         "follow-button-follow-user", "follow-target-user", "follow-target-organization",

@@ -165,7 +165,7 @@ public class ModrinthModule : AsterionInteractionModuleBase
         }
 
         var result = await Subscriptions.SubscribeAsync(_modrinthService, _dataService, Context.Guild.Id,
-            Subscriptions.ParseModrinthInput(projectId), channel.Id);
+            Subscriptions.ParseProjectInput(projectId), channel.Id);
 
         await ModifyOriginalResponseAsync(x =>
         {

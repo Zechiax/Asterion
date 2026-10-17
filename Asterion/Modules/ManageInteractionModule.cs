@@ -226,7 +226,7 @@ public class ManageInteractionModule(
         await DeferAsync();
 
         var modal = (SocketModal)Context.Interaction;
-        var query = Subscriptions.ParseModrinthInput(modal.GetText(ProjectInputId) ?? string.Empty);
+        var query = Subscriptions.ParseProjectInput(modal.GetText(ProjectInputId) ?? string.Empty);
         var channelId = SettingsPanelBuilder.ParseSelectedId(modal.GetSelected(ChannelInputId));
 
         if (channelId is null || !BotCanSendIn(channelId.Value))
@@ -242,10 +242,11 @@ public class ManageInteractionModule(
         {
             SubscribeStatus.Subscribed => Loc("manage-subscribed", new
             {
-                title = result.Project!.Title, channel = MentionUtils.MentionChannel(channelId.Value)
+                title = Format.Sanitize(result.Project!.Title), channel = MentionUtils.MentionChannel(channelId.Value)
             }),
-            SubscribeStatus.AlreadySubscribed => Loc("manage-already-subscribed", new { title = result.Project!.Title }),
-            SubscribeStatus.ProjectNotFound => Loc("manage-project-not-found", new { query }),
+            SubscribeStatus.AlreadySubscribed => Loc("manage-already-subscribed",
+                new { title = Format.Sanitize(result.Project!.Title) }),
+            SubscribeStatus.ProjectNotFound => Loc("manage-project-not-found", new { query = Format.Sanitize(query) }),
             _ => Loc("error-internal")
         };
 
@@ -291,8 +292,15 @@ public class ManageInteractionModule(
             return;
         }
 
+        var user = Subscriptions.ParseUserInput(query);
+        if (user is null)
+        {
+            await ShowPanelAsync(Context.User.Id, ManageTab.Creators, 0, Loc("follow-input-is-project"));
+            return;
+        }
+
         var (search, result) = await Subscriptions.FollowUserAsync(modrinthService, followService, Context.Guild.Id,
-            query, channelId.Value, events == FollowEvents.None ? FollowEvents.ProjectUpdate : events,
+            user, channelId.Value, events == FollowEvents.None ? FollowEvents.ProjectUpdate : events,
             newProjectChannelId);
         if (result is null)
         {
@@ -371,7 +379,7 @@ public class ManageInteractionModule(
     {
         return loc.Get("list-subscription-entry", culture, new
         {
-            title = entry.Project.Title ?? entry.ProjectId,
+            title = Format.Sanitize(entry.Project.Title ?? entry.ProjectId),
             id = entry.ProjectId,
             channel = entry.CustomUpdateChannel.HasValue
                 ? MentionUtils.MentionChannel(entry.CustomUpdateChannel.Value)

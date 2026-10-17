@@ -67,12 +67,12 @@ public class FollowInteractionModule(
         var shownPage = Math.Clamp(page, 0, ListPageBuilder.GetPageCount(projects.Count) - 1);
 
         return ListPageBuilder.Build(projects, shownPage,
-            loc.Get("follow-projects-title", culture, new { name = follow.TargetName }),
+            loc.Get("follow-projects-title", culture, new { name = Format.Sanitize(follow.TargetName) }),
             loc.Get("follow-projects-description", culture),
             SettingsPanelBuilder.FollowAccent,
             $"{FollowComponentBuilder.IgnoredProjectsButtonId}:{ownerId}:{follow.Id}:{listPage}",
             fp => loc.Get(fp.Ignored ? "follow-project-entry-ignored" : "follow-project-entry", culture,
-                new { title = fp.Project?.Title ?? fp.ProjectId, id = fp.ProjectId }),
+                new { title = Format.Sanitize(fp.Project?.Title ?? fp.ProjectId), id = fp.ProjectId }),
             fp => new ButtonBuilder(loc.Get(fp.Ignored ? "button-unignore" : "button-ignore", culture),
                 $"{FollowComponentBuilder.IgnoreToggleButtonId}:{ownerId}:{follow.Id}:{listPage}:{shownPage}:{fp.ProjectId}",
                 fp.Ignored ? ButtonStyle.Success : ButtonStyle.Secondary),
@@ -118,7 +118,7 @@ public class FollowInteractionModule(
         {
             // The project was removed from the follow since the page was shown
             notice = LocalizationService.Get("follow-project-not-found", CommandCultureInfo,
-                new { name = follow.TargetName, project = projectId });
+                new { name = Format.Sanitize(follow.TargetName), project = Format.Sanitize(projectId) });
         }
 
         // Reload, the follow service saves through its own context

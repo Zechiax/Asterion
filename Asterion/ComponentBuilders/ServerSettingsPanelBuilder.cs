@@ -167,9 +167,12 @@ public static class ServerSettingsPanelBuilder
     /// <summary>
     ///     If the text typed in the danger modal is the confirmation word, ignoring case and surrounding spaces
     /// </summary>
-    public static bool IsConfirmed(string? input, string word)
+    /// <param name="culture">Culture of the word, the thread's culture can be a different language</param>
+    public static bool IsConfirmed(string? input, string word, CultureInfo? culture)
     {
-        return string.Equals(input?.Trim(), word, StringComparison.CurrentCultureIgnoreCase);
+        return input is not null &&
+               string.Compare(input.Trim(), word, culture ?? CultureInfo.InvariantCulture,
+                   CompareOptions.IgnoreCase) == 0;
     }
 
     /// <summary>

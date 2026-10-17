@@ -1,3 +1,4 @@
+using System.Globalization;
 using Asterion.ComponentBuilders;
 using Asterion.Database.Models;
 
@@ -13,7 +14,25 @@ public class ServerSettingsPanelBuilderTests
     [TestCase(null, false)]
     public void DangerModalNeedsTheConfirmationWord(string? input, bool expected)
     {
-        Assert.That(ServerSettingsPanelBuilder.IsConfirmed(input, "unsubscribe"), Is.EqualTo(expected));
+        Assert.That(ServerSettingsPanelBuilder.IsConfirmed(input, "unsubscribe", null), Is.EqualTo(expected));
+    }
+
+    [Test]
+    public void ConfirmationWordUsesItsOwnCultureNotTheThreads()
+    {
+        var threadCulture = CultureInfo.CurrentCulture;
+        try
+        {
+            // Turkish casing maps "I" to the dotless "ı", so "UNFOLLOW" wouldn't match "unfollow" there
+            CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("tr-TR");
+
+            Assert.That(ServerSettingsPanelBuilder.IsConfirmed("UNFOLLOW", "unfollow",
+                CultureInfo.GetCultureInfo("en-US")), Is.True);
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = threadCulture;
+        }
     }
 
     [TestCase("2000", 2000)]

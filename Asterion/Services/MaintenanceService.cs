@@ -52,26 +52,7 @@ public class MaintenanceService : BackgroundService
         await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
 
         var cutoff = DateTime.UtcNow.AddDays(-TotalDownloadsRetentionDays);
-
-        var oldRows = await db.TotalDownloads
-            .Where(p => p.Timestamp < cutoff)
-            .Select(p => new { p.Id, p.ProjectId, p.Timestamp })
-            .ToListAsync(ct);
-
-        // Keep only the latest row per (project, day) among the old rows, drop the rest
-        var idsToKeep = oldRows
-            .GroupBy(p => new { p.ProjectId, p.Timestamp.Date })
-            .Select(g => g.OrderByDescending(x => x.Timestamp).First().Id)
-            .ToHashSet();
-
-        var idsToRemove = oldRows.Select(p => p.Id).Where(id => !idsToKeep.Contains(id)).ToList();
-
-        var removedEntries = 0;
-        if (idsToRemove.Count > 0)
-        {
-            db.TotalDownloads.RemoveRange(db.TotalDownloads.Where(p => idsToRemove.Contains(p.Id)));
-            removedEntries = await db.SaveChangesAsync(ct);
-        }
+        var removedEntries = await StatisticsCleanup.TrimTotalDownloadsAsync(db, cutoff, ct);
 
         _logger.LogInformation("Finished statistics database cleanup, removed {RemovedEntries} entries",
             removedEntries);
@@ -86,12 +67,10 @@ public class MaintenanceService : BackgroundService
 
         var cutoff = DateTime.UtcNow.AddDays(-PendingNotificationRetentionDays);
 
-        var toRemove = db.PendingNotifications.Where(p =>
-            (p.Status == NotificationStatus.Sent || p.Status == NotificationStatus.DeadLettered)
-            && (p.LastAttemptAt ?? p.CreatedAt) < cutoff);
-
-        db.PendingNotifications.RemoveRange(toRemove);
-        var removedEntries = await db.SaveChangesAsync(ct);
+        var removedEntries = await db.PendingNotifications
+            .Where(p => (p.Status == NotificationStatus.Sent || p.Status == NotificationStatus.DeadLettered)
+                        && (p.LastAttemptAt ?? p.CreatedAt) < cutoff)
+            .ExecuteDeleteAsync(ct);
 
         _logger.LogInformation("Finished pending notification purge, removed {RemovedEntries} entries",
             removedEntries);

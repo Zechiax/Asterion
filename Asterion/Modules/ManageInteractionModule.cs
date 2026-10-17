@@ -84,9 +84,10 @@ public class ManageInteractionModule(
             .OrderBy(e => e.Project.Title ?? e.ProjectId, StringComparer.OrdinalIgnoreCase)
             .ThenBy(e => e.ProjectId)
             .ToList();
-        var follows = await followService.GetFollowsAsync(guildId);
+        // Follows with their projects are only loaded for the creators tab, the other tabs need just the count
+        var followCount = await followService.CountFollowsAsync(guildId);
 
-        var shownTab = tab ?? (entries.Count == 0 && follows.Count > 0 ? ManageTab.Creators : ManageTab.Projects);
+        var shownTab = tab ?? (entries.Count == 0 && followCount > 0 ? ManageTab.Creators : ManageTab.Projects);
         if (!canManageServer && shownTab is ManageTab.General or ManageTab.Notifications)
             shownTab = ManageTab.Projects;
 
@@ -100,7 +101,7 @@ public class ManageInteractionModule(
         var tabs = new[]
         {
             TabButton(ManageTab.Projects, loc.Get("list-tab-projects", culture, new { count = entries.Count })),
-            TabButton(ManageTab.Creators, loc.Get("list-tab-creators", culture, new { count = follows.Count })),
+            TabButton(ManageTab.Creators, loc.Get("list-tab-creators", culture, new { count = followCount })),
             TabButton(ManageTab.General, loc.Get("manage-tab-general", culture), canManageServer),
             TabButton(ManageTab.Notifications, loc.Get("manage-tab-notifications", culture), canManageServer)
         };
@@ -115,7 +116,7 @@ public class ManageInteractionModule(
                         ServerSettingsPanelBuilder.Accent);
 
                 var container = shownTab == ManageTab.General
-                    ? ServerSettingsPanelBuilder.BuildGeneral(guild, ownerId, entries.Count, follows.Count,
+                    ? ServerSettingsPanelBuilder.BuildGeneral(guild, ownerId, entries.Count, followCount,
                         loc.AvailableLocales, loc, culture, notice)
                     : ServerSettingsPanelBuilder.BuildNotifications(guild.GuildSettings, ownerId, loc, culture,
                         notice);
@@ -126,7 +127,7 @@ public class ManageInteractionModule(
                     .Build();
             }
             case ManageTab.Creators:
-                return BuildPage(follows, page, ownerId, ManageTab.Creators,
+                return BuildPage(await followService.GetFollowsAsync(guildId), page, ownerId, ManageTab.Creators,
                     loc.Get("follow-list-title", culture),
                     loc.Get("follow-list-description", culture),
                     SettingsPanelBuilder.FollowAccent,
@@ -337,7 +338,7 @@ public class ManageInteractionModule(
     {
         return channelId is null
             ? Loc("follow-channel-invalid")
-            : Loc("follow-no-send-permission", new { channel = MentionUtils.MentionChannel(channelId.Value) });
+            : Loc("no-send-permission", new { channel = MentionUtils.MentionChannel(channelId.Value) });
     }
 
     private string Loc(string key)

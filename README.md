@@ -38,9 +38,6 @@ Access all of [Modrinth](https://modrinth.com/) within Discord
 
 </div>
 
-## Wiki
-On wiki there are guides and documentation for all commands: https://zechiax.gitbook.io/rinthbot/
-
 ## Self-hosting (Docker)
 Images for `linux/amd64` and `linux/arm64` are published to `ghcr.io/zechiax/asterion`:
 - `latest` - the newest release, `4` / `4.0` / `4.0.0` - pinned releases

@@ -1,4 +1,5 @@
-﻿using Asterion.Configuration;
+﻿using System.Runtime.InteropServices;
+using Asterion.Configuration;
 using Asterion.Database;
 using Asterion.Interfaces;
 using Asterion.Services;
@@ -24,6 +25,9 @@ namespace Asterion;
 
 public class Asterion
 {
+    // Leaves room for the Discord logout within Docker's default 10 second stop grace period
+    private static readonly TimeSpan BackgroundServicesStopTimeout = TimeSpan.FromSeconds(5);
+
     private readonly IConfiguration _config;
     private int _shardId;
 
@@ -39,12 +43,27 @@ public class Asterion
 
         // Setup logging
         services.GetRequiredService<LoggingService>();
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        
+        using var shutdown = new CancellationTokenSource();
+        void OnShutdownSignal(PosixSignalContext context)
+        {
+            if (shutdown.IsCancellationRequested)
+                return;
+
+            context.Cancel = true;
+            logger.LogInformation("Received {Signal}, exiting bot", context.Signal);
+            shutdown.Cancel();
+        }
+
+        using var sigTerm = PosixSignalRegistration.Create(PosixSignal.SIGTERM, OnShutdownSignal);
+        using var sigInt = PosixSignalRegistration.Create(PosixSignal.SIGINT, OnShutdownSignal);
+        using var sigQuit = PosixSignalRegistration.Create(PosixSignal.SIGQUIT, OnShutdownSignal);
 
         // Run database migration
         services.GetRequiredService<DatabaseMigrationService>().MigrateDatabase();
 
         var client = services.GetRequiredService<DiscordSocketClient>();
-        var logger = services.GetRequiredService<ILogger<Program>>();
         var commands = services.GetRequiredService<InteractionService>();
 
         services.GetRequiredService<ModrinthService>();
@@ -92,26 +111,25 @@ public class Asterion
         foreach (var hostedService in hostedServices)
             await hostedService.StartAsync(CancellationToken.None);
 
-        // Disconnect from Discord when pressing Ctrl+C
-        Console.CancelKeyPress += (_, args) =>
+        await Task.Delay(Timeout.Infinite, shutdown.Token).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+
+        logger.LogInformation("Stopping background services");
+        using (var stopTimeout = new CancellationTokenSource(BackgroundServicesStopTimeout))
         {
-            args.Cancel = true;
+            try
+            {
+                await Task.WhenAll(hostedServices.Select(s => s.StopAsync(stopTimeout.Token)));
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to stop background services");
+            }
+        }
 
-            logger.LogInformation("{Key} pressed, exiting bot", args.SpecialKey);
-
-            logger.LogInformation("Stopping background services");
-            foreach (var hostedService in hostedServices)
-                hostedService.StopAsync(CancellationToken.None).Wait();
-
-            logger.LogInformation("Logging out from Discord");
-            client.LogoutAsync().Wait();
-            logger.LogInformation("Stopping the client");
-            client.StopAsync().Wait();
-
-            args.Cancel = false;
-        };
-
-        await Task.Delay(Timeout.Infinite);
+        logger.LogInformation("Logging out from Discord");
+        await client.LogoutAsync();
+        logger.LogInformation("Stopping the client");
+        await client.StopAsync();
     }
 
     private ServiceProvider ConfigureServices()

@@ -61,7 +61,14 @@ public class Program
             return;
         }
 
-        new Asterion(0, config).MainAsync().GetAwaiter().GetResult();
+        try
+        {
+            new Asterion(0, config).MainAsync().GetAwaiter().GetResult();
+        }
+        finally
+        {
+            Log.CloseAndFlush();
+        }
     }
     
     private static string GetVersion()

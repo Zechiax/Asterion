@@ -183,7 +183,7 @@ public class FollowModule(
         if (botUser.GetPermissions(channel).SendMessages)
             return;
 
-        await FollowupAsync(Loc("follow-no-send-permission", new { channel = channel.Mention }), ephemeral: true);
+        await FollowupAsync(Loc("no-send-permission", new { channel = channel.Mention }), ephemeral: true);
     }
 
     private string Loc(string key)

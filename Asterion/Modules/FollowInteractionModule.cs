@@ -107,15 +107,19 @@ public class FollowInteractionModule(
     [ComponentInteraction(FollowComponentBuilder.ChannelMenuId + ":*:*:*")]
     public async Task HandleChannelSelectionAsync(ulong ownerId, int followId, int listPage, string[] selectedValues)
     {
+        // The picker requires a channel, redraw the saved state in case nothing was selected
         var channelId = SettingsPanelBuilder.ParseSelectedId(selectedValues);
         if (channelId is null)
+        {
+            await UpdateAsync(ownerId, followId, listPage, _ => { });
             return;
+        }
 
         if (!BotCanSendIn(channelId.Value))
         {
             // Show the panel again, so the picker goes back to the saved channel
             await UpdateAsync(ownerId, followId, listPage, _ => { });
-            await FollowupAsync(LocalizationService.Get("follow-no-send-permission", CommandCultureInfo,
+            await FollowupAsync(LocalizationService.Get("no-send-permission", CommandCultureInfo,
                 new { channel = MentionUtils.MentionChannel(channelId.Value) }), ephemeral: true);
             return;
         }
@@ -149,21 +153,15 @@ public class FollowInteractionModule(
     }
 
     [ComponentInteraction(FollowComponentBuilder.ReleaseMenuId + ":*:*:*")]
-    public async Task HandleReleaseFilterSelectionAsync(ulong ownerId, int followId, int listPage, string[] selectedValues)
+    public Task HandleReleaseFilterSelectionAsync(ulong ownerId, int followId, int listPage, string[] selectedValues)
     {
+        // The menu requires at least one release type
         ReleaseType releaseFilter = 0;
         foreach (var value in selectedValues)
             if (int.TryParse(value, out var flag))
                 releaseFilter |= (ReleaseType)flag;
 
-        if (releaseFilter == 0)
-        {
-            await RespondAsync(LocalizationService.Get("settings-release-required", CommandCultureInfo),
-                ephemeral: true);
-            return;
-        }
-
-        await UpdateAsync(ownerId, followId, listPage, f => f.ReleaseFilter = releaseFilter);
+        return UpdateAsync(ownerId, followId, listPage, f => f.ReleaseFilter = releaseFilter);
     }
 
     [ComponentInteraction(FollowComponentBuilder.LoaderMenuId + ":*:*:*")]

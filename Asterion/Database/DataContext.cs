@@ -3,6 +3,7 @@ using Asterion.Configuration;
 using Asterion.Database.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Array = Asterion.Database.Models.Array;
@@ -25,8 +26,8 @@ public class DataContext : DbContext
     public virtual DbSet<Array> Arrays { get; set; } = null!;
     public virtual DbSet<ModrinthEntry> ModrinthEntries { get; set; } = null!;
     public virtual DbSet<GuildSettings> GuildSettings { get; set; } = null!;
-    public virtual DbSet<TotalDownloads> TotalDownloads { get; set; } = null!;
-    public virtual DbSet<ModrinthInstanceStatistics> ModrinthInstanceStatistics { get; set; } = null!;
+    public virtual DbSet<HourlyProjectStats> HourlyProjectStats { get; set; } = null!;
+    public virtual DbSet<DailyProjectStats> DailyProjectStats { get; set; } = null!;
     public virtual DbSet<PendingNotification> PendingNotifications { get; set; } = null!;
     public virtual DbSet<ModrinthFollow> ModrinthFollows { get; set; } = null!;
     public virtual DbSet<FollowProject> FollowProjects { get; set; } = null!;
@@ -95,9 +96,27 @@ public class DataContext : DbContext
         modelBuilder.Entity<FollowProject>()
             .HasIndex(fp => fp.ProjectId);
 
-        // Used by the statistics lookups and the maintenance trim of old rows
-        modelBuilder.Entity<TotalDownloads>()
-            .HasIndex(t => new { t.ProjectId, t.Timestamp });
+        // Buckets are stored as unix seconds, a lot smaller than the default TEXT dates
+        var unixSeconds = new ValueConverter<DateTime, long>(
+            v => new DateTimeOffset(DateTime.SpecifyKind(v, DateTimeKind.Utc)).ToUnixTimeSeconds(),
+            v => DateTimeOffset.FromUnixTimeSeconds(v).UtcDateTime);
+
+        // The key serves the chart range queries, the bucket index the per-poll lookup and the retention delete
+        modelBuilder.Entity<HourlyProjectStats>(e =>
+        {
+            e.HasKey(s => new { s.ProjectId, s.Hour });
+            e.HasIndex(s => s.Hour);
+            e.Property(s => s.Hour).HasConversion(unixSeconds);
+            e.HasOne<ModrinthProject>().WithMany().HasForeignKey(s => s.ProjectId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<DailyProjectStats>(e =>
+        {
+            e.HasKey(s => new { s.ProjectId, s.Day });
+            e.HasIndex(s => s.Day);
+            e.Property(s => s.Day).HasConversion(unixSeconds);
+            e.HasOne<ModrinthProject>().WithMany().HasForeignKey(s => s.ProjectId).OnDelete(DeleteBehavior.Cascade);
+        });
 
         modelBuilder.Entity<PendingNotification>()
             .HasOne(p => p.Entry)

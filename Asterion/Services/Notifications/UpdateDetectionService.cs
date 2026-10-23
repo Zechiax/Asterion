@@ -74,7 +74,7 @@ public class UpdateDetectionService : BackgroundService
         var projects = await _client.Project.GetMultipleAsync(projectsDto.Select(p => p.ProjectId), ct);
         var projectList = projects.ToList();
 
-        await UpdateStatisticsDataAsync(projectList);
+        await UpdateStatisticsDataAsync(projectList, ct);
 
         var updatedProjects = FilterUpdatedProjects(projectsDto, projectList).ToArray();
 
@@ -180,13 +180,11 @@ public class UpdateDetectionService : BackgroundService
         return versions;
     }
 
-    private async Task UpdateStatisticsDataAsync(IEnumerable<Project> projects)
+    private async Task UpdateStatisticsDataAsync(IReadOnlyCollection<Project> projects, CancellationToken ct)
     {
-        var projectList = projects.ToList();
-        _logger.LogDebug("Updating statistics for {Count} projects", projectList.Count);
+        _logger.LogDebug("Updating statistics for {Count} projects", projects.Count);
 
-        foreach (var project in projectList)
-            await _projectStatisticsManager.UpdateDownloadsAsync(project);
+        await _projectStatisticsManager.RecordAsync(projects, ct);
 
         _logger.LogDebug("Statistics update finished");
     }

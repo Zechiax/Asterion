@@ -18,9 +18,7 @@ public static class Errors
     public static readonly StatusCard MessageEmpty = new(StatusKind.Error, "error-message-empty");
     public static readonly StatusCard InputIsProject = new(StatusKind.Error, "error-input-is-project");
 
-    public static readonly StatusCard NoDownloadData = new(StatusKind.Error, "error-no-download-data");
-    public static readonly StatusCard NotEnoughDataHourly = new(StatusKind.Error, "error-not-enough-data-hourly");
-    public static readonly StatusCard NotEnoughDataDaily = new(StatusKind.Error, "error-not-enough-data-daily");
+    public static readonly StatusCard NoStatsData = new(StatusKind.Error, "error-no-stats-data");
 
     public static readonly StatusCard NotAllowed = new(StatusKind.Error, "error-not-allowed");
     public static readonly StatusCard GuildOnly = new(StatusKind.Error, "error-guild-only");
@@ -42,6 +40,16 @@ public static class Errors
     public static StatusCard ChangelogLengthInvalid(int min, int max)
     {
         return new StatusCard(StatusKind.Error, "error-changelog-length-invalid", new { min, max });
+    }
+
+    /// <param name="wait">Roughly how long until there is enough data</param>
+    public static StatusCard NotEnoughData(TimeSpan wait)
+    {
+        var args = wait < TimeSpan.FromDays(2)
+            ? new { unit = "hours", amount = (int)Math.Ceiling(wait.TotalHours) }
+            : new { unit = "days", amount = (int)Math.Ceiling(wait.TotalDays) };
+
+        return new StatusCard(StatusKind.Error, "error-not-enough-data", args);
     }
 
     public static StatusCard DangerNotConfirmed(string word)

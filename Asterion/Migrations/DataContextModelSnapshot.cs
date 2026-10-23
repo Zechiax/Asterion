@@ -34,6 +34,27 @@ namespace Asterion.Migrations
                     b.ToTable("Arrays");
                 });
 
+            modelBuilder.Entity("Asterion.Database.Models.DailyProjectStats", b =>
+                {
+                    b.Property<string>("ProjectId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Day")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Downloads")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Followers")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("ProjectId", "Day");
+
+                    b.HasIndex("Day");
+
+                    b.ToTable("DailyProjectStats");
+                });
+
             modelBuilder.Entity("Asterion.Database.Models.FollowProject", b =>
                 {
                     b.Property<int>("FollowId")
@@ -141,6 +162,27 @@ namespace Asterion.Migrations
                         .IsUnique();
 
                     b.ToTable("GuildSettings");
+                });
+
+            modelBuilder.Entity("Asterion.Database.Models.HourlyProjectStats", b =>
+                {
+                    b.Property<string>("ProjectId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Hour")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Downloads")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Followers")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("ProjectId", "Hour");
+
+                    b.HasIndex("Hour");
+
+                    b.ToTable("HourlyProjectStats");
                 });
 
             modelBuilder.Entity("Asterion.Database.Models.ModrinthEntry", b =>
@@ -252,29 +294,6 @@ namespace Asterion.Migrations
                     b.ToTable("ModrinthFollows");
                 });
 
-            modelBuilder.Entity("Asterion.Database.Models.ModrinthInstanceStatistics", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("Authors")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("Files")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("Projects")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("Versions")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("ModrinthInstanceStatistics");
-                });
-
             modelBuilder.Entity("Asterion.Database.Models.ModrinthProject", b =>
                 {
                     b.Property<string>("ProjectId")
@@ -368,30 +387,13 @@ namespace Asterion.Migrations
                         });
                 });
 
-            modelBuilder.Entity("Asterion.Database.Models.TotalDownloads", b =>
+            modelBuilder.Entity("Asterion.Database.Models.DailyProjectStats", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("Downloads")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("Followers")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("ProjectId")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("Timestamp")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ProjectId", "Timestamp");
-
-                    b.ToTable("TotalDownloads");
+                    b.HasOne("Asterion.Database.Models.ModrinthProject", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Asterion.Database.Models.FollowProject", b =>
@@ -433,6 +435,15 @@ namespace Asterion.Migrations
                         .IsRequired();
 
                     b.Navigation("Guild");
+                });
+
+            modelBuilder.Entity("Asterion.Database.Models.HourlyProjectStats", b =>
+                {
+                    b.HasOne("Asterion.Database.Models.ModrinthProject", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Asterion.Database.Models.ModrinthEntry", b =>
@@ -498,17 +509,6 @@ namespace Asterion.Migrations
                     b.Navigation("Project");
                 });
 
-            modelBuilder.Entity("Asterion.Database.Models.TotalDownloads", b =>
-                {
-                    b.HasOne("Asterion.Database.Models.ModrinthProject", "Project")
-                        .WithMany("TotalDownloads")
-                        .HasForeignKey("ProjectId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Project");
-                });
-
             modelBuilder.Entity("Asterion.Database.Models.Array", b =>
                 {
                     b.Navigation("Guild")
@@ -524,11 +524,6 @@ namespace Asterion.Migrations
             modelBuilder.Entity("Asterion.Database.Models.ModrinthFollow", b =>
                 {
                     b.Navigation("Projects");
-                });
-
-            modelBuilder.Entity("Asterion.Database.Models.ModrinthProject", b =>
-                {
-                    b.Navigation("TotalDownloads");
                 });
 #pragma warning restore 612, 618
         }

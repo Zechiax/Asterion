@@ -3,238 +3,124 @@ using Asterion.Common;
 using Asterion.Interfaces;
 using Asterion.Services;
 using Asterion.Services.Modrinth;
+using Asterion.Services.Statistics;
 using Discord;
 using Discord.Interactions;
-using LiveChartsCore;
-using LiveChartsCore.SkiaSharpView;
-using LiveChartsCore.SkiaSharpView.SKCharts;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using SkiaSharp;
 
 namespace Asterion.Modules;
 
-public class ChartModule : AsterionInteractionModuleBase
+public enum ChartRange
 {
-    private readonly ILogger<ChartModule> _logger;
-    private readonly ModrinthService _modrinthService;
-    private readonly ProjectStatisticsManager _projectStatisticsManager;
+    [ChoiceDisplay("24 hours")] Day,
+    [ChoiceDisplay("7 days")] Week,
+    [ChoiceDisplay("30 days")] Month,
+    [ChoiceDisplay("90 days")] Quarter,
+    [ChoiceDisplay("1 year")] Year
+}
 
-    public ChartModule(IServiceProvider serviceProvider, ILocalizationService localizationService, IGuildCultureProvider cultureProvider) : base(
-        localizationService, cultureProvider)
+public enum ChartMetric
+{
+    Downloads,
+    Followers
+}
+
+[Group("chart", "Creates charts of project statistics")]
+// ReSharper disable once ClassNeverInstantiated.Global
+public class ChartModule(
+    ILocalizationService localizationService,
+    IGuildCultureProvider cultureProvider,
+    ModrinthService modrinthService,
+    ProjectStatisticsManager statistics)
+    : AsterionInteractionModuleBase(localizationService, cultureProvider)
+{
+    // Fewer points than this don't make a useful chart
+    private const int MinPoints = 5;
+
+    private static readonly TimeSpan Hour = TimeSpan.FromHours(1);
+    private static readonly TimeSpan Day = TimeSpan.FromDays(1);
+
+    [SlashCommand("downloads", "Charts the downloads of a project", runMode: RunMode.Async)]
+    public Task Downloads(
+        [Summary("project", "ID or slug of the project")] [Autocomplete(typeof(SubscribedIdAutocompletionHandler))]
+        string project,
+        [Summary("range", "Time span of the chart")]
+        ChartRange range = ChartRange.Month)
     {
-        _projectStatisticsManager = serviceProvider.GetRequiredService<ProjectStatisticsManager>();
-        _modrinthService = serviceProvider.GetRequiredService<ModrinthService>();
-        _logger = serviceProvider.GetRequiredService<ILogger<ChartModule>>();
+        return SendChartAsync(project, ChartMetric.Downloads, range);
     }
 
-    // We create subcommands for each graph type
-    [Group("chart", "Creates charts of different statistics")]
-    public class ChartType : ChartModule
+    [SlashCommand("followers", "Charts the new followers of a project", runMode: RunMode.Async)]
+    public Task Followers(
+        [Summary("project", "ID or slug of the project")] [Autocomplete(typeof(SubscribedIdAutocompletionHandler))]
+        string project,
+        [Summary("range", "Time span of the chart")]
+        ChartRange range = ChartRange.Month)
     {
-        public ChartType(IServiceProvider serviceProvider, ILocalizationService localizationService, IGuildCultureProvider cultureProvider) : base(
-            serviceProvider, localizationService, cultureProvider)
+        return SendChartAsync(project, ChartMetric.Followers, range);
+    }
+
+    private async Task SendChartAsync(string query, ChartMetric metric, ChartRange range)
+    {
+        await DeferAsync();
+
+        var search = await modrinthService.FindProject(query);
+        if (!search.Success)
         {
+            await SendStatusAsync(Errors.FromSearch(search));
+            return;
         }
 
-        [SlashCommand("24h", "[Experimental] Graphs the downloads of a project over the span of 24 hours",
-            runMode: RunMode.Async)]
-        public async Task Hourly([Autocomplete(typeof(SubscribedIdAutocompletionHandler))] string projectSlugOrId)
+        var project = search.Payload.Project;
+        var (hourly, step, count, labelFormat) = Buckets(range);
+        var unit = hourly ? Hour : Day;
+        var now = DateTime.UtcNow;
+
+        // One extra unit before the first bucket, its sample is the base of the first change
+        var from = now - count * step - step - unit;
+        var samples = hourly
+            ? (await statistics.GetHourlyAsync(project.Id, from))
+            .ToDictionary(s => s.Hour, s => metric == ChartMetric.Downloads ? s.Downloads : s.Followers)
+            : (await statistics.GetDailyAsync(project.Id, from))
+            .ToDictionary(s => s.Day, s => metric == ChartMetric.Downloads ? s.Downloads : s.Followers);
+
+        if (samples.Count == 0)
         {
-            await DeferAsync();
-
-            var project = await _modrinthService.FindProject(projectSlugOrId);
-            if (project.Success == false)
-            {
-                await SendStatusAsync(Errors.FromSearch(project));
-                return;
-            }
-
-            var downloadData = (await _projectStatisticsManager.GetTotalDownloadsAsync(project.Payload.Project.Id))
-                .OrderBy(x => x.Timestamp).ToList();
-
-            if (downloadData.Count == 0)
-            {
-                await SendStatusAsync(Errors.NoDownloadData);
-                return;
-            }
-
-            _logger.LogTrace("Download data: {@DownloadData}", downloadData);
-
-            // We only want the last 24 hours and only pick the last measurement of each hour
-            var now = DateTime.UtcNow;
-            downloadData = downloadData.Where(x => x.Timestamp > now.AddHours(-24)).ToList();
-            var lastHour = -1;
-            for (var i = 0; i < downloadData.Count; i++)
-                if (downloadData[i].Timestamp.Hour == lastHour)
-                {
-                    downloadData.RemoveAt(i);
-                    i--;
-                }
-                else
-                {
-                    lastHour = downloadData[i].Timestamp.Hour;
-                }
-
-            // Print sequentially the filtered data
-            foreach (var download in downloadData)
-                _logger.LogTrace("Filtered download data: {@DownloadData}", download);
-
-            // We check if we have enough data to create a graph
-            if (downloadData.Count < 5)
-            {
-                _logger.LogDebug("Not enough data to create a graph, we have {DownloadDataCount} data points",
-                    downloadData.Count);
-                await SendStatusAsync(Errors.NotEnoughDataHourly);
-                return;
-            }
-
-            // Make the downloads be a difference between each other, so the graph shows the number of downloads each time
-            var downloads = new List<int>();
-            for (var i = 0; i < downloadData.Count; i++)
-            {
-                if (i == 0)
-                    // downloads.Add(downloadData[i].Downloads);
-                    // We'll skip the first one, so the result is a difference between the first and second
-                    continue;
-
-                downloads.Add(downloadData[i].Downloads - downloadData[i - 1].Downloads);
-            }
-
-            var color = project.Payload.Project.Color!.Value;
-
-            var cartesianChart = new SKCartesianChart
-            {
-                Series = new ISeries[]
-                {
-                    new LineSeries<int>
-                    {
-                        Name = "Downloads per hour",
-                        Values = downloads
-                        // This stroke settings make some graphs look blurry-like
-                        // Stroke = new SolidColorPaint(new SKColor(color.R, color.G, color.B)),
-                        // Fill = new SolidColorPaint(new SKColor(color.R, color.G, color.B, 100))
-                    }
-                },
-                XAxes = new[]
-                {
-                    new Axis
-                    {
-                        // We don't need to display minutes
-                        Labels = downloadData.Select(x => x.Timestamp.ToString("HH")).ToArray(),
-                        Name = "Hour (UTC)",
-                        // We make it so that every hour is displayed
-                        ForceStepToMin = true,
-                        MinStep = 1
-                    }
-                }
-            };
-
-            var image = cartesianChart.GetImage();
-
-            FileAttachment file = new(image.Encode(SKEncodedImageFormat.Png, 100).AsStream(), "chart.png");
-
-            await FollowupWithFileAsync(file,
-                "Downloads of " + project.Payload.Project.Title + " over the last 24 hours (time in UTC)");
+            await SendStatusAsync(Errors.NoStatsData);
+            return;
         }
 
-        [SlashCommand("30d", "[Experimental] Graphs the downloads of a project over the span of 30 days",
-            runMode: RunMode.Async)]
-        public async Task Daily([Autocomplete(typeof(SubscribedIdAutocompletionHandler))] string projectSlugOrId)
+        var points = StatisticsSeries.BuildDeltas(samples, now, unit, step, count);
+        if (points.Count(p => p.Value is not null) < MinPoints)
         {
-            await DeferAsync();
-
-            var project = await _modrinthService.FindProject(projectSlugOrId);
-
-            if (project.Success == false)
-            {
-                await SendStatusAsync(Errors.FromSearch(project));
-                return;
-            }
-
-            var downloadData = (await _projectStatisticsManager.GetTotalDownloadsAsync(project.Payload.Project.Id))
-                .OrderBy(x => x.Timestamp).ToList();
-
-            if (downloadData.Count == 0)
-            {
-                await SendStatusAsync(Errors.NoDownloadData);
-                return;
-            }
-
-
-            // We only want the last 30 days and only pick the last measurement of each day
-            var now = DateTime.UtcNow;
-            downloadData = downloadData.Where(x => x.Timestamp > now.AddDays(-30)).ToList();
-            var lastDay = -1;
-            for (var i = 0; i < downloadData.Count; i++)
-                if (downloadData[i].Timestamp.Day == lastDay)
-                {
-                    downloadData.RemoveAt(i);
-                    i--;
-                }
-                else
-                {
-                    lastDay = downloadData[i].Timestamp.Day;
-                }
-
-            // Print sequentially the filtered data
-            foreach (var download in downloadData)
-                _logger.LogTrace("Filtered download data: {@DownloadData}", download);
-
-            // We check if we have enough data to create a graph
-            if (downloadData.Count < 5)
-            {
-                _logger.LogDebug("Not enough data to create a graph, we have {DownloadDataCount} data points",
-                    downloadData.Count);
-                await SendStatusAsync(Errors.NotEnoughDataDaily);
-                return;
-            }
-
-            // Make the downloads be a difference between each other, so the graph shows the number of downloads each time
-            var downloads = new List<int>();
-            for (var i = 0; i < downloadData.Count; i++)
-            {
-                if (i == 0)
-                    // downloads.Add(downloadData[i].Downloads);
-                    // We'll skip the first one, so the result is a difference between the first and second
-                    continue;
-
-                downloads.Add(downloadData[i].Downloads - downloadData[i - 1].Downloads);
-            }
-
-            var color = project.Payload.Project.Color!.Value;
-
-            var cartesianChart = new SKCartesianChart
-            {
-                Series = new ISeries[]
-                {
-                    new LineSeries<int>
-                    {
-                        Name = "Downloads per day",
-                        Values = downloads
-                        // This stroke settings make some graphs look blurry-like
-                        // Stroke = new SolidColorPaint(new SKColor(color.R, color.G, color.B)),
-                        // Fill = new SolidColorPaint(new SKColor(color.R, color.G, color.B, 100))
-                    }
-                },
-                XAxes = new[]
-                {
-                    new Axis
-                    {
-                        Labels = downloadData.Select(x => x.Timestamp.ToString("dd/MM")).ToArray(),
-                        Name = "Day (dd/MM)",
-                        // We rotate the labels so they don't overlap
-                        LabelsRotation = 45
-                    }
-                }
-            };
-
-            var image = cartesianChart.GetImage();
-
-            FileAttachment file = new(image.Encode(SKEncodedImageFormat.Png, 100).AsStream(), "chart.png");
-
-            await FollowupWithFileAsync(file,
-                "Downloads of " + project.Payload.Project.Title + " over the last 30 days");
+            await SendStatusAsync(Errors.NotEnoughData(step * (MinPoints + 1)));
+            return;
         }
+
+        var axisName = hourly
+            ? LocalizationService.Get("chart-axis-hour", CommandCultureInfo)
+            : LocalizationService.Get("chart-axis-day", CommandCultureInfo);
+        var image = ChartRenderer.RenderPng(points, labelFormat, axisName, project.Color,
+            CommandCultureInfo);
+
+        var args = new { title = Format.Sanitize(project.Title), range = range.ToString().ToLowerInvariant() };
+        var caption = metric == ChartMetric.Downloads
+            ? LocalizationService.Get("chart-caption-downloads", CommandCultureInfo, args)
+            : LocalizationService.Get("chart-caption-followers", CommandCultureInfo, args);
+
+        await FollowupWithFileAsync(new FileAttachment(image, "chart.png"), caption);
+    }
+
+    /// <returns>If the chart uses the hourly samples, the length and number of buckets and the label format</returns>
+    private static (bool Hourly, TimeSpan Step, int Count, string LabelFormat) Buckets(ChartRange range)
+    {
+        return range switch
+        {
+            ChartRange.Day => (true, Hour, 24, "HH:mm"),
+            ChartRange.Week => (true, TimeSpan.FromHours(6), 28, "dd/MM HH:mm"),
+            ChartRange.Month => (false, Day, 30, "dd/MM"),
+            ChartRange.Quarter => (false, Day, 90, "dd/MM"),
+            ChartRange.Year => (false, Day, 365, "dd/MM/yy"),
+            _ => throw new ArgumentOutOfRangeException(nameof(range), range, null)
+        };
     }
 }

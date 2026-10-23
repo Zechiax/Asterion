@@ -1,6 +1,7 @@
 using System.Globalization;
 using Asterion.Services.Statistics;
 using LiveChartsCore;
+using LiveChartsCore.Defaults;
 using LiveChartsCore.Measure;
 using LiveChartsCore.SkiaSharpView;
 using LiveChartsCore.SkiaSharpView.Painting;
@@ -26,16 +27,21 @@ public static class ChartRenderer
     private static readonly SKColor DefaultLine = SKColor.Parse("#1BD96A");
 
     /// <param name="points">Values of the chart, null values are drawn as gaps</param>
-    /// <param name="labelFormat">Format of the bucket start in the X axis labels</param>
-    /// <param name="axisName">Name of the X axis</param>
+    /// <param name="timeAxis">Spacing and format of the X axis labels</param>
     /// <param name="color">Line color, e.g. the project's color</param>
     /// <param name="culture">Culture of the labels, invariant if null</param>
-    public static Stream RenderPng(IReadOnlyList<ChartPoint> points, string labelFormat, string axisName,
-        System.Drawing.Color? color, CultureInfo? culture)
+    public static Stream RenderPng(IReadOnlyList<ChartPoint> points, TimeAxis timeAxis, System.Drawing.Color? color,
+        CultureInfo? culture)
     {
         culture ??= CultureInfo.InvariantCulture;
         var line = color is { } c ? new SKColor(c.R, c.G, c.B) : DefaultLine;
         var markers = points.Count <= MaxPointsWithMarkers;
+
+        // X is the time in label units since a Monday, so the labels land on whole hours, days or weeks,
+        // the same Mondays the weekly buckets start on
+        var values = points
+            .Select(p => new ObservablePoint((p.Start - DateTime.MinValue) / timeAxis.Unit, p.Value))
+            .ToArray();
 
         var chart = new SKCartesianChart
         {
@@ -45,11 +51,11 @@ public static class ChartRenderer
             LegendPosition = LegendPosition.Hidden,
             Series =
             [
-                new LineSeries<int?>
+                new LineSeries<ObservablePoint>
                 {
-                    Values = points.Select(p => p.Value).ToArray(),
+                    Values = values,
                     Stroke = new SolidColorPaint(line) { StrokeThickness = 3 },
-                    Fill = null,
+                    Fill = new SolidColorPaint(line.WithAlpha(40)),
                     GeometrySize = markers ? 8 : 0,
                     GeometryStroke = markers ? new SolidColorPaint(line) { StrokeThickness = 3 } : null,
                     GeometryFill = markers ? new SolidColorPaint(Background) : null,
@@ -60,10 +66,9 @@ public static class ChartRenderer
             {
                 new Axis
                 {
-                    Name = axisName,
-                    Labels = points.Select(p => p.Start.ToString(labelFormat, culture)).ToArray(),
-                    LabelsRotation = points.Count > 24 ? 45 : 0,
-                    NamePaint = new SolidColorPaint(Text),
+                    Labeler = x => TimeLabel(x, timeAxis, culture),
+                    MinStep = timeAxis.Step,
+                    ForceStepToMin = true,
                     LabelsPaint = new SolidColorPaint(Text),
                     SeparatorsPaint = null
                 }
@@ -72,7 +77,9 @@ public static class ChartRenderer
             {
                 new Axis
                 {
-                    Labeler = value => value.ToString("N0", culture),
+                    // From zero, unless there are negative values, e.g. lost followers
+                    MinLimit = points.Any(p => p.Value < 0) ? null : 0,
+                    Labeler = value => Compact(value, culture),
                     LabelsPaint = new SolidColorPaint(Text),
                     SeparatorsPaint = new SolidColorPaint(Separators) { StrokeThickness = 1 }
                 }
@@ -82,4 +89,32 @@ public static class ChartRenderer
         using var image = chart.GetImage();
         return image.Encode(SKEncodedImageFormat.Png, 100).AsStream();
     }
+
+    private static string TimeLabel(double x, TimeAxis timeAxis, IFormatProvider culture)
+    {
+        // LiveCharts also asks for labels of extreme values when measuring them
+        var ticks = x * timeAxis.Unit.Ticks;
+        if (double.IsNaN(ticks) || ticks < 0 || ticks > DateTime.MaxValue.Ticks)
+            return string.Empty;
+
+        return new DateTime((long)ticks).ToString(timeAxis.LabelFormat, culture);
+    }
+
+    /// <summary>
+    ///     Short form of large numbers, e.g. 1.2M or 35k
+    /// </summary>
+    private static string Compact(double value, IFormatProvider culture)
+    {
+        return Math.Abs(value) switch
+        {
+            >= 1_000_000 => (value / 1_000_000).ToString("0.#", culture) + "M",
+            >= 1_000 => (value / 1_000).ToString("0.#", culture) + "k",
+            _ => value.ToString("0.#", culture)
+        };
+    }
 }
+
+/// <param name="Unit">Time of one step on the axis</param>
+/// <param name="Step">Steps between the labels</param>
+/// <param name="LabelFormat">Format of the label times</param>
+public sealed record TimeAxis(TimeSpan Unit, double Step, string LabelFormat);

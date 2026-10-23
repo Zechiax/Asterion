@@ -92,8 +92,9 @@ public class InteractionCommandHandler
                 await SendStatusAsync(arg2, Errors.InvalidInput);
                 break;
             case InteractionCommandError.Exception:
-                _logger.LogError(
-                    "{CommandType} Command {Arg1Name} for user {UserUsername} failed; Exception: \'{ErrorReason}\'",
+                // ErrorReason only says that the command failed, the cause is in the exception
+                _logger.LogError(arg3 is ExecuteResult result ? result.Exception : null,
+                    "{CommandType} Command {Arg1Name} for user {UserUsername} failed; Reason: \'{ErrorReason}\'",
                     commandType, commandName, arg2.User.Username, arg3.ErrorReason);
                 await SendStatusAsync(arg2, Errors.CommandFailed);
                 break;
@@ -168,7 +169,7 @@ public class InteractionCommandHandler
         }
         catch (Exception ex)
         {
-            _logger.LogError("{ExceptionMessage}", ex.Message);
+            _logger.LogError(ex, "Executing interaction {InteractionId} failed", arg.Id);
 
             // If a Slash Command execution fails it is most likely that the original interaction acknowledgement will persist. It is a good idea to delete the original
             // response, or at least let the user know that something went wrong during the command execution.

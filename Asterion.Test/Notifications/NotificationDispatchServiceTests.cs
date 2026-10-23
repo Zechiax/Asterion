@@ -4,6 +4,7 @@ using Asterion.Database.Models;
 using Asterion.Services.Notifications;
 using Asterion.Services.Notifications.Delivery;
 using Asterion.Test.Fakes;
+using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -95,7 +96,7 @@ public class NotificationDispatchServiceTests
             .Returns(System.Array.Empty<TeamMember>());
 
         return new NotificationDispatchService(provider, reader, signal, router, modrinthClient,
-            NullLogger<NotificationDispatchService>.Instance);
+            new DiscordSocketClient(), NullLogger<NotificationDispatchService>.Instance);
     }
 
     [Test]

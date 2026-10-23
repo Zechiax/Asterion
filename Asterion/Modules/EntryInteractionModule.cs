@@ -166,8 +166,7 @@ namespace Asterion.Modules
             {
                 // Show the panel again, so the picker goes back to the saved channel
                 await UpdateAsync(ownerId, projectId, listPage, _ => Task.CompletedTask);
-                await FollowupAsync(LocalizationService.Get("no-send-permission", CommandCultureInfo,
-                    new { channel = MentionUtils.MentionChannel(channelId.Value) }), ephemeral: true);
+                await SendStatusAsync(Warnings.BotCannotSend(MentionUtils.MentionChannel(channelId.Value)));
                 return;
             }
 

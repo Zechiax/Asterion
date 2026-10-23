@@ -1,5 +1,4 @@
 ﻿using System.Globalization;
-using Asterion.EmbedBuilders;
 using Asterion.Interfaces;
 using Discord;
 using Discord.Interactions;
@@ -8,48 +7,23 @@ using Color = Discord.Color;
 
 namespace Asterion.Common;
 
-public class AsterionInteractionModuleBase : InteractionModuleBase<SocketInteractionContext>
+public class AsterionInteractionModuleBase(
+    ILocalizationService localizationService,
+    IGuildCultureProvider cultureProvider)
+    : InteractionModuleBase<SocketInteractionContext>
 {
     protected CultureInfo? CommandCultureInfo { get; set; }
-    protected ILocalizationService LocalizationService { get; }
-    private readonly IGuildCultureProvider _cultureProvider;
-
-    public AsterionInteractionModuleBase(ILocalizationService localizationService, IGuildCultureProvider cultureProvider)
-    {
-        LocalizationService = localizationService;
-        _cultureProvider = cultureProvider;
-    }
-
-    protected async Task FollowupWithSearchResultErrorAsync<T>(Services.Modrinth.SearchResult<T> status)
-    {
-        if (status.Success)
-        {
-            throw new ArgumentException("SearchResult was successful, but was expected to be an error");
-        }
-
-        string title = LocalizationService.Get("modrinth-search-unsuccessful", CommandCultureInfo);
-        if (status.SearchStatus != Services.Modrinth.SearchStatus.NoResult)
-            title += ". " + LocalizationService.Get("error-try-again-later", CommandCultureInfo);
-
-        var embed = CommonEmbedBuilder.GetErrorEmbedBuilder(title, SearchErrorDescription(status)).Build();
-
-        await FollowupAsync(embeds: new[] {embed});
-    }
+    protected ILocalizationService LocalizationService { get; } = localizationService;
 
     /// <summary>
-    ///     Why the search was unsuccessful
+    ///     Sends an error or warning card, whether the interaction was responded to already
     /// </summary>
-    protected string SearchErrorDescription<T>(Services.Modrinth.SearchResult<T> status)
+    /// <param name="card">The card to send</param>
+    /// <param name="ephemeral">If only the user sees the card</param>
+    protected Task SendStatusAsync(StatusCard card, bool ephemeral = true)
     {
-        return status.SearchStatus switch
-        {
-            Services.Modrinth.SearchStatus.ApiDown =>
-                LocalizationService.Get("error-modrinth-api-unavailable", CommandCultureInfo),
-            Services.Modrinth.SearchStatus.NoResult =>
-                LocalizationService.Get("modrinth-search-no-result", CommandCultureInfo, new { query = status.Query }),
-            Services.Modrinth.SearchStatus.UnknownError => LocalizationService.Get("error-unknown", CommandCultureInfo),
-            _ => throw new ArgumentOutOfRangeException(nameof(status))
-        };
+        return InteractionResponder.SendAsync(Context.Interaction, card.Build(LocalizationService, CommandCultureInfo),
+            ephemeral);
     }
 
     /// <summary>
@@ -91,13 +65,13 @@ public class AsterionInteractionModuleBase : InteractionModuleBase<SocketInterac
     /// </summary>
     protected async Task RefreshCultureAsync()
     {
-        _cultureProvider.Invalidate(Context.Guild.Id);
-        CommandCultureInfo = await _cultureProvider.GetCultureAsync(Context.Interaction);
+        cultureProvider.Invalidate(Context.Guild.Id);
+        CommandCultureInfo = await cultureProvider.GetCultureAsync(Context.Interaction);
     }
 
     public override async Task BeforeExecuteAsync(ICommandInfo command)
     {
-        CommandCultureInfo = await _cultureProvider.GetCultureAsync(Context.Interaction);
+        CommandCultureInfo = await cultureProvider.GetCultureAsync(Context.Interaction);
         await base.BeforeExecuteAsync(command);
     }
 }

@@ -16,7 +16,6 @@ namespace Asterion.Modules;
 [RequireContext(ContextType.Guild)]
 public class ModrinthInteractionModule : AsterionInteractionModuleBase
 {
-    private const string RequestError = "Sorry, there was an error processing your request, try again later";
     private readonly IDataService _dataService;
     private readonly IFollowService _followService;
     private readonly ModrinthService _modrinthService;
@@ -56,17 +55,29 @@ public class ModrinthInteractionModule : AsterionInteractionModuleBase
         var channel = Context.Guild.GetTextChannel(Context.Channel.Id);
         var guild = await _dataService.GetGuildByIdAsync(guildId);
 
-        if (channel is null || guild is null)
+        if (channel is null)
         {
-            await FollowupAsync(RequestError, ephemeral: true);
+            await SendStatusAsync(Errors.InvalidChannel);
+            return;
+        }
+
+        if (guild is null)
+        {
+            await SendStatusAsync(Errors.Internal);
             return;
         }
 
         var result = await Subscriptions.SubscribeAsync(_modrinthService, _dataService, guildId, projectId, channel.Id);
 
-        if (result.Status is SubscribeStatus.ProjectNotFound or SubscribeStatus.Failed)
+        if (result.Status is SubscribeStatus.ProjectNotFound)
         {
-            await FollowupAsync(RequestError, ephemeral: true);
+            await SendStatusAsync(Errors.ProjectNotFound(projectId));
+            return;
+        }
+
+        if (result.Status is SubscribeStatus.Failed)
+        {
+            await SendStatusAsync(Errors.Internal);
             return;
         }
 
@@ -80,7 +91,7 @@ public class ModrinthInteractionModule : AsterionInteractionModuleBase
 
         if (result.Status == SubscribeStatus.AlreadySubscribed)
         {
-            await FollowupAsync("You're already subscribed to updates for this project", ephemeral: true);
+            await SendStatusAsync(Warnings.AlreadySubscribed);
             return;
         }
 
@@ -89,9 +100,7 @@ public class ModrinthInteractionModule : AsterionInteractionModuleBase
             ephemeral: true);
 
         if (!BotCanSendIn(channel.Id))
-            await FollowupAsync(
-                ":warning: I don't have permission to send messages in this channel, please give me the required permissions :warning:",
-                ephemeral: true);
+            await SendStatusAsync(Warnings.BotCannotSend(channel.Mention));
     }
 
     [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
@@ -108,15 +117,14 @@ public class ModrinthInteractionModule : AsterionInteractionModuleBase
 
         if (guild is null)
         {
-            // Try again later
-            await FollowupAsync(RequestError, ephemeral: true);
+            await SendStatusAsync(Errors.Internal);
             return;
         }
 
         // BUG: If the project does not exists, it will always throw an error
         if (project == null)
         {
-            await FollowupAsync(RequestError, ephemeral: true);
+            await SendStatusAsync(Errors.ProjectNotFound(projectId));
             return;
         }
         
@@ -131,7 +139,7 @@ public class ModrinthInteractionModule : AsterionInteractionModuleBase
             {
                 x.Components = GetButtons(project, guild.GuildSettings, team: team).Build();
             });
-            await FollowupAsync("You're already unsubscribed from updates to this project", ephemeral: true);
+            await SendStatusAsync(Warnings.AlreadyUnsubscribed);
             return;
         }
 
@@ -153,23 +161,10 @@ public class ModrinthInteractionModule : AsterionInteractionModuleBase
 
         var findUser = await _modrinthService.FindUser(modrinthUserId);
 
-        switch (findUser.SearchStatus)
+        if (!findUser.Success)
         {
-            case SearchStatus.ApiDown:
-                await FollowupAsync("Modrinth API is down, please try again later", ephemeral: true);
-                return;
-            case SearchStatus.NoResult:
-                await FollowupAsync("User does not exist", ephemeral: true);
-                return;
-            case SearchStatus.UnknownError:
-                await FollowupAsync("There was an unknown error, please try again later", ephemeral: true);
-                return;
-            case SearchStatus.FoundById:
-                break;
-            case SearchStatus.FoundBySearch:
-                break;
-            default:
-                throw new ArgumentOutOfRangeException();
+            await SendStatusAsync(Errors.FromSearch(findUser));
+            return;
         }
 
         await FollowupAsync(embed: ModrinthEmbedBuilder.GetUserEmbed(findUser).Build(),
@@ -192,22 +187,20 @@ public class ModrinthInteractionModule : AsterionInteractionModuleBase
         var findUser = await _modrinthService.FindUser(modrinthUserId);
         if (!findUser.Success)
         {
-            await FollowupWithSearchResultErrorAsync(findUser);
+            await SendStatusAsync(Errors.FromSearch(findUser));
             return;
         }
 
         if (Context.Channel is not ITextChannel channel)
         {
-            await FollowupAsync(LocalizationService.Get("follow-channel-invalid", CommandCultureInfo),
-                ephemeral: true);
+            await SendStatusAsync(Errors.InvalidChannel);
             return;
         }
 
         // Every message of the follow would fail to send, don't add it
         if (!BotCanSendIn(channel.Id))
         {
-            await FollowupAsync(LocalizationService.Get("no-send-permission", CommandCultureInfo,
-                new { channel = channel.Mention }), ephemeral: true);
+            await SendStatusAsync(Warnings.BotCannotSend(channel.Mention));
             return;
         }
 
@@ -229,28 +222,14 @@ public class ModrinthInteractionModule : AsterionInteractionModuleBase
 
         if (guild is null)
         {
-            // Try again later
-            await FollowupAsync(RequestError, ephemeral: true);
+            await SendStatusAsync(Errors.Internal);
             return;
         }
 
-        switch (searchResult.SearchStatus)
+        if (!searchResult.Success)
         {
-            case SearchStatus.ApiDown:
-                await FollowupAsync("Modrinth API is probably down, please try again later", ephemeral: true);
-                return;
-            case SearchStatus.NoResult:
-                await FollowupAsync("Project does not exist", ephemeral: true);
-                return;
-            case SearchStatus.UnknownError:
-                await FollowupAsync("Unknown error, please try again later", ephemeral: true);
-                return;
-            case SearchStatus.FoundById:
-                break;
-            case SearchStatus.FoundBySearch:
-                break;
-            default:
-                throw new ArgumentOutOfRangeException();
+            await SendStatusAsync(Errors.FromSearch(searchResult));
+            return;
         }
 
         var projectDto = searchResult.Payload;
@@ -276,7 +255,7 @@ public class ModrinthInteractionModule : AsterionInteractionModuleBase
 
         if (search.Success == false)
         {
-            await FollowupAsync("Couldn't find this project", ephemeral: true);
+            await SendStatusAsync(Errors.FromSearch(search));
             return;
         }
 
@@ -293,7 +272,7 @@ public class ModrinthInteractionModule : AsterionInteractionModuleBase
 
         if (search.Payload.SearchResponse is null)
         {
-            await FollowupAsync("Could not find any more projects", ephemeral: true);
+            await SendStatusAsync(Errors.NoMoreResults);
             return;
         }
 

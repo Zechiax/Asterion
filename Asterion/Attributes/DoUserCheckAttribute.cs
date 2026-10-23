@@ -1,4 +1,5 @@
-﻿using Discord;
+﻿using Asterion.Common;
+using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 
@@ -11,7 +12,7 @@ internal class DoUserCheck : PreconditionAttribute
     {
         // Check if the component matches the target properly.
         if (context.Interaction is not SocketMessageComponent componentContext)
-            return Task.FromResult(PreconditionResult.FromError("Context unrecognized as component context."));
+            return Task.FromResult<PreconditionResult>(LocalizedPreconditionResult.FromError(Errors.Internal));
 
         // The approach here entirely depends on how you construct your custom ID. In this case, the format is:
         // unique-name:*,*
@@ -25,10 +26,8 @@ internal class DoUserCheck : PreconditionAttribute
             return context.User.Id == id
                 // If the user ID
                 ? Task.FromResult(PreconditionResult.FromSuccess())
-                //: Task.FromResult(PreconditionResult.FromError("User ID does not match component ID!"));
-                : Task.FromResult(
-                    PreconditionResult.FromError("Only the user who executed the command can use this interaction"));
+                : Task.FromResult<PreconditionResult>(LocalizedPreconditionResult.FromError(Errors.NotPanelOwner));
 
-        return Task.FromResult(PreconditionResult.FromError("Parse cannot be done if no userID exists."));
+        return Task.FromResult<PreconditionResult>(LocalizedPreconditionResult.FromError(Errors.Internal));
     }
 }

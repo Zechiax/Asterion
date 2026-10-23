@@ -54,14 +54,14 @@ public class FollowModule(
         var textChannel = channel as ITextChannel ?? Context.Channel as ITextChannel;
         if (textChannel is null)
         {
-            await FollowupAsync(Loc("follow-channel-invalid"));
+            await SendStatusAsync(Errors.InvalidChannel);
             return;
         }
 
         var user = Subscriptions.ParseUserInput(username);
         if (user is null)
         {
-            await FollowupAsync(Loc("follow-input-is-project"));
+            await SendStatusAsync(Errors.InputIsProject);
             return;
         }
 
@@ -69,7 +69,7 @@ public class FollowModule(
             user, textChannel.Id, ToFollowEvents(events), newProjectChannel?.Id);
         if (result is null)
         {
-            await FollowupWithSearchResultErrorAsync(search);
+            await SendStatusAsync(Errors.FromSearch(search));
             return;
         }
 
@@ -89,17 +89,7 @@ public class FollowModule(
         if (BotCanSendIn(channel.Id))
             return;
 
-        await FollowupAsync(Loc("no-send-permission", new { channel = channel.Mention }), ephemeral: true);
-    }
-
-    private string Loc(string key)
-    {
-        return LocalizationService.Get(key, CommandCultureInfo);
-    }
-
-    private string Loc(string key, object args)
-    {
-        return LocalizationService.Get(key, CommandCultureInfo, args);
+        await SendStatusAsync(Warnings.BotCannotSend(channel.Mention));
     }
 
     private static FollowEvents ToFollowEvents(FollowEventsChoice choice)

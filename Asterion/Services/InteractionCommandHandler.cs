@@ -1,4 +1,7 @@
 ﻿using System.Reflection;
+using Asterion.Attributes;
+using Asterion.Common;
+using Asterion.Interfaces;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
@@ -12,10 +15,6 @@ public class InteractionCommandHandler
     private readonly DiscordSocketClient _client;
     private readonly InteractionService _commands;
     private readonly ILogger _logger;
-
-    private readonly string _manageSubsGroupError =
-        "For this command, you either need to have Administrator permission or have role for managing subs";
-
     private readonly IServiceProvider _services;
 
     public InteractionCommandHandler(DiscordSocketClient client, InteractionService commands, IServiceProvider services)
@@ -80,13 +79,7 @@ public class InteractionCommandHandler
         switch (arg3.Error)
         {
             case InteractionCommandError.UnmetPrecondition:
-                if (arg3.ErrorReason.Contains("ManageSubs"))
-                {
-                    await arg2.Interaction.RespondAsync(_manageSubsGroupError, ephemeral: true);
-                    break;
-                }
-
-                await arg2.Interaction.RespondAsync(arg3.ErrorReason, ephemeral: true);
+                await SendStatusAsync(arg2, PreconditionCard(arg3));
                 break;
             case InteractionCommandError.UnknownCommand:
                 _logger.LogError("Unknown {CommandType} Command {Arg1Name} for user {UserUsername}: \'{ErrorReason}\'",
@@ -96,14 +89,13 @@ public class InteractionCommandHandler
                 _logger.LogError(
                     "{CommandType} Command {Arg1Name} for user {UserUsername} failed with bad arguments: \'{ErrorReason}\'",
                     commandType, commandName, arg2.User.Username, arg3.ErrorReason);
+                await SendStatusAsync(arg2, Errors.InvalidInput);
                 break;
             case InteractionCommandError.Exception:
                 _logger.LogError(
                     "{CommandType} Command {Arg1Name} for user {UserUsername} failed; Exception: \'{ErrorReason}\'",
                     commandType, commandName, arg2.User.Username, arg3.ErrorReason);
-                await arg2.Interaction.FollowupAsync(
-                    "An error occurred while executing this command. Please try again later. If the problem persists, please contact the bot owner.",
-                    ephemeral: true);
+                await SendStatusAsync(arg2, Errors.CommandFailed);
                 break;
             case InteractionCommandError.Unsuccessful:
                 _logger.LogError(
@@ -114,17 +106,52 @@ public class InteractionCommandHandler
                 _logger.LogError(
                     "{CommandType} Command {Arg1Name} for user {UserUsername} failed; Reason: \'{ErrorReason}\'",
                     commandType, commandName, arg2.User.Username, arg3.ErrorReason);
+                await SendStatusAsync(arg2, Errors.InvalidInput);
                 break;
             case InteractionCommandError.ParseFailed:
                 _logger.LogError(
                     "{CommandType} Command {Arg1Name} for user {UserUsername} failed; Reason: \'{ErrorReason}\'",
                     commandType, commandName, arg2.User.Username, arg3.ErrorReason);
+                await SendStatusAsync(arg2, Errors.InvalidInput);
                 break;
             case null:
                 break;
         }
 
         return Task.CompletedTask;
+    }
+
+    /// <summary>
+    ///     Card of a failed precondition. Of a failed group (e.g. administrator or manage role), the first one of ours,
+    ///     as the built-in preconditions only have English reasons
+    /// </summary>
+    private static StatusCard PreconditionCard(IResult result)
+    {
+        return result switch
+        {
+            LocalizedPreconditionResult localized => localized.Card,
+            PreconditionGroupResult group => group.Results.OfType<LocalizedPreconditionResult>().FirstOrDefault()?.Card
+                                             ?? Errors.NotAllowed,
+            _ => Errors.NotAllowed
+        };
+    }
+
+    private async Task SendStatusAsync(IInteractionContext context, StatusCard card)
+    {
+        try
+        {
+            var localization = _services.GetRequiredService<ILocalizationService>();
+            var culture = await _services.GetRequiredService<IGuildCultureProvider>()
+                .GetCultureAsync(context.Interaction);
+
+            await InteractionResponder.SendAsync(context.Interaction, card.Build(localization, culture), true);
+        }
+        catch (Exception e)
+        {
+            // E.g. the interaction expired, nothing more can be sent
+            _logger.LogWarning(e, "Couldn't send error {Key} to user {UserUsername}", card.Key,
+                context.User.Username);
+        }
     }
 
     # endregion

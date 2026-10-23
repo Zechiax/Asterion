@@ -1,18 +1,5 @@
 ### Asterion response strings — en-US (source language)
 
-## Errors
-error-modrinth-api-unavailable = The Modrinth API is currently unavailable
-error-try-again-later = Please try again later
-error-unknown = Unknown error
-
-## Modrinth search
-modrinth-search-unsuccessful = Search was not successful
-modrinth-search-no-result = No results for query '{ $query }'
-
-## Settings
-error-internal = Internal error, please try again later
-settings-outdated = This menu is outdated, use `/manage` to change the settings
-
 ## Follows
 follow-event-project-update = Project updates
 follow-event-new-project = New projects
@@ -25,9 +12,7 @@ follow-added =
 follow-added-sync-failed = Following **{ $name }**, but the projects could not be loaded yet ({ $error }). I will try again soon.
 follow-already-following = This server already follows **{ $name }**
 follow-limit-reached = This server already follows the maximum of { $max } creators
-follow-channel-invalid = There was an error processing your request, check if the channel is correct
 follow-not-found = This server does not follow this creator
-follow-input-is-project = That is a link to a project, not to a user. Subscribe to the project instead, or use the link of the user's profile.
 follow-removed = Stopped following **{ $name }** :white_check_mark:
 follow-project-not-found = **{ $name }** has no project with ID { $project }
 follow-list-empty = This server does not follow any creators. Use **Follow creator** to follow a Modrinth user.
@@ -55,7 +40,6 @@ entry-not-found = This server is not subscribed to this project
 entry-unsub-confirm-question = Unsubscribe from **{ $title }** ({ $id })?
 entry-unsubscribed = Unsubscribed from updates for **{ $title }** ({ $id }) :white_check_mark:
 follow-remove-confirm-question = Stop following **{ $name }**?
-no-send-permission = :warning: I don't have permission to send messages in { $channel }, please give me the required permissions :warning:
 
 ## Settings panel
 settings-follow-title = Follow settings: { $name } ({ $type })
@@ -87,7 +71,6 @@ manage-add-follow-input = Modrinth user
 manage-add-follow-placeholder = Username, ID or link
 manage-subscribed = Subscribed to **{ $title }** :white_check_mark: Updates will be sent to { $channel }.
 manage-already-subscribed = This server is already subscribed to **{ $title }**
-manage-project-not-found = No project found for '{ $query }', check the slug or ID
 follow-projects-title = Projects of { $name }
 follow-projects-description = No messages are sent for ignored projects
 follow-projects-empty = No projects are known yet, they are loaded with the next sync
@@ -119,7 +102,6 @@ server-unfollow-all-warning =
     No more messages are sent for any followed creator, and the settings of every follow (channels, ping roles, ignored projects, filters) are deleted. This can't be undone.
 server-unfollow-all-word = unfollow
 server-danger-confirm-input = Type "{ $word }" to confirm
-server-danger-not-confirmed = You didn't type "{ $word }", nothing was removed
 server-unsubscribed-all = Unsubscribed from { $count } projects :white_check_mark:
 server-unfollowed-all = Stopped following { $count } creators :white_check_mark:
 server-notifications-title = Update messages
@@ -136,7 +118,6 @@ server-changelog-length-value-default = { $length } characters (default)
 server-changelog-length-title = Changelog length
 server-changelog-length-input = Maximum number of characters
 server-changelog-length-hint = From { $min } to { $max }. Leave empty to reset to the default ({ $default }).
-server-changelog-length-invalid = Please enter a number from { $min } to { $max }, or leave it empty to reset to the default
 message-style-full = Full
 message-style-compact = Compact
 changelog-style-plaintext = Plain text

@@ -246,7 +246,7 @@ public class ManageInteractionModule(
             }),
             SubscribeStatus.AlreadySubscribed => Loc("manage-already-subscribed",
                 new { title = Format.Sanitize(result.Project!.Title) }),
-            SubscribeStatus.ProjectNotFound => Loc("manage-project-not-found", new { query = Format.Sanitize(query) }),
+            SubscribeStatus.ProjectNotFound => Errors.ProjectNotFound(query).Text(LocalizationService, CommandCultureInfo),
             _ => Loc("error-internal")
         };
 
@@ -295,7 +295,8 @@ public class ManageInteractionModule(
         var user = Subscriptions.ParseUserInput(query);
         if (user is null)
         {
-            await ShowPanelAsync(Context.User.Id, ManageTab.Creators, 0, Loc("follow-input-is-project"));
+            await ShowPanelAsync(Context.User.Id, ManageTab.Creators, 0,
+                Errors.InputIsProject.Text(LocalizationService, CommandCultureInfo));
             return;
         }
 
@@ -304,7 +305,8 @@ public class ManageInteractionModule(
             newProjectChannelId);
         if (result is null)
         {
-            await ShowPanelAsync(Context.User.Id, ManageTab.Creators, 0, SearchErrorDescription(search));
+            await ShowPanelAsync(Context.User.Id, ManageTab.Creators, 0,
+                Errors.FromSearch(search).Text(LocalizationService, CommandCultureInfo));
             return;
         }
 
@@ -344,9 +346,11 @@ public class ManageInteractionModule(
 
     private string ChannelError(ulong? channelId)
     {
-        return channelId is null
-            ? Loc("follow-channel-invalid")
-            : Loc("no-send-permission", new { channel = MentionUtils.MentionChannel(channelId.Value) });
+        var card = channelId is null
+            ? Errors.InvalidChannel
+            : Warnings.BotCannotSend(MentionUtils.MentionChannel(channelId.Value));
+
+        return card.Text(LocalizationService, CommandCultureInfo);
     }
 
     private string Loc(string key)

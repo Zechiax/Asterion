@@ -83,7 +83,7 @@ public class ServerSettingsInteractionModule(
         var guild = await dataService.GetGuildByIdAsync(Context.Guild.Id);
         if (guild is null)
         {
-            await RespondAsync(Loc("error-internal"), ephemeral: true);
+            await SendStatusAsync(Errors.Internal);
             return;
         }
 
@@ -100,11 +100,8 @@ public class ServerSettingsInteractionModule(
 
         if (length is null)
         {
-            await RespondAsync(Loc("server-changelog-length-invalid", new
-            {
-                min = ServerSettingsPanelBuilder.MinChangelogLength,
-                max = ServerSettingsPanelBuilder.MaxChangelogLength
-            }), ephemeral: true);
+            await SendStatusAsync(Errors.ChangelogLengthInvalid(ServerSettingsPanelBuilder.MinChangelogLength,
+                ServerSettingsPanelBuilder.MaxChangelogLength));
             return;
         }
 
@@ -122,7 +119,7 @@ public class ServerSettingsInteractionModule(
         var guild = await dataService.GetGuildByIdAsync(Context.Guild.Id);
         if (guild is null)
         {
-            await FollowupAsync(Loc("error-internal"), ephemeral: true);
+            await SendStatusAsync(Errors.Internal);
             return;
         }
 
@@ -190,7 +187,7 @@ public class ServerSettingsInteractionModule(
         if (ServerSettingsPanelBuilder.IsConfirmed(input, word, CommandCultureInfo))
             return true;
 
-        await RespondAsync(Loc("server-danger-not-confirmed", new { word }), ephemeral: true);
+        await SendStatusAsync(Errors.DangerNotConfirmed(word));
         return false;
     }
 
@@ -206,7 +203,7 @@ public class ServerSettingsInteractionModule(
         var guild = await dataService.GetGuildByIdAsync(Context.Guild.Id);
         if (guild is null)
         {
-            await FollowupAsync(Loc("error-internal"), ephemeral: true);
+            await SendStatusAsync(Errors.Internal);
             return;
         }
 
@@ -214,7 +211,7 @@ public class ServerSettingsInteractionModule(
 
         if (!await dataService.UpdateGuildAsync(guild))
         {
-            await FollowupAsync(Loc("error-internal"), ephemeral: true);
+            await SendStatusAsync(Errors.Internal);
             return;
         }
 
@@ -275,6 +272,6 @@ public class LegacySettingsInteractionModule(
 
     private Task RespondOutdatedAsync()
     {
-        return RespondAsync(LocalizationService.Get("settings-outdated", CommandCultureInfo), ephemeral: true);
+        return SendStatusAsync(Errors.MenuOutdated);
     }
 }

@@ -222,8 +222,7 @@ public class FollowInteractionModule(
         {
             // Show the panel again, so the picker goes back to the saved channel
             await UpdateAsync(ownerId, followId, listPage, _ => { });
-            await FollowupAsync(LocalizationService.Get("no-send-permission", CommandCultureInfo,
-                new { channel = MentionUtils.MentionChannel(channelId) }), ephemeral: true);
+            await SendStatusAsync(Warnings.BotCannotSend(MentionUtils.MentionChannel(channelId)));
             return;
         }
 

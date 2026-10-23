@@ -53,24 +53,11 @@ public class ModrinthModule : AsterionInteractionModuleBase
         _logger.LogDebug("Search for user '{Query}", query);
         var searchResult = await _modrinthService.FindUser(query);
         _logger.LogDebug("Search status: {SearchStatus}", searchResult.SearchStatus);
-        
-        switch (searchResult.SearchStatus)
+
+        if (!searchResult.Success)
         {
-            case SearchStatus.ApiDown:
-                await FollowupAsync("Modrinth API is probably down, please try again later");
-                return;
-            case SearchStatus.NoResult:
-                await FollowupAsync($"No result for query '{query}'");
-                return;
-            case SearchStatus.UnknownError:
-                await FollowupAsync("Unknown error, please try again later");
-                return;
-            case SearchStatus.FoundById:
-                break;
-            case SearchStatus.FoundBySearch:
-                break;
-            default:
-                throw new ArgumentOutOfRangeException();
+            await SendStatusAsync(Errors.FromSearch(searchResult));
+            return;
         }
 
         var userDto = searchResult.Payload;
@@ -95,7 +82,7 @@ public class ModrinthModule : AsterionInteractionModuleBase
 
         if (searchResult.Success == false)
         {
-            await FollowupWithSearchResultErrorAsync(searchResult);
+            await SendStatusAsync(Errors.FromSearch(searchResult));
             return;
         }
 
@@ -108,8 +95,7 @@ public class ModrinthModule : AsterionInteractionModuleBase
 
         if (guild is null)
         {
-            // Try again later
-            await ModifyOriginalResponseAsync(x => { x.Content = "Internal error, please try again later"; });
+            await SendStatusAsync(Errors.Internal);
             return;
         }
 
@@ -137,7 +123,7 @@ public class ModrinthModule : AsterionInteractionModuleBase
     {
         if (string.IsNullOrEmpty(msg.Content))
         {
-            await RespondAsync("Message contains no content to search for", ephemeral: true);
+            await SendStatusAsync(Errors.MessageEmpty);
             return;
         }
 
@@ -157,34 +143,35 @@ public class ModrinthModule : AsterionInteractionModuleBase
 
         if (channel is null)
         {
-            await ModifyOriginalResponseAsync(x =>
-            {
-                x.Content = "There was an error processing your request, check if the channel is correct";
-            });
+            await SendStatusAsync(Errors.InvalidChannel);
             return;
         }
 
-        var result = await Subscriptions.SubscribeAsync(_modrinthService, _dataService, Context.Guild.Id,
-            Subscriptions.ParseProjectInput(projectId), channel.Id);
+        var query = Subscriptions.ParseProjectInput(projectId);
+        var result = await Subscriptions.SubscribeAsync(_modrinthService, _dataService, Context.Guild.Id, query,
+            channel.Id);
+
+        switch (result.Status)
+        {
+            case SubscribeStatus.AlreadySubscribed:
+                await SendStatusAsync(Warnings.AlreadySubscribed);
+                return;
+            case SubscribeStatus.ProjectNotFound:
+                await SendStatusAsync(Errors.ProjectNotFound(query));
+                return;
+            case not SubscribeStatus.Subscribed:
+                await SendStatusAsync(Errors.Internal);
+                return;
+        }
 
         await ModifyOriginalResponseAsync(x =>
         {
-            x.Content = result.Status switch
-            {
-                SubscribeStatus.Subscribed =>
-                    $@"Subscribed to updates for project **{result.Project!.Title}** with ID **{result.Project.Id}** updates will be send to channel {channel.Mention} :white_check_mark:",
-                SubscribeStatus.AlreadySubscribed => $"You're already subscribed to project ID {result.Project!.Id}",
-                _ => "There was an error processing your request, check if the ID is correct or try again later"
-            };
+            x.Content =
+                $@"Subscribed to updates for project **{result.Project!.Title}** with ID **{result.Project.Id}** updates will be send to channel {channel.Mention} :white_check_mark:";
         });
 
-        if (result.Status != SubscribeStatus.Subscribed)
-            return;
-
         if (!BotCanSendIn(channel.Id))
-            await FollowupAsync(
-                ":warning: I don't have permission to send messages in this channel, please give me the required permissions :warning:",
-                ephemeral: true);
+            await SendStatusAsync(Warnings.BotCannotSend(channel.Mention));
     }
 
     [SlashCommand("latest-release", "Gets the latest release of project")]
@@ -195,7 +182,7 @@ public class ModrinthModule : AsterionInteractionModuleBase
 
         if (project == null)
         {
-            await ModifyOriginalResponseAsync(x => { x.Content = "Project not found"; });
+            await SendStatusAsync(Errors.ProjectNotFound(slugOrId));
             return;
         }
 
@@ -203,7 +190,7 @@ public class ModrinthModule : AsterionInteractionModuleBase
 
         if (latestVersion == null)
         {
-            await ModifyOriginalResponseAsync(x => { x.Content = "Error"; });
+            await SendStatusAsync(Errors.Unknown);
             return;
         }
 
@@ -213,8 +200,7 @@ public class ModrinthModule : AsterionInteractionModuleBase
 
         if (guild is null)
         {
-            // Try again later
-            await ModifyOriginalResponseAsync(x => { x.Content = "Internal error, please try again later"; });
+            await SendStatusAsync(Errors.Internal);
             return;
         }
         

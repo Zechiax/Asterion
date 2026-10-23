@@ -46,7 +46,7 @@ public class ChartModule : AsterionInteractionModuleBase
             var project = await _modrinthService.FindProject(projectSlugOrId);
             if (project.Success == false)
             {
-                await FollowupAsync("Project not found", ephemeral: true);
+                await SendStatusAsync(Errors.FromSearch(project));
                 return;
             }
 
@@ -55,9 +55,7 @@ public class ChartModule : AsterionInteractionModuleBase
 
             if (downloadData.Count == 0)
             {
-                await FollowupAsync(
-                    "No download data for this project are currently stored, the project must be subscribed to in atleast 1 guild",
-                    ephemeral: true);
+                await SendStatusAsync(Errors.NoDownloadData);
                 return;
             }
 
@@ -87,8 +85,7 @@ public class ChartModule : AsterionInteractionModuleBase
             {
                 _logger.LogDebug("Not enough data to create a graph, we have {DownloadDataCount} data points",
                     downloadData.Count);
-                await FollowupAsync("Not enough data to create a graph, please wait for a bit (~5 hours)",
-                    ephemeral: true);
+                await SendStatusAsync(Errors.NotEnoughDataHourly);
                 return;
             }
 
@@ -151,7 +148,7 @@ public class ChartModule : AsterionInteractionModuleBase
 
             if (project.Success == false)
             {
-                await FollowupAsync("Project not found", ephemeral: true);
+                await SendStatusAsync(Errors.FromSearch(project));
                 return;
             }
 
@@ -160,9 +157,7 @@ public class ChartModule : AsterionInteractionModuleBase
 
             if (downloadData.Count == 0)
             {
-                await FollowupAsync(
-                    "No download data for this project are currently stored, the project must be subscribed to in atleast 1 guild",
-                    ephemeral: true);
+                await SendStatusAsync(Errors.NoDownloadData);
                 return;
             }
 
@@ -191,8 +186,7 @@ public class ChartModule : AsterionInteractionModuleBase
             {
                 _logger.LogDebug("Not enough data to create a graph, we have {DownloadDataCount} data points",
                     downloadData.Count);
-                await FollowupAsync("Not enough data to create a graph, please wait for a bit (~5 days)",
-                    ephemeral: true);
+                await SendStatusAsync(Errors.NotEnoughDataDaily);
                 return;
             }
 

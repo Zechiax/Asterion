@@ -5,6 +5,7 @@ using Asterion.Database.Models;
 using Asterion.EmbedBuilders;
 using Asterion.Services.Notifications.Delivery;
 using Discord;
+using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -24,6 +25,7 @@ public class NotificationDispatchService : BackgroundService
     private const int BatchSize = 50;
     private static readonly TimeSpan SafetyNetPollInterval = TimeSpan.FromSeconds(30);
 
+    private readonly DiscordSocketClient _client;
     private readonly ILogger<NotificationDispatchService> _logger;
     private readonly IModrinthClient _modrinthClient;
     private readonly INotificationReader _reader;
@@ -31,17 +33,29 @@ public class NotificationDispatchService : BackgroundService
     private readonly IServiceProvider _services;
     private readonly INotificationSignal _signal;
 
+    // Set once the first Ready fires (guild cache populated); resumes after that don't re-fire Ready.
+    private volatile bool _readyOnce;
+
     public NotificationDispatchService(IServiceProvider services, INotificationReader reader,
         INotificationSignal signal, NotificationSenderRouter router, IModrinthClient modrinthClient,
-        ILogger<NotificationDispatchService> logger)
+        DiscordSocketClient client, ILogger<NotificationDispatchService> logger)
     {
         _services = services;
         _reader = reader;
         _signal = signal;
         _router = router;
         _modrinthClient = modrinthClient;
+        _client = client;
         _logger = logger;
+
+        _client.Ready += () =>
+        {
+            _readyOnce = true;
+            return Task.CompletedTask;
+        };
     }
+
+    private bool IsClientReady => _readyOnce && _client.ConnectionState == ConnectionState.Connected;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -49,7 +63,10 @@ public class NotificationDispatchService : BackgroundService
         {
             try
             {
-                await ProcessDueNotificationsAsync(stoppingToken);
+                if (IsClientReady)
+                    await ProcessDueNotificationsAsync(stoppingToken);
+                else
+                    _logger.LogDebug("Discord client not ready, skipping dispatch pass");
             }
             catch (Exception ex)
             {

@@ -29,4 +29,20 @@ public class ChartRendererTests
         }
         Assert.That(bitmap.Pixels, Has.Some.EqualTo(new SKColor(255, 0, 0)), "The line was not drawn");
     }
+
+    // A dark project color is lightened to stand out, keeping its hue, a light one is used as it is
+    [TestCase(13, 55, 112, true)]
+    [TestCase(255, 170, 0, false)]
+    public void ProjectColorStandsOutFromTheBackground(int r, int g, int b, bool lightened)
+    {
+        var line = ChartRenderer.LineColor(Color.FromArgb(r, g, b));
+
+        Assert.That(ChartRenderer.ContrastRatio(line, ChartRenderer.Background),
+            Is.GreaterThanOrEqualTo(ChartRenderer.MinLineContrast));
+        Assert.That(line != new SKColor((byte)r, (byte)g, (byte)b), Is.EqualTo(lightened));
+
+        new SKColor((byte)r, (byte)g, (byte)b).ToHsl(out var hue, out _, out _);
+        line.ToHsl(out var lineHue, out _, out _);
+        Assert.That(lineHue, Is.EqualTo(hue).Within(2));
+    }
 }

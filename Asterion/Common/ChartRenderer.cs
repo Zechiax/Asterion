@@ -21,10 +21,16 @@ public static class ChartRenderer
     // Above this many points the markers only clutter the line
     private const int MaxPointsWithMarkers = 60;
 
-    private static readonly SKColor Background = SKColor.Parse("#313338");
+    // Contrast of the line against the background, 3:1 is the WCAG minimum for graphics
+    internal const double MinLineContrast = 3;
+
+    // Below this saturation (in %) a project color is a grey, which looks dull, so the default is used
+    private const float MinLineSaturation = 15;
+
+    internal static readonly SKColor Background = SKColor.Parse("#313338");
     private static readonly SKColor Text = SKColor.Parse("#DBDEE1");
     private static readonly SKColor Separators = SKColor.Parse("#3F4147");
-    private static readonly SKColor DefaultLine = SKColor.Parse("#1BD96A");
+    internal static readonly SKColor DefaultLine = SKColor.Parse("#1BD96A");
 
     /// <param name="points">Values of the chart, null values are drawn as gaps</param>
     /// <param name="timeAxis">Spacing and format of the X axis labels</param>
@@ -34,7 +40,7 @@ public static class ChartRenderer
         CultureInfo? culture)
     {
         culture ??= CultureInfo.InvariantCulture;
-        var line = color is { } c ? new SKColor(c.R, c.G, c.B) : DefaultLine;
+        var line = LineColor(color);
         var markers = points.Count <= MaxPointsWithMarkers;
 
         // X is the time in label units since a Monday, so the labels land on whole hours, days or weeks,
@@ -88,6 +94,49 @@ public static class ChartRenderer
 
         using var image = chart.GetImage();
         return image.Encode(SKEncodedImageFormat.Png, 100).AsStream();
+    }
+
+    /// <summary>
+    ///     The project's color, lightened with the same hue until it stands out from the background,
+    ///     the default for no color or a grey
+    /// </summary>
+    internal static SKColor LineColor(System.Drawing.Color? color)
+    {
+        if (color is not { } c)
+            return DefaultLine;
+
+        var line = new SKColor(c.R, c.G, c.B);
+        line.ToHsl(out var hue, out var saturation, out var lightness);
+        if (saturation < MinLineSaturation)
+            return DefaultLine;
+
+        while (ContrastRatio(line, Background) < MinLineContrast && lightness < 100)
+        {
+            lightness = Math.Min(100, lightness + 2);
+            line = SKColor.FromHsl(hue, saturation, lightness);
+        }
+
+        return line;
+    }
+
+    /// <summary>
+    ///     WCAG contrast ratio of two colors, from 1 (same) to 21 (black and white)
+    /// </summary>
+    internal static double ContrastRatio(SKColor a, SKColor b)
+    {
+        var (la, lb) = (RelativeLuminance(a), RelativeLuminance(b));
+        return (Math.Max(la, lb) + 0.05) / (Math.Min(la, lb) + 0.05);
+    }
+
+    private static double RelativeLuminance(SKColor color)
+    {
+        static double Linear(byte channel)
+        {
+            var c = channel / 255.0;
+            return c <= 0.03928 ? c / 12.92 : Math.Pow((c + 0.055) / 1.055, 2.4);
+        }
+
+        return 0.2126 * Linear(color.Red) + 0.7152 * Linear(color.Green) + 0.0722 * Linear(color.Blue);
     }
 
     private static string TimeLabel(double x, TimeAxis timeAxis, IFormatProvider culture)

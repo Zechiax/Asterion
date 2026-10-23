@@ -8,12 +8,12 @@ using Microsoft.Extensions.Logging;
 namespace Asterion.Services;
 
 /// <summary>
-///     Trims old TotalDownloads rows and purges old terminal-status PendingNotifications so neither
-///     table grows unbounded.
+///     Deletes old hourly statistics and purges old terminal-status PendingNotifications so neither
+///     table grows unbounded. Daily statistics are kept forever.
 /// </summary>
 public class MaintenanceService : BackgroundService
 {
-    private const int TotalDownloadsRetentionDays = 30;
+    private const int HourlyStatsRetentionDays = 30;
     private const int PendingNotificationRetentionDays = 14;
     private static readonly TimeSpan RunInterval = TimeSpan.FromDays(1);
 
@@ -34,8 +34,9 @@ public class MaintenanceService : BackgroundService
         {
             try
             {
-                await RunTotalDownloadsCleanupAsync(stoppingToken);
+                await RunHourlyStatsCleanupAsync(stoppingToken);
                 await RunPendingNotificationPurgeAsync(stoppingToken);
+                await ReclaimFreePagesAsync(stoppingToken);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
@@ -44,18 +45,33 @@ public class MaintenanceService : BackgroundService
         } while (await timer.WaitForNextTickAsync(stoppingToken));
     }
 
-    private async Task RunTotalDownloadsCleanupAsync(CancellationToken ct)
+    private async Task RunHourlyStatsCleanupAsync(CancellationToken ct)
     {
         _logger.LogInformation("Running statistics database cleanup");
 
         using var scope = _services.CreateScope();
         await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
 
-        var cutoff = DateTime.UtcNow.AddDays(-TotalDownloadsRetentionDays);
-        var removedEntries = await StatisticsCleanup.TrimTotalDownloadsAsync(db, cutoff, ct);
+        var cutoff = DateTime.UtcNow.AddDays(-HourlyStatsRetentionDays);
+        var removedEntries = await db.HourlyProjectStats
+            .Where(s => s.Hour < cutoff)
+            .ExecuteDeleteAsync(ct);
 
         _logger.LogInformation("Finished statistics database cleanup, removed {RemovedEntries} entries",
             removedEntries);
+    }
+
+    /// <summary>
+    ///     Gives the pages freed by the deletes back to the file system, the database runs with
+    ///     auto_vacuum = INCREMENTAL so it doesn't happen on its own
+    /// </summary>
+    private async Task ReclaimFreePagesAsync(CancellationToken ct)
+    {
+        using var scope = _services.CreateScope();
+        await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
+
+        if (db.Database.IsSqlite())
+            await db.Database.ExecuteSqlRawAsync("PRAGMA incremental_vacuum;", ct);
     }
 
     private async Task RunPendingNotificationPurgeAsync(CancellationToken ct)

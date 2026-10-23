@@ -4,7 +4,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Modrinth.Models;
-using Version = Modrinth.Models.Version;
 
 namespace Asterion.Services;
 
@@ -19,106 +18,73 @@ public class ProjectStatisticsManager
         _logger = services.GetRequiredService<ILogger<ProjectStatisticsManager>>();
     }
 
-    public async Task UpdateDownloadsAsync(Project project, IEnumerable<Version>? version = null)
+    /// <summary>
+    ///     Stores the current counts of the projects into this hour's and this day's rows, overwriting
+    ///     earlier samples of the same hour and day, so each row ends up with the last sample
+    /// </summary>
+    public async Task RecordAsync(IReadOnlyCollection<Project> projects, CancellationToken ct = default)
     {
         using var scope = _services.CreateScope();
         await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
 
-        // Get the project from the database
-        var dbProject = await db.ModrinthProjects.FindAsync(project.Id);
+        var now = DateTime.UtcNow;
+        var hour = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0, DateTimeKind.Utc);
+        var day = now.Date;
 
-        var timestamp = DateTime.UtcNow;
+        var known = (await db.ModrinthProjects.Select(p => p.ProjectId).ToListAsync(ct)).ToHashSet();
+        var hourly = await db.HourlyProjectStats.Where(s => s.Hour == hour).ToDictionaryAsync(s => s.ProjectId, ct);
+        var daily = await db.DailyProjectStats.Where(s => s.Day == day).ToDictionaryAsync(s => s.ProjectId, ct);
 
-        // If the project doesn't exist, we fail
-        if (dbProject == null)
+        foreach (var project in projects)
         {
-            _logger.LogError(
-                "Failed to update downloads for project {ProjectId} because it doesn't exist in the database",
-                project.Id);
-            return;
-        }
-
-        // We create new total downloads for the project
-        var totalDownloads = new TotalDownloads
-        {
-            ProjectId = dbProject.ProjectId,
-            Downloads = project.Downloads,
-            Timestamp = timestamp,
-            Followers = project.Followers
-        };
-
-        // If the total downloads already exists in this hour, we update the existing entry instead of creating a new one
-        var existingTotalDownloads = await db.TotalDownloads
-            .Where(p => p.ProjectId == totalDownloads.ProjectId
-                        && p.Timestamp.Year == totalDownloads.Timestamp.Year
-                        && p.Timestamp.Month == totalDownloads.Timestamp.Month
-                        && p.Timestamp.Day == totalDownloads.Timestamp.Day
-                        && p.Timestamp.Hour == totalDownloads.Timestamp.Hour)
-            .FirstOrDefaultAsync();
-
-        if (existingTotalDownloads != null)
-        {
-            _logger.LogDebug("Updating existing total downloads for project {ProjectId}", project.Id);
-            existingTotalDownloads.Downloads = totalDownloads.Downloads;
-            existingTotalDownloads.Followers = totalDownloads.Followers;
-            db.TotalDownloads.Update(existingTotalDownloads);
-        }
-        else
-        {
-            _logger.LogDebug("Creating new total downloads for project {ProjectId}", project.Id);
-            db.TotalDownloads.Add(totalDownloads);
-        }
-
-        /*
-        // We create new project downloads for each version
-        List<ProjectDownload> projectDownloads = new();
-        
-        foreach (var v in version)
-        {
-            var projectDownload = new ProjectDownload
+            // Stats rows reference the project, it may have been removed since the poll started
+            if (!known.Contains(project.Id))
             {
-                ProjectId = dbProject.ProjectId,
-                VersionId = v.Id,
-                Downloads = v.Downloads,
-                Date = timestamp
-            };
-            
-            // Check if a version with the same id in the same hour already exists
-            var existingVersion = await db.ProjectDownloads
-                .Where(p => p.ProjectId == projectDownload.ProjectId 
-                            && p.VersionId == projectDownload.VersionId 
-                                                                 && p.Date.Year == projectDownload.Date.Year 
-                                                                 && p.Date.Month == projectDownload.Date.Month 
-                                                                 && p.Date.Day == projectDownload.Date.Day 
-                                                                 && p.Date.Hour == projectDownload.Date.Hour)
-                .FirstOrDefaultAsync();
-            
-            // If it does, we update the existing entry instead of creating a new one
-            if (existingVersion != null)
-            {
-                existingVersion.Downloads = projectDownload.Downloads;
-                db.ProjectDownloads.Update(existingVersion);
+                _logger.LogDebug("Skipping statistics of project {ProjectId}, it's not in the database", project.Id);
+                continue;
             }
-            else
-            {
-                projectDownloads.Add(projectDownload);
-            }
-        }
-        
-        db.ProjectDownloads.AddRange(projectDownloads);
-        */
 
-        await db.SaveChangesAsync();
+            if (!hourly.TryGetValue(project.Id, out var hourStats))
+            {
+                hourStats = new HourlyProjectStats { ProjectId = project.Id, Hour = hour };
+                db.HourlyProjectStats.Add(hourStats);
+            }
+
+            hourStats.Downloads = project.Downloads;
+            hourStats.Followers = project.Followers;
+
+            if (!daily.TryGetValue(project.Id, out var dayStats))
+            {
+                dayStats = new DailyProjectStats { ProjectId = project.Id, Day = day };
+                db.DailyProjectStats.Add(dayStats);
+            }
+
+            dayStats.Downloads = project.Downloads;
+            dayStats.Followers = project.Followers;
+        }
+
+        await db.SaveChangesAsync(ct);
     }
 
-    public async Task<ICollection<TotalDownloads>> GetTotalDownloadsAsync(string projectId)
+    public async Task<List<HourlyProjectStats>> GetHourlyAsync(string projectId, DateTime from)
     {
         using var scope = _services.CreateScope();
         await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
 
-        return await db.TotalDownloads
-            .Where(p => p.ProjectId == projectId)
+        return await db.HourlyProjectStats.AsNoTracking()
+            .Where(s => s.ProjectId == projectId && s.Hour >= from)
+            .OrderBy(s => s.Hour)
             .ToListAsync();
     }
 
+    public async Task<List<DailyProjectStats>> GetDailyAsync(string projectId, DateTime from)
+    {
+        using var scope = _services.CreateScope();
+        await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
+
+        return await db.DailyProjectStats.AsNoTracking()
+            .Where(s => s.ProjectId == projectId && s.Day >= from)
+            .OrderBy(s => s.Day)
+            .ToListAsync();
+    }
 }

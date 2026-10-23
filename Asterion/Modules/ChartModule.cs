@@ -38,6 +38,7 @@ public class ChartModule(
 
     private static readonly TimeSpan Hour = TimeSpan.FromHours(1);
     private static readonly TimeSpan Day = TimeSpan.FromDays(1);
+    private static readonly TimeSpan Week = TimeSpan.FromDays(7);
 
     [SlashCommand("downloads", "Charts the downloads of a project", runMode: RunMode.Async)]
     public Task Downloads(
@@ -71,7 +72,7 @@ public class ChartModule(
         }
 
         var project = search.Payload.Project;
-        var (hourly, step, count, labelFormat) = Buckets(range);
+        var (hourly, step, count, timeAxis) = Buckets(range);
         var unit = hourly ? Hour : Day;
         var now = DateTime.UtcNow;
 
@@ -96,11 +97,7 @@ public class ChartModule(
             return;
         }
 
-        var axisName = hourly
-            ? LocalizationService.Get("chart-axis-hour", CommandCultureInfo)
-            : LocalizationService.Get("chart-axis-day", CommandCultureInfo);
-        var image = ChartRenderer.RenderPng(points, labelFormat, axisName, project.Color,
-            CommandCultureInfo);
+        var image = ChartRenderer.RenderPng(points, timeAxis, project.Color, CommandCultureInfo);
 
         var args = new { title = Format.Sanitize(project.Title), range = range.ToString().ToLowerInvariant() };
         var caption = metric == ChartMetric.Downloads
@@ -110,16 +107,17 @@ public class ChartModule(
         await FollowupWithFileAsync(new FileAttachment(image, "chart.png"), caption);
     }
 
-    /// <returns>If the chart uses the hourly samples, the length and number of buckets and the label format</returns>
-    private static (bool Hourly, TimeSpan Step, int Count, string LabelFormat) Buckets(ChartRange range)
+    /// <returns>If the chart uses the hourly samples, the length and number of buckets and the X axis</returns>
+    private static (bool Hourly, TimeSpan Step, int Count, TimeAxis Axis) Buckets(ChartRange range)
     {
         return range switch
         {
-            ChartRange.Day => (true, Hour, 24, "HH:mm"),
-            ChartRange.Week => (true, TimeSpan.FromHours(6), 28, "dd/MM HH:mm"),
-            ChartRange.Month => (false, Day, 30, "dd/MM"),
-            ChartRange.Quarter => (false, Day, 90, "dd/MM"),
-            ChartRange.Year => (false, Day, 365, "dd/MM/yy"),
+            // Labels every 3 hours, every midnight, every 3 days, every week and every 8 weeks
+            ChartRange.Day => (true, Hour, 24, new TimeAxis(Hour, 3, "HH:mm")),
+            ChartRange.Week => (true, TimeSpan.FromHours(6), 28, new TimeAxis(Day, 1, "ddd dd/MM")),
+            ChartRange.Month => (false, Day, 30, new TimeAxis(Day, 3, "dd/MM")),
+            ChartRange.Quarter => (false, Day, 90, new TimeAxis(Week, 1, "dd/MM")),
+            ChartRange.Year => (false, Week, 52, new TimeAxis(Week, 8, "MMM yy")),
             _ => throw new ArgumentOutOfRangeException(nameof(range), range, null)
         };
     }

@@ -20,7 +20,7 @@ public static class ImageService
             // Scale down preserving the aspect ratio to speed up the averaging.
             var height = Math.Max(1, original.Height * SampleSize / Math.Max(1, original.Width));
             using var bitmap = original.Resize(new SKImageInfo(SampleSize, height, SKColorType.Rgba8888, SKAlphaType.Unpremul),
-                SKFilterQuality.Low);
+                new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.None));
             if (bitmap is null) return new Color();
 
             long r = 0, g = 0, b = 0, weight = 0;

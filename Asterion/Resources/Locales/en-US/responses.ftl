@@ -147,15 +147,13 @@ chart-caption-downloads = Downloads of **{ $title }** per { $range ->
     [day] hour over the last 24 hours
     [week] 6 hours over the last 7 days
     [quarter] day over the last 90 days
-    [year] day over the last year
+    [year] week over the last year
    *[month] day over the last 30 days
 } (UTC)
 chart-caption-followers = New followers of **{ $title }** per { $range ->
     [day] hour over the last 24 hours
     [week] 6 hours over the last 7 days
     [quarter] day over the last 90 days
-    [year] day over the last year
+    [year] week over the last year
    *[month] day over the last 30 days
 } (UTC)
-chart-axis-hour = Hour (UTC)
-chart-axis-day = Day (UTC)

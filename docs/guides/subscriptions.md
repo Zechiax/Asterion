@@ -11,7 +11,14 @@ also /manage → add project -->
 
 ## Download milestones
 
-<!-- notes: per-project milestone toggle + milestone channel; server-wide ladder/channel/ping role in /manage settings -->
+A subscription can post a message when the project reaches a download milestone. Milestones have to be turned on for
+the server first, in `/manage` → Notifications.
+
+After that, the project's settings in `/manage` have a **Milestones** button to turn them off for this project, and a
+milestone channel to send them somewhere other than the server's milestone channel.
+
+See [Download milestones](/guides/milestones) for the milestone sets, channels and how subscriptions and follows work
+together.
 
 ## Update messages
 

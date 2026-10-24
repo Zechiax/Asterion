@@ -133,6 +133,7 @@ server-milestones-title = Download milestones
 server-milestones = Milestone messages
 server-milestones-enabled = Sent when a project reaches a download milestone
 server-milestones-disabled = Not sent
+server-milestones-override-hint = The channel below applies to all projects. Each subscribed project and followed creator can override it in its own settings.
 server-milestone-ladder = Milestones
 server-milestone-channel = Milestone channel
 server-milestone-channel-placeholder = Channel of each subscription or follow

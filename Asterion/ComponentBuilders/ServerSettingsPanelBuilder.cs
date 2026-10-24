@@ -139,6 +139,7 @@ public static class ServerSettingsPanelBuilder
         if (!settings.MilestonesEnabled)
             return;
 
+        container.AddComponent(new TextDisplayBuilder($"-# {loc.Get("server-milestones-override-hint", culture)}"));
         SettingsPanelBuilder.AddField(container, new SettingsField(loc.Get("server-milestone-ladder", culture),
             EnumMenu(id(MilestoneLadderMenuId), settings.MilestoneLadder, "milestone-ladder", loc, culture)));
         SettingsPanelBuilder.AddField(container, new SettingsField(loc.Get("server-milestone-channel", culture),

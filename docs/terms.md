@@ -1,0 +1,1 @@
+<!--@include: ../TERMS_OF_SERVICE.md-->

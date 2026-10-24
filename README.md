@@ -2,14 +2,13 @@
 
 # Asterion
 
-<img src="assets/logo/AsterionLogo.png" alt="logo" width="25%"/>
+<img src="assets/logo/AsterionLogo-512.png" alt="logo" width="25%"/>
 
 Access all of [Modrinth](https://modrinth.com/) within Discord
 
-</div>
+**[Invite](https://discord.com/api/oauth2/authorize?client_id=986993814671614094&permissions=537316416&scope=bot%20applications.commands)** · **[Documentation](https://zechiax.github.io/Asterion/)**
 
-## Invite
-- You can invite the bot by clicking [here](https://discord.com/api/oauth2/authorize?client_id=986993814671614094&permissions=537316416&scope=bot%20applications.commands)
+</div>
 
 ## Features
 - Search for Modrinth projects

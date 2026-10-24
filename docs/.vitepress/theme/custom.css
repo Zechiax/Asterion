@@ -1,0 +1,12 @@
+/* The default hero image is as tall as the nav-to-buttons block and touches the nav bar */
+@media (min-width: 960px) {
+  .VPHero .image-container {
+    width: 260px;
+    height: 260px;
+  }
+
+  .VPHero .image-src {
+    max-width: 260px;
+    max-height: 260px;
+  }
+}

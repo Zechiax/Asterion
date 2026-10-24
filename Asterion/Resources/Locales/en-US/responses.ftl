@@ -3,6 +3,10 @@
 ## Follows
 follow-event-project-update = Project updates
 follow-event-new-project = New projects
+follow-event-download-milestone = Project download milestones
+follow-event-project-update-description = New versions of the creator's projects
+follow-event-new-project-description = Projects the creator publishes
+follow-event-download-milestone-description = When one of the creator's projects reaches a milestone
 follow-event-none = None
 follow-added =
     Following **{ $name }** :white_check_mark: Tracking { $count ->
@@ -52,6 +56,8 @@ settings-ping-role = Ping role override
 settings-ping-role-placeholder = Default ping role
 settings-new-project-ping-role = New projects ping role override
 settings-new-project-ping-role-placeholder = Same as the ping role above
+settings-milestone-channel = Milestone channel override
+settings-milestone-channel-placeholder = Server's milestone channel
 settings-events = Events
 settings-events-placeholder = No events
 settings-release-filter = Release types
@@ -123,6 +129,18 @@ message-style-compact = Compact
 changelog-style-plaintext = Plain text
 changelog-style-codeblock = Code block
 changelog-style-nochangelog = No changelog
+server-milestones-title = Download milestones
+server-milestones = Milestone messages
+server-milestones-enabled = Sent when a project reaches a download milestone
+server-milestones-disabled = Not sent
+server-milestone-ladder = Milestones
+server-milestone-channel = Milestone channel
+server-milestone-channel-placeholder = Channel of each subscription or follow
+server-milestone-ping-role = Milestone ping role
+server-milestone-ping-role-placeholder = Nobody is pinged
+milestone-ladder-standard = Standard: 1k, 2.5k, 5k, 10k, 25k…
+milestone-ladder-round = Round: 1k, 10k, 100k, 1M…
+milestone-ladder-major = Major: 100k, 1M, 10M…
 
 ## Buttons
 button-add-project = Add project
@@ -131,6 +149,11 @@ button-preview = Preview
 button-change = Change
 button-hide = Hide
 button-show = Show
+button-enable = Enable
+button-disable = Disable
+button-milestones-on = Milestones: on
+button-milestones-off = Milestones: off
+button-milestones-server-off = Milestones: off on this server
 button-ignore = Ignore
 button-unignore = Unignore
 button-ignored-projects = Projects ({ $ignored } of { $count } ignored)

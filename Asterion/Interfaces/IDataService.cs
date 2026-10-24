@@ -143,4 +143,10 @@ public interface IDataService
     public Task<ulong?> GetPingRoleIdAsync(ulong guildId, string? projectId = null);
     public Task<bool> SetReleaseFilterAsync(ulong entryId, ReleaseType releaseType);
     public Task<bool> SetLoaderFilterAsync(ulong entryEntryId, string[]? newLoaderFilter);
+
+    /// <summary>
+    ///     Applies the change to the entry and saves it
+    /// </summary>
+    /// <returns>False if the entry doesn't exist</returns>
+    public Task<bool> UpdateModrinthEntryAsync(ulong entryId, Action<ModrinthEntry> update);
 }

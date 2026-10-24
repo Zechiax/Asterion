@@ -12,7 +12,7 @@ namespace Asterion.Modules;
 
 public enum FollowEventsChoice
 {
-    [ChoiceDisplay("Project updates and new projects")]
+    [ChoiceDisplay("Project updates, new projects and download milestones")]
     All,
 
     [ChoiceDisplay("Only project updates")]
@@ -98,7 +98,7 @@ public class FollowModule(
         {
             FollowEventsChoice.Updates => FollowEvents.ProjectUpdate,
             FollowEventsChoice.NewProjects => FollowEvents.NewProject,
-            _ => FollowEvents.ProjectUpdate | FollowEvents.NewProject
+            _ => FollowEvents.All
         };
     }
 }

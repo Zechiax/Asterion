@@ -100,6 +100,10 @@ public class DataService : IDataService
         guild.GuildSettings.ChangelogStyle = updatedGuild.GuildSettings.ChangelogStyle;
         guild.GuildSettings.ChangeLogMaxLength = updatedGuild.GuildSettings.ChangeLogMaxLength;
         guild.GuildSettings.Language = updatedGuild.GuildSettings.Language;
+        guild.GuildSettings.MilestonesEnabled = updatedGuild.GuildSettings.MilestonesEnabled;
+        guild.GuildSettings.MilestoneLadder = updatedGuild.GuildSettings.MilestoneLadder;
+        guild.GuildSettings.MilestoneChannel = updatedGuild.GuildSettings.MilestoneChannel;
+        guild.GuildSettings.MilestonePingRole = updatedGuild.GuildSettings.MilestonePingRole;
 
         await db.SaveChangesAsync();
 
@@ -449,9 +453,23 @@ public class DataService : IDataService
         if (entry is null) return false;
         
         entry.LoaderFilter = newLoaderFilter;
-        
+
         await db.SaveChangesAsync();
-        
+
+        return true;
+    }
+
+    public async Task<bool> UpdateModrinthEntryAsync(ulong entryId, Action<ModrinthEntry> update)
+    {
+        using var scope = _services.CreateScope();
+        await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
+
+        var entry = await db.ModrinthEntries.FirstOrDefaultAsync(x => x.EntryId == entryId);
+        if (entry is null) return false;
+
+        update(entry);
+        await db.SaveChangesAsync();
+
         return true;
     }
 

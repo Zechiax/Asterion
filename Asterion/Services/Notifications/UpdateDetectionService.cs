@@ -76,6 +76,16 @@ public class UpdateDetectionService : BackgroundService
 
         await UpdateStatisticsDataAsync(projectList, ct);
 
+        // A failed milestone check must not stop the update messages
+        try
+        {
+            await ProcessMilestonesAsync(projectList, ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogError(ex, "Download milestone check failed");
+        }
+
         var updatedProjects = FilterUpdatedProjects(projectsDto, projectList).ToArray();
 
         if (updatedProjects.Length == 0)
@@ -149,6 +159,70 @@ public class UpdateDetectionService : BackgroundService
         _logger.LogInformation("Enqueued notifications for {VersionCount} new version(s) of project {ProjectId}",
             keepVersions.Count, project.Id);
 
+        _notificationSignal.Signal();
+    }
+
+    /// <summary>
+    ///     Enqueues milestone messages for projects whose downloads passed a milestone since the last check.
+    ///     The first check of a project only records its downloads, so nothing is sent for milestones reached
+    ///     before the bot tracked it.
+    /// </summary>
+    private async Task ProcessMilestonesAsync(IReadOnlyCollection<Project> projects, CancellationToken ct)
+    {
+        using var scope = _services.CreateScope();
+        await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
+
+        var dbProjects = await db.ModrinthProjects.ToDictionaryAsync(p => p.ProjectId, ct);
+        var enqueued = 0;
+
+        foreach (var project in projects)
+        {
+            if (!dbProjects.TryGetValue(project.Id, out var dbProject))
+                continue;
+
+            var previous = dbProject.MilestoneCheckedDownloads;
+            var current = (long)project.Downloads;
+
+            if (previous is null)
+            {
+                dbProject.MilestoneCheckedDownloads = current;
+                continue;
+            }
+
+            // Ignores decreases, so a milestone is not sent again after Modrinth removes downloads
+            if (current <= previous)
+                continue;
+
+            // The standard ladder has every milestone of the other ladders, no guild can have one if it has none
+            if (DownloadMilestones.HighestCrossed(previous.Value, current, MilestoneLadder.Standard) is not null)
+            {
+                var entries = await db.ModrinthEntries
+                    .Include(e => e.Guild).ThenInclude(g => g.GuildSettings)
+                    .Where(e => e.ProjectId == project.Id)
+                    .ToListAsync(ct);
+
+                var follows = await db.FollowProjects
+                    .Where(fp => fp.ProjectId == project.Id && !fp.Ignored)
+                    .Select(fp => fp.Follow)
+                    .Where(f => (f.Events & FollowEvents.DownloadMilestone) != 0)
+                    .Include(f => f.Guild).ThenInclude(g => g.GuildSettings)
+                    .ToListAsync(ct);
+
+                var before = db.ChangeTracker.Entries<PendingNotification>().Count();
+                _notificationScheduler.EnqueueMilestone(db, project, previous.Value, current, entries, follows);
+                enqueued += db.ChangeTracker.Entries<PendingNotification>().Count() - before;
+            }
+
+            dbProject.MilestoneCheckedDownloads = current;
+        }
+
+        // Single atomic commit: the checked downloads and the milestone rows land together
+        await db.SaveChangesAsync(ct);
+
+        if (enqueued == 0)
+            return;
+
+        _logger.LogInformation("Enqueued {Count} download milestone notification(s)", enqueued);
         _notificationSignal.Signal();
     }
 

@@ -32,6 +32,8 @@ namespace Asterion.Modules
         public const string PingRoleMenuId = "entry_ping";
         public const string ReleaseMenuId = "release_filter";
         public const string LoaderMenuId = "loader_filter";
+        public const string MilestoneChannelMenuId = "entry_mschannel";
+        public const string MilestoneToggleButtonId = "entry-ms-toggle";
         public const string UnsubscribeButtonId = "entry-unsub";
         public const string UnsubscribeConfirmButtonId = "entry-unsub-confirm";
         public const string UnsubscribeCancelButtonId = "entry-unsub-cancel";
@@ -63,6 +65,8 @@ namespace Asterion.Modules
                                         (await dataService.GetModrinthProjectByIdAsync(entry.ProjectId))?.Title ??
                                         entry.ProjectId);
 
+            var serverMilestones = await MilestonesEnabledAsync(dataService, entry.GuildId);
+
             var fields = new List<SettingsField>
             {
                 new(loc.Get("settings-channel", culture),
@@ -70,11 +74,18 @@ namespace Asterion.Modules
                         loc.Get("settings-channel-placeholder", culture))),
                 new(loc.Get("settings-ping-role", culture),
                     SettingsPanelBuilder.RolePicker(Id(PingRoleMenuId), entry.CustomPingRole,
-                        loc.Get("settings-ping-role-placeholder", culture))),
-                new(loc.Get("settings-release-filter", culture),
-                    SettingsPanelBuilder.ReleaseFilterMenu(Id(ReleaseMenuId), entry.ReleaseFilter,
-                        loc.Get("settings-release-placeholder", culture)))
+                        loc.Get("settings-ping-role-placeholder", culture)))
             };
+
+            // Milestone settings do nothing while the server has milestones off
+            if (serverMilestones)
+                fields.Add(new SettingsField(loc.Get("settings-milestone-channel", culture),
+                    SettingsPanelBuilder.ChannelPicker(Id(MilestoneChannelMenuId), entry.MilestoneChannel,
+                        loc.Get("settings-milestone-channel-placeholder", culture), optional: true)));
+
+            fields.Add(new SettingsField(loc.Get("settings-release-filter", culture),
+                SettingsPanelBuilder.ReleaseFilterMenu(Id(ReleaseMenuId), entry.ReleaseFilter,
+                    loc.Get("settings-release-placeholder", culture))));
 
             var loaderMenu = SettingsPanelBuilder.LoaderFilterMenu(Id(LoaderMenuId), project?.Loaders ?? [],
                 entry.LoaderFilter, loc.Get("settings-loader-placeholder", culture));
@@ -84,12 +95,35 @@ namespace Asterion.Modules
             var buttons = new[]
             {
                 ManageInteractionModule.BackButton(ownerId, ManageTab.Projects, listPage, loc, culture),
+                MilestoneButton(entry.NotifyMilestones, serverMilestones, Id(MilestoneToggleButtonId), loc, culture),
                 new ButtonBuilder(loc.Get("button-unsubscribe", culture), Id(UnsubscribeButtonId), ButtonStyle.Danger)
             };
 
             return SettingsPanelBuilder.Build(
                 loc.Get("settings-subscription-title", culture, new { title, id = entry.ProjectId }),
                 SettingsPanelBuilder.SubscriptionAccent, fields, buttons, notice);
+        }
+
+        /// <summary>
+        ///     If the server has milestone messages turned on in its settings
+        /// </summary>
+        public static async Task<bool> MilestonesEnabledAsync(IDataService dataService, ulong guildId)
+        {
+            return (await dataService.GetGuildByIdAsync(guildId))?.GuildSettings.MilestonesEnabled ?? false;
+        }
+
+        /// <summary>
+        ///     Toggle of the subscription's milestones, disabled while the server has them off
+        /// </summary>
+        private static ButtonBuilder MilestoneButton(bool enabled, bool serverEnabled, string customId,
+            ILocalizationService loc, CultureInfo? culture)
+        {
+            if (!serverEnabled)
+                return new ButtonBuilder(loc.Get("button-milestones-server-off", culture), customId,
+                    ButtonStyle.Secondary, isDisabled: true);
+
+            return new ButtonBuilder(loc.Get(enabled ? "button-milestones-on" : "button-milestones-off", culture),
+                customId, enabled ? ButtonStyle.Success : ButtonStyle.Secondary);
         }
 
         [DoUserCheck]
@@ -172,6 +206,35 @@ namespace Asterion.Modules
 
             await UpdateAsync(ownerId, projectId, listPage,
                 _ => dataService.ChangeModrinthEntryChannel(Context.Guild.Id, projectId, channelId.Value));
+        }
+
+        [DoUserCheck]
+        [ComponentInteraction(MilestoneChannelMenuId + ":*:*:*")]
+        public async Task HandleMilestoneChannelSelectionAsync(ulong ownerId, string projectId, int listPage,
+            string[] selectedValues)
+        {
+            // Deselecting sends milestones to the server's milestone channel again
+            var channelId = SettingsPanelBuilder.ParseSelectedId(selectedValues);
+
+            if (channelId is not null && !BotCanSendIn(channelId.Value))
+            {
+                // Show the panel again, so the picker goes back to the saved channel
+                await UpdateAsync(ownerId, projectId, listPage, _ => Task.CompletedTask);
+                await SendStatusAsync(Warnings.BotCannotSend(MentionUtils.MentionChannel(channelId.Value)));
+                return;
+            }
+
+            await UpdateAsync(ownerId, projectId, listPage,
+                entry => dataService.UpdateModrinthEntryAsync(entry.EntryId, e => e.MilestoneChannel = channelId));
+        }
+
+        [DoUserCheck]
+        [ComponentInteraction(MilestoneToggleButtonId + ":*:*:*")]
+        public Task HandleMilestoneToggleAsync(ulong ownerId, string projectId, int listPage)
+        {
+            return UpdateAsync(ownerId, projectId, listPage,
+                entry => dataService.UpdateModrinthEntryAsync(entry.EntryId,
+                    e => e.NotifyMilestones = !e.NotifyMilestones));
         }
 
         [DoUserCheck]

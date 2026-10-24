@@ -22,6 +22,10 @@ public static class ServerSettingsPanelBuilder
     public const string ChangelogLengthModalId = "srv_cllen_modal";
     public const string ChangelogLengthInputId = "length";
     public const string PreviewButtonId = "srv_preview";
+    public const string MilestoneToggleId = "srv_ms_toggle";
+    public const string MilestoneLadderMenuId = "srv_ms_ladder";
+    public const string MilestoneChannelMenuId = "srv_ms_channel";
+    public const string MilestonePingRoleMenuId = "srv_ms_ping";
     public const string UnsubscribeAllButtonId = "srv_unsuball";
     public const string UnsubscribeAllModalId = "srv_unsuball_modal";
     public const string UnfollowAllButtonId = "srv_unfolall";
@@ -112,7 +116,37 @@ public static class ServerSettingsPanelBuilder
             new ButtonBuilder(loc.Get("button-change", culture), Id(ChangelogLengthButtonId), ButtonStyle.Secondary,
                 isDisabled: settings.ChangelogStyle == ChangelogStyle.NoChangelog));
 
+        AddMilestoneSettings(container, settings, Id, loc, culture);
+
         return container;
+    }
+
+    /// <summary>
+    ///     The download milestone settings, the menus are only shown while milestones are enabled
+    /// </summary>
+    private static void AddMilestoneSettings(ContainerBuilder container, GuildSettings settings,
+        Func<string, string> id, ILocalizationService loc, CultureInfo? culture)
+    {
+        container
+            .AddComponent(new SeparatorBuilder())
+            .AddComponent(new TextDisplayBuilder($"**{loc.Get("server-milestones-title", culture)}**"));
+
+        SettingsPanelBuilder.AddButtonSetting(container, loc.Get("server-milestones", culture),
+            loc.Get(settings.MilestonesEnabled ? "server-milestones-enabled" : "server-milestones-disabled", culture),
+            new ButtonBuilder(loc.Get(settings.MilestonesEnabled ? "button-disable" : "button-enable", culture),
+                id(MilestoneToggleId), settings.MilestonesEnabled ? ButtonStyle.Secondary : ButtonStyle.Success));
+
+        if (!settings.MilestonesEnabled)
+            return;
+
+        SettingsPanelBuilder.AddField(container, new SettingsField(loc.Get("server-milestone-ladder", culture),
+            EnumMenu(id(MilestoneLadderMenuId), settings.MilestoneLadder, "milestone-ladder", loc, culture)));
+        SettingsPanelBuilder.AddField(container, new SettingsField(loc.Get("server-milestone-channel", culture),
+            SettingsPanelBuilder.ChannelPicker(id(MilestoneChannelMenuId), settings.MilestoneChannel,
+                loc.Get("server-milestone-channel-placeholder", culture), optional: true)));
+        SettingsPanelBuilder.AddField(container, new SettingsField(loc.Get("server-milestone-ping-role", culture),
+            SettingsPanelBuilder.RolePicker(id(MilestonePingRoleMenuId), settings.MilestonePingRole,
+                loc.Get("server-milestone-ping-role-placeholder", culture))));
     }
 
     /// <summary>

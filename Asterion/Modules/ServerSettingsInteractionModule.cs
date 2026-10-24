@@ -69,6 +69,49 @@ public class ServerSettingsInteractionModule(
     }
 
     [DoUserCheck]
+    [ComponentInteraction(ServerSettingsPanelBuilder.MilestoneToggleId + ":*")]
+    public Task HandleMilestoneToggleAsync(ulong ownerId)
+    {
+        return UpdateAsync(ownerId, ManageTab.Notifications,
+            guild => guild.GuildSettings.MilestonesEnabled = !guild.GuildSettings.MilestonesEnabled);
+    }
+
+    [DoUserCheck]
+    [ComponentInteraction(ServerSettingsPanelBuilder.MilestoneLadderMenuId + ":*")]
+    public Task HandleMilestoneLadderAsync(ulong ownerId, string[] selectedValues)
+    {
+        return Enum.TryParse<MilestoneLadder>(selectedValues.FirstOrDefault(), out var ladder)
+            ? UpdateAsync(ownerId, ManageTab.Notifications, guild => guild.GuildSettings.MilestoneLadder = ladder)
+            : DeferAsync();
+    }
+
+    [DoUserCheck]
+    [ComponentInteraction(ServerSettingsPanelBuilder.MilestoneChannelMenuId + ":*")]
+    public async Task HandleMilestoneChannelAsync(ulong ownerId, string[] selectedValues)
+    {
+        // Deselecting sends milestones to the channel of each subscription or follow again
+        var channelId = SettingsPanelBuilder.ParseSelectedId(selectedValues);
+
+        if (channelId is not null && !BotCanSendIn(channelId.Value))
+        {
+            // Show the tab again, so the picker goes back to the saved channel
+            await UpdateAsync(ownerId, ManageTab.Notifications, _ => { });
+            await SendStatusAsync(Warnings.BotCannotSend(MentionUtils.MentionChannel(channelId.Value)));
+            return;
+        }
+
+        await UpdateAsync(ownerId, ManageTab.Notifications, guild => guild.GuildSettings.MilestoneChannel = channelId);
+    }
+
+    [DoUserCheck]
+    [ComponentInteraction(ServerSettingsPanelBuilder.MilestonePingRoleMenuId + ":*")]
+    public Task HandleMilestonePingRoleAsync(ulong ownerId, string[] selectedValues)
+    {
+        var roleId = SettingsPanelBuilder.ParseSelectedId(selectedValues);
+        return UpdateAsync(ownerId, ManageTab.Notifications, guild => guild.GuildSettings.MilestonePingRole = roleId);
+    }
+
+    [DoUserCheck]
     [ComponentInteraction(ServerSettingsPanelBuilder.SubscribeButtonToggleId + ":*")]
     public Task HandleSubscribeButtonToggleAsync(ulong ownerId)
     {

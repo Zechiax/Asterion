@@ -11,4 +11,10 @@ public class ModrinthProject
     [Required] public string LastCheckVersion { get; set; } = null!;
     public DateTime? LastUpdated { get; set; }
     [Required] public DateTime Created { get; set; }
+
+    /// <summary>
+    ///     Highest download count seen by the milestone check, null until the first check. Never decreases,
+    ///     so a milestone isn't sent again when Modrinth removes downloads.
+    /// </summary>
+    public long? MilestoneCheckedDownloads { get; set; }
 }

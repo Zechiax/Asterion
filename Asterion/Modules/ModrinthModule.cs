@@ -1,4 +1,5 @@
-﻿using Asterion.Attributes;
+﻿using System.Text.RegularExpressions;
+using Asterion.Attributes;
 using Asterion.AutocompleteHandlers;
 using Asterion.Common;
 using Asterion.ComponentBuilders;
@@ -10,6 +11,7 @@ using Asterion.Services.Modrinth;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
+using Humanizer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Modrinth;
@@ -24,6 +26,8 @@ namespace Asterion.Modules;
 // ReSharper disable once ClassNeverInstantiated.Global
 public class ModrinthModule : AsterionInteractionModuleBase
 {
+    private const int SearchQueryMaxLength = 60;
+
     private readonly DiscordSocketClient _client;
     private readonly IDataService _dataService;
     private readonly ILogger<ModrinthModule> _logger;
@@ -47,7 +51,7 @@ public class ModrinthModule : AsterionInteractionModuleBase
     }
 
     [SlashCommand("user", "Finds information about user, search by ID or username")]
-    public async Task FindUser([Summary("Query", "ID or username")] [MaxLength(60)] string query)
+    public async Task FindUser([Summary("Query", "ID or username")] [MaxLength(SearchQueryMaxLength)] string query)
     {
         await DeferAsync();
         _logger.LogDebug("Search for user '{Query}", query);
@@ -73,7 +77,7 @@ public class ModrinthModule : AsterionInteractionModuleBase
     }
 
     [SlashCommand("search", "Search Projects (by slug, ID or search) and gives you info about the first response")]
-    public async Task SearchProject([Summary("Query", "Query, ID or slug")] [MaxLength(60)] string query)
+    public async Task SearchProject([Summary("Query", "Query, ID or slug")] [MaxLength(SearchQueryMaxLength)] string query)
     {
         await DeferAsync();
         _logger.LogDebug("Search for query '{Query}'", query);
@@ -121,13 +125,18 @@ public class ModrinthModule : AsterionInteractionModuleBase
     [MessageCommand("Find project on Modrinth")]
     public async Task SearchOnModrinth(IMessage msg)
     {
-        if (string.IsNullOrEmpty(msg.Content))
+        // Same limit as /search, newlines and '|' would break the custom ID of the "more results" button
+        var query = Regex.Replace(msg.Content ?? string.Empty, @"[\s|]+", " ")
+            .Truncate(SearchQueryMaxLength, string.Empty)
+            .Trim();
+
+        if (query.Length == 0)
         {
             await SendStatusAsync(Errors.MessageEmpty);
             return;
         }
 
-        await SearchProject(msg.Content);
+        await SearchProject(query);
     }
 
     [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
@@ -166,8 +175,8 @@ public class ModrinthModule : AsterionInteractionModuleBase
 
         await ModifyOriginalResponseAsync(x =>
         {
-            x.Content =
-                $@"Subscribed to updates for project **{result.Project!.Title}** with ID **{result.Project.Id}** updates will be send to channel {channel.Mention} :white_check_mark:";
+            x.Content = LocalizationService.Get("manage-subscribed", CommandCultureInfo,
+                new { title = Format.Sanitize(result.Project!.Title), channel = channel.Mention });
         });
 
         if (!BotCanSendIn(channel.Id))
@@ -175,7 +184,8 @@ public class ModrinthModule : AsterionInteractionModuleBase
     }
 
     [SlashCommand("latest-release", "Gets the latest release of project")]
-    public async Task LatestRelease(string slugOrId, MessageStyle style = MessageStyle.Full)
+    public async Task LatestRelease(string slugOrId,
+        [Summary("style", "Message style, the server's message style if not set")] MessageStyle? style = null)
     {
         await DeferAsync();
         var project = await _modrinthService.GetProject(slugOrId);
@@ -204,7 +214,7 @@ public class ModrinthModule : AsterionInteractionModuleBase
             return;
         }
         
-        var embed = ModrinthEmbedBuilder.VersionUpdateEmbed(guild.GuildSettings, project, latestVersion, team);
+        var embed = ModrinthEmbedBuilder.VersionUpdateEmbed(guild.GuildSettings, project, latestVersion, team, style);
 
         var buttons =
             new ComponentBuilder().WithButton(

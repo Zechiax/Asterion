@@ -95,9 +95,8 @@ public class ModrinthInteractionModule : AsterionInteractionModuleBase
             return;
         }
 
-        await FollowupAsync(
-            $"Subscribed to updates for project **{project.Title}** with ID **{project.Id}** :white_check_mark: Updates will be send to this channel {channel.Mention}",
-            ephemeral: true);
+        await FollowupAsync(LocalizationService.Get("manage-subscribed", CommandCultureInfo,
+            new { title = Format.Sanitize(project.Title), channel = channel.Mention }), ephemeral: true);
 
         if (!BotCanSendIn(channel.Id))
             await SendStatusAsync(Warnings.BotCannotSend(channel.Mention));
@@ -150,8 +149,8 @@ public class ModrinthInteractionModule : AsterionInteractionModuleBase
             x.Components = GetButtons(project, guild.GuildSettings, team: team).Build();
         });
 
-        await FollowupAsync($"Unsubscribed from updates for project ID **{projectId}** :white_check_mark:",
-            ephemeral: true);
+        await FollowupAsync(LocalizationService.Get("entry-unsubscribed", CommandCultureInfo,
+            new { title = Format.Sanitize(project.Title), id = project.Id }), ephemeral: true);
     }
 
     [ComponentInteraction("show-user:*;*;*", runMode: RunMode.Async)]

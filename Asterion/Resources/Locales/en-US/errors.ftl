@@ -17,7 +17,7 @@ error-message-empty = The message has no text to search for
 error-input-is-project = That is a link to a project, not to a user. Subscribe to the project instead, or use the link of the user's profile.
 
 ## Charts
-error-no-stats-data = No statistics are stored for this project yet, it must be subscribed to in at least one server
+error-no-stats-data = No statistics are stored for this project yet, they are only recorded while a server subscribes to it or follows its creator
 error-not-enough-data = Not enough data for this chart yet, try again in about { $unit ->
     [hours] { $amount } hours
    *[days] { $amount } days

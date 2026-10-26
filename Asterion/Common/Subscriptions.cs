@@ -21,6 +21,10 @@ public sealed record SubscribeResult(SubscribeStatus Status, Project? Project = 
 /// <param name="Result">Result of adding the follow, null if the user was not found</param>
 public sealed record FollowUserResult(SearchResult<UserDto> Search, AddFollowResult? Result = null);
 
+/// <param name="Found">The subscription or follow, null if there is none</param>
+/// <param name="Error">Set if Modrinth could not be asked, then <paramref name="Found" /> is null</param>
+public sealed record LookupResult<T>(T? Found, StatusCard? Error = null) where T : class;
+
 /// <summary>
 ///     Subscribing and following shared by the commands and the manage panel
 /// </summary>
@@ -74,40 +78,70 @@ public static partial class Subscriptions
     ///     The guild's subscription of the project, null if the guild is not subscribed to it
     /// </summary>
     /// <param name="input">Slug, ID or link, see <see cref="ParseProjectInput" /></param>
-    public static async Task<ModrinthEntry?> FindSubscriptionAsync(ModrinthService modrinthService,
+    public static async Task<LookupResult<ModrinthEntry>> FindSubscriptionAsync(ModrinthService modrinthService,
         IDataService dataService, ulong guildId, string input)
     {
         var entries = await dataService.GetAllGuildsSubscribedProjectsAsync(guildId);
         if (entries is null || entries.Count == 0)
-            return null;
+            return new LookupResult<ModrinthEntry>(null);
 
         var query = ParseProjectInput(input);
         var entry = entries.FirstOrDefault(e => e.ProjectId == query);
         if (entry is not null)
-            return entry;
+            return new LookupResult<ModrinthEntry>(entry);
 
         // Slugs are not stored, Modrinth knows the ID behind them
-        var project = await modrinthService.GetProject(query);
-        return project is null ? null : entries.FirstOrDefault(e => e.ProjectId == project.Id);
+        var search = await modrinthService.FindProject(query);
+        return search.SearchStatus switch
+        {
+            // A search hit is a different project than the one typed
+            SearchStatus.FoundById => new LookupResult<ModrinthEntry>(
+                entries.FirstOrDefault(e => e.ProjectId == search.Payload.Project.Id)),
+            SearchStatus.FoundBySearch or SearchStatus.NoResult => new LookupResult<ModrinthEntry>(null),
+            _ => new LookupResult<ModrinthEntry>(null, Errors.FromSearch(search))
+        };
+    }
+
+    /// <summary>
+    ///     The follow with the user ID or stored username, null if none matches
+    /// </summary>
+    /// <param name="follows">Follows of users</param>
+    /// <param name="user">Username or ID, see <see cref="ParseUserInput" /></param>
+    public static ModrinthFollow? MatchFollow(IList<ModrinthFollow> follows, string user)
+    {
+        return follows.FirstOrDefault(f => f.TargetId == user)
+               ?? follows.FirstOrDefault(f => string.Equals(f.TargetName, user, StringComparison.OrdinalIgnoreCase));
     }
 
     /// <summary>
     ///     The guild's follow of the user, null if the guild does not follow them
     /// </summary>
     /// <param name="input">Username, ID or link, see <see cref="ParseUserInput" /></param>
-    public static async Task<ModrinthFollow?> FindFollowAsync(IFollowService followService, ulong guildId,
-        string input)
+    public static async Task<LookupResult<ModrinthFollow>> FindFollowAsync(ModrinthService modrinthService,
+        IFollowService followService, ulong guildId, string input)
     {
         var user = ParseUserInput(input);
         if (user is null)
-            return null;
+            return new LookupResult<ModrinthFollow>(null);
 
         var follows = (await followService.GetFollowsAsync(guildId))
             .Where(f => f.TargetType == FollowTargetType.User)
             .ToList();
+        if (follows.Count == 0)
+            return new LookupResult<ModrinthFollow>(null);
 
-        return follows.FirstOrDefault(f => f.TargetId == user)
-               ?? follows.FirstOrDefault(f => string.Equals(f.TargetName, user, StringComparison.OrdinalIgnoreCase));
+        var follow = MatchFollow(follows, user);
+        if (follow is not null)
+            return new LookupResult<ModrinthFollow>(follow);
+
+        // The stored name is old if the user was renamed, Modrinth knows the ID behind the new one
+        var search = await modrinthService.FindUser(user);
+        if (search.Success)
+            return new LookupResult<ModrinthFollow>(follows.FirstOrDefault(f => f.TargetId == search.Payload.User.Id));
+
+        return search.SearchStatus == SearchStatus.NoResult
+            ? new LookupResult<ModrinthFollow>(null)
+            : new LookupResult<ModrinthFollow>(null, Errors.FromSearch(search));
     }
 
     /// <summary>

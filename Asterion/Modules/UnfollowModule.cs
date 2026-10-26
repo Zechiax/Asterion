@@ -3,6 +3,7 @@ using Asterion.AutocompleteHandlers;
 using Asterion.Common;
 using Asterion.ComponentBuilders;
 using Asterion.Interfaces;
+using Asterion.Services.Modrinth;
 using Discord;
 using Discord.Interactions;
 
@@ -19,7 +20,8 @@ namespace Asterion.Modules;
 public class UnfollowModule(
     ILocalizationService localizationService,
     IGuildCultureProvider cultureProvider,
-    IFollowService followService)
+    IFollowService followService,
+    ModrinthService modrinthService)
     : AsterionInteractionModuleBase(localizationService, cultureProvider)
 {
     // "{id}:{ownerId}:{followId}", only the user who ran /unfollow can confirm
@@ -28,16 +30,16 @@ public class UnfollowModule(
 
     [SlashCommand("user", "Stop following a Modrinth user")]
     public async Task UnfollowUser(
-        [Summary("user", "Username, ID or link of the followed Modrinth user")] [MaxLength(60)]
+        [Summary("user", "Username, ID or link of the followed Modrinth user")]
         [Autocomplete(typeof(FollowAutocompletionHandler))]
         string user)
     {
         await DeferAsync();
 
-        var follow = await Subscriptions.FindFollowAsync(followService, Context.Guild.Id, user);
-        if (follow is null)
+        var lookup = await Subscriptions.FindFollowAsync(modrinthService, followService, Context.Guild.Id, user);
+        if (lookup.Found is not { } follow)
         {
-            await SendStatusAsync(Warnings.NotFollowing);
+            await SendStatusAsync(lookup.Error ?? Warnings.NotFollowing);
             return;
         }
 

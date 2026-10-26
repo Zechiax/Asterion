@@ -187,17 +187,17 @@ public class ModrinthModule : AsterionInteractionModuleBase
     [DoManageSubsRoleCheck(Group = "ManageSubs")]
     [SlashCommand("unsubscribe", "Remove a Modrinth project from your watched list")]
     public async Task Unsubscribe(
-        [Summary("project", "ID, slug or link of the project")] [MaxLength(60)]
+        [Summary("project", "ID, slug or link of the project")]
         [Autocomplete(typeof(SubscribedIdAutocompletionHandler))]
         string project)
     {
         await DeferAsync();
 
-        var entry = await Subscriptions.FindSubscriptionAsync(_modrinthService, _dataService, Context.Guild.Id,
+        var lookup = await Subscriptions.FindSubscriptionAsync(_modrinthService, _dataService, Context.Guild.Id,
             project);
-        if (entry is null)
+        if (lookup.Found is not { } entry)
         {
-            await SendStatusAsync(Warnings.AlreadyUnsubscribed);
+            await SendStatusAsync(lookup.Error ?? Warnings.AlreadyUnsubscribed);
             return;
         }
 

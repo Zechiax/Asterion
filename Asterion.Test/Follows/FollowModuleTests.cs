@@ -1,7 +1,8 @@
-﻿using System.Runtime.CompilerServices;
-using Asterion.Interfaces;
+﻿using Asterion.Interfaces;
 using Asterion.Modules;
+using Asterion.Services;
 using Asterion.Services.Modrinth;
+using Asterion.Services.Notifications;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,8 +25,15 @@ public class FollowModuleTests
             .AddSingleton(Substitute.For<IFollowService>())
             .AddSingleton(Substitute.For<IDataService>())
             .AddSingleton(Substitute.For<IModrinthClient>())
-            // Only constructed, never called
-            .AddSingleton((ModrinthService)RuntimeHelpers.GetUninitializedObject(typeof(ModrinthService)))
+            // The real ModrinthService, built from substitutes, it is never called
+            .AddLogging()
+            .AddMemoryCache()
+            .AddSingleton(Substitute.For<IHttpClientFactory>())
+            .AddSingleton(Substitute.For<INotificationScheduler>())
+            .AddSingleton(Substitute.For<INotificationSignal>())
+            .AddSingleton<ProjectStatisticsManager>()
+            .AddSingleton<UpdateDetectionService>()
+            .AddSingleton<ModrinthService>()
             .BuildServiceProvider();
 
         var follow = await interactions.AddModuleAsync<FollowModule>(services);

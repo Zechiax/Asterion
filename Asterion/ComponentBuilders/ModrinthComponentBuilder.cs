@@ -101,10 +101,15 @@ public static class ModrinthComponentBuilder
 
     public static ButtonBuilder ViewMoreSearchResults(SearchResponse? results, string query, int maxResults = 10)
     {
+        // The query is part of the custom ID, which Discord limits to 100 characters
+        var maxQueryLength = ComponentBuilder.MaxCustomIdLength - "more-results:||".Length;
+        if (query.Length > maxQueryLength)
+            query = query[..maxQueryLength];
+
         var button = new ButtonBuilder(
             customId: $"more-results:|{query}|".Replace(' ', '_'),
             style: ButtonStyle.Primary,
-            label: $"View more results ({(results is not null ? Math.Min(results.Hits.Length, maxResults) : '0')})",
+            label: $"View more results ({(results is not null ? Math.Min(results.Hits.Length, maxResults) : 0)})",
             emote: Emoji.Parse(":mag_right:"),
             isDisabled: results is null || results.Hits.Length <= 1
         );

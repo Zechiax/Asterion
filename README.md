@@ -6,7 +6,7 @@
 
 Access all of [Modrinth](https://modrinth.com/) within Discord
 
-**[Invite](https://discord.com/api/oauth2/authorize?client_id=986993814671614094&permissions=537316416&scope=bot%20applications.commands)** · **[Documentation](https://zechiax.github.io/Asterion/)**
+**[Invite](https://discord.com/api/oauth2/authorize?client_id=986993814671614094&permissions=537054208&scope=bot%20applications.commands)** · **[Documentation](https://zechiax.github.io/Asterion/)**
 
 </div>
 

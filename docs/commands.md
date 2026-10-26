@@ -14,7 +14,8 @@ Options in `[brackets]` are optional. "Manage role" means Administrator or the r
 
 - `/search`: search projects by slug, ID or search term and show the first result
 - `/user`: show a Modrinth user, by ID or username
-- `/latest-release`: show the latest release of a project, `style` is `Full` (default) or `Compact`
+- `/latest-release`: show the latest release of a project. `style` is `Full` or `Compact`, the server's
+  [message style](/guides/manage#notifications) if not set.
 - `/random`: show a random project
 - `/subscribe`: add a project to the watched list, updates go to `custom-channel` or the current channel
 
@@ -26,7 +27,7 @@ Options in `[brackets]` are optional. "Manage role" means Administrator or the r
 
 - `username`: username, ID or link of the Modrinth user
 - `channel`: channel for the messages, the current channel if not set
-- `events`: project updates, new projects and download milestones (default) / only project updates / only new projects
+- `events`: project updates and new projects (default), only project updates, or only new projects
 - `new_project_channel`: channel for new project messages, `channel` if not set
 
 ## Charts
@@ -36,7 +37,7 @@ Options in `[brackets]` are optional. "Manage role" means Administrator or the r
 | `/chart downloads` | `project` `[range]` | Everyone |
 | `/chart followers` | `project` `[range]` | Everyone |
 
-- `project`: ID or slug, autocompletes from the server's subscribed projects
+- `project`: ID or slug. Administrators and the manage role get suggestions from the server's subscriptions.
 - `range`: 24 hours, 7 days, 30 days (default), 90 days, 1 year
 
 ## Management

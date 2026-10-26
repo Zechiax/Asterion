@@ -2,6 +2,9 @@
   "name": "asterion-docs",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "docs:dev": "vitepress dev",
     "docs:build": "vitepress build",
@@ -9,5 +12,11 @@
   },
   "devDependencies": {
     "vitepress": "^1.6.4"
+  },
+  "overrides": {
+    "vite": "^6.4.5"
+  },
+  "allowScripts": {
+    "esbuild": false
   }
 }

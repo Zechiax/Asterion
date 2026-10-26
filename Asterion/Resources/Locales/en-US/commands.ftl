@@ -26,6 +26,16 @@ command-follow-user-new_project_channel =
     .name = new_project_channel
     .description = Channel for new project messages, the channel above if not set
 
+command-unfollow =
+    .name = unfollow
+    .description = Stop following Modrinth creators
+command-unfollow-user =
+    .name = user
+    .description = Stop following a Modrinth user
+command-unfollow-user-user =
+    .name = user
+    .description = Username, ID or link of the followed Modrinth user
+
 command-chart =
     .name = chart
     .description = Creates charts of project statistics

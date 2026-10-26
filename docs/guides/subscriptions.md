@@ -46,6 +46,8 @@ To make the messages shorter or change how the changelog looks, see
 
 ## Unsubscribe
 
+- **`/unsubscribe`**: `/unsubscribe project:sodium`, then **Confirm**. The option suggests the server's
+  subscriptions and also accepts a slug, an ID or a Modrinth link.
 - In `/manage`: open the project's **Settings**, click **Unsubscribe**, then **Confirm**.
 - Under `/search`: the button shows **Unsubscribe** for projects the server is subscribed to.
 

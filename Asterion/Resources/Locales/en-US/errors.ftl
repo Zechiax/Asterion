@@ -40,3 +40,4 @@ error-danger-not-confirmed = You didn't type "{ $word }", nothing was removed
 warning-bot-cannot-send = I don't have permission to send messages in { $channel }, please give me the required permissions
 warning-already-subscribed = This server is already subscribed to this project
 warning-already-unsubscribed = This server is not subscribed to this project
+warning-not-following = This server does not follow this creator

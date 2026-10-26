@@ -69,7 +69,47 @@ public static partial class Subscriptions
 
         return new FollowUserResult(search, result);
     }
-    
+
+    /// <summary>
+    ///     The guild's subscription of the project, null if the guild is not subscribed to it
+    /// </summary>
+    /// <param name="input">Slug, ID or link, see <see cref="ParseProjectInput" /></param>
+    public static async Task<ModrinthEntry?> FindSubscriptionAsync(ModrinthService modrinthService,
+        IDataService dataService, ulong guildId, string input)
+    {
+        var entries = await dataService.GetAllGuildsSubscribedProjectsAsync(guildId);
+        if (entries is null || entries.Count == 0)
+            return null;
+
+        var query = ParseProjectInput(input);
+        var entry = entries.FirstOrDefault(e => e.ProjectId == query);
+        if (entry is not null)
+            return entry;
+
+        // Slugs are not stored, Modrinth knows the ID behind them
+        var project = await modrinthService.GetProject(query);
+        return project is null ? null : entries.FirstOrDefault(e => e.ProjectId == project.Id);
+    }
+
+    /// <summary>
+    ///     The guild's follow of the user, null if the guild does not follow them
+    /// </summary>
+    /// <param name="input">Username, ID or link, see <see cref="ParseUserInput" /></param>
+    public static async Task<ModrinthFollow?> FindFollowAsync(IFollowService followService, ulong guildId,
+        string input)
+    {
+        var user = ParseUserInput(input);
+        if (user is null)
+            return null;
+
+        var follows = (await followService.GetFollowsAsync(guildId))
+            .Where(f => f.TargetType == FollowTargetType.User)
+            .ToList();
+
+        return follows.FirstOrDefault(f => f.TargetId == user)
+               ?? follows.FirstOrDefault(f => string.Equals(f.TargetName, user, StringComparison.OrdinalIgnoreCase));
+    }
+
     /// <summary>
     ///     The project's slug or ID from a slug, ID or link
     /// </summary>

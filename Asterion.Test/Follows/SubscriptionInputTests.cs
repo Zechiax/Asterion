@@ -1,4 +1,7 @@
-using Asterion.Common;
+﻿using Asterion.Common;
+using Asterion.Database.Models;
+using Asterion.Interfaces;
+using NSubstitute;
 
 namespace Asterion.Test.Follows;
 
@@ -29,5 +32,21 @@ public class SubscriptionInputTests
     public void ProjectLinkIsNotAUser(string input)
     {
         Assert.That(Subscriptions.ParseUserInput(input), Is.Null);
+    }
+
+    [TestCase("u1")]
+    [TestCase("JellySquid3")]
+    [TestCase("https://modrinth.com/user/jellysquid3")]
+    public async Task FindsFollowByIdOrName(string input)
+    {
+        var followService = Substitute.For<IFollowService>();
+        followService.GetFollowsAsync(1).Returns(new List<ModrinthFollow>
+        {
+            new() { Id = 7, TargetType = FollowTargetType.User, TargetId = "u1", TargetName = "jellysquid3" }
+        });
+
+        var follow = await Subscriptions.FindFollowAsync(followService, 1, input);
+
+        Assert.That(follow?.Id, Is.EqualTo(7));
     }
 }

@@ -29,6 +29,7 @@ public class FollowModuleTests
             .BuildServiceProvider();
 
         var follow = await interactions.AddModuleAsync<FollowModule>(services);
+        var unfollow = await interactions.AddModuleAsync<UnfollowModule>(services);
         await interactions.AddModuleAsync<FollowInteractionModule>(services);
         await interactions.AddModuleAsync<EntryInteractionModule>(services);
         var manage = await interactions.AddModuleAsync<ManageInteractionModule>(services);
@@ -39,6 +40,8 @@ public class FollowModuleTests
         {
             Assert.That(follow.SlashGroupName, Is.EqualTo("follow"));
             Assert.That(follow.SlashCommands.Select(c => c.Name), Is.EquivalentTo(new[] { "user" }));
+            Assert.That(unfollow.SlashGroupName, Is.EqualTo("unfollow"));
+            Assert.That(unfollow.SlashCommands.Select(c => c.Name), Is.EquivalentTo(new[] { "user" }));
             Assert.That(manage.SlashCommands.Select(c => c.Name), Is.EquivalentTo(new[] { "manage" }));
         }
     }

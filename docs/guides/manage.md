@@ -56,6 +56,10 @@ These settings change how update messages look. New project messages always look
 | **Changelog style** | **Plain text** (default), **Code block** or **No changelog** |
 | **Changelog length** | 100 to 4000 characters, 2000 by default. Longer changelogs are cut and end with a link to Modrinth. |
 
-Click **Preview** to see an example message with the current settings. Only you can see it.
+An update message in **Compact** style:
 
 ![Update message in Compact style](/update-compact.png)
+
+For the **Full** style, see [Update messages](/guides/subscriptions#update-messages).
+
+Click **Preview** to see an example message with the current settings. Only you can see it.

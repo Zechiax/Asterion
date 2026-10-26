@@ -14,7 +14,7 @@ Asterion only works in servers, not in DMs.
 Run `/search` with a name, slug or ID:
 
 ```
-/search query:sodium
+/search query:iris shaders
 ```
 
 The bot shows the first match. The buttons under it:

@@ -66,6 +66,14 @@ Click **Unignore** to get its updates again. If the list is empty right after fo
 
 ## Unfollow
 
-Open the follow's **Settings**, click **Unfollow**, then **Confirm**.
+Run `/unfollow user`, pick the creator and click **Confirm**:
+
+```
+/unfollow user user:jellysquid3
+```
+
+The option suggests the server's followed creators and also accepts a username, an ID or a profile link.
+
+Or open the follow's **Settings** in `/manage`, click **Unfollow**, then **Confirm**.
 
 To remove all follows at once, use **Unfollow all creators** in the [General](/guides/manage#general) tab.

@@ -83,6 +83,7 @@ public static class Warnings
 {
     public static readonly StatusCard AlreadySubscribed = new(StatusKind.Warning, "warning-already-subscribed");
     public static readonly StatusCard AlreadyUnsubscribed = new(StatusKind.Warning, "warning-already-unsubscribed");
+    public static readonly StatusCard NotFollowing = new(StatusKind.Warning, "warning-not-following");
 
     public static StatusCard BotCannotSend(string channelMention)
     {

@@ -183,6 +183,72 @@ public class ModrinthModule : AsterionInteractionModuleBase
             await SendStatusAsync(Warnings.BotCannotSend(channel.Mention));
     }
 
+    [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
+    [DoManageSubsRoleCheck(Group = "ManageSubs")]
+    [SlashCommand("unsubscribe", "Remove a Modrinth project from your watched list")]
+    public async Task Unsubscribe(
+        [Summary("project", "ID, slug or link of the project")] [MaxLength(60)]
+        [Autocomplete(typeof(SubscribedIdAutocompletionHandler))]
+        string project)
+    {
+        await DeferAsync();
+
+        var entry = await Subscriptions.FindSubscriptionAsync(_modrinthService, _dataService, Context.Guild.Id,
+            project);
+        if (entry is null)
+        {
+            await SendStatusAsync(Warnings.AlreadyUnsubscribed);
+            return;
+        }
+
+        var question = LocalizationService.Get("entry-unsub-confirm-question", CommandCultureInfo,
+            new { title = Format.Sanitize(entry.Project.Title ?? entry.ProjectId), id = entry.ProjectId });
+
+        await FollowupAsync(components: SettingsPanelBuilder.BuildMessage(question,
+            SettingsPanelBuilder.SubscriptionAccent,
+            new ButtonBuilder(LocalizationService.Get("button-confirm", CommandCultureInfo),
+                $"{UnsubscribeConfirmButtonId}:{Context.User.Id}:{entry.ProjectId}", ButtonStyle.Danger),
+            new ButtonBuilder(LocalizationService.Get("button-cancel", CommandCultureInfo),
+                $"{UnsubscribeCancelButtonId}:{Context.User.Id}:{entry.ProjectId}", ButtonStyle.Secondary)),
+            flags: MessageFlags.ComponentsV2);
+    }
+
+    // "{id}:{ownerId}:{projectId}", only the user who ran /unsubscribe can confirm
+    public const string UnsubscribeConfirmButtonId = "unsub-cmd-confirm";
+    public const string UnsubscribeCancelButtonId = "unsub-cmd-cancel";
+
+    [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
+    [DoManageSubsRoleCheck(Group = "ManageSubs")]
+    [DoUserCheck]
+    [ComponentInteraction(UnsubscribeConfirmButtonId + ":*:*")]
+    public async Task HandleUnsubscribeConfirmAsync(ulong ownerId, string projectId)
+    {
+        await DeferAsync();
+
+        var project = await _dataService.GetModrinthProjectByIdAsync(projectId);
+
+        // Also removes the shared project state if nothing else uses it
+        var text = await _dataService.RemoveModrinthProjectFromGuildAsync(Context.Guild.Id, projectId)
+            ? LocalizationService.Get("entry-unsubscribed", CommandCultureInfo,
+                new { title = Format.Sanitize(project?.Title ?? projectId), id = projectId })
+            : LocalizationService.Get("entry-not-found", CommandCultureInfo);
+
+        await ModifyOriginalResponseAsync(msg =>
+            msg.Components = SettingsPanelBuilder.BuildMessage(text, SettingsPanelBuilder.SubscriptionAccent));
+    }
+
+    [RequireUserPermission(GuildPermission.Administrator, Group = "ManageSubs")]
+    [DoManageSubsRoleCheck(Group = "ManageSubs")]
+    [DoUserCheck]
+    [ComponentInteraction(UnsubscribeCancelButtonId + ":*:*")]
+    public async Task HandleUnsubscribeCancelAsync(ulong ownerId, string projectId)
+    {
+        await DeferAsync();
+        await ModifyOriginalResponseAsync(msg => msg.Components = SettingsPanelBuilder.BuildMessage(
+            LocalizationService.Get("removal-cancelled", CommandCultureInfo),
+            SettingsPanelBuilder.SubscriptionAccent));
+    }
+
     [SlashCommand("latest-release", "Gets the latest release of project")]
     public async Task LatestRelease(string slugOrId,
         [Summary("style", "Message style, the server's message style if not set")] MessageStyle? style = null)

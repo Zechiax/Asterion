@@ -11,6 +11,7 @@ Options in `[brackets]` are optional. "Manage role" means Administrator or the r
 | `/latest-release` | `slug-or-id` `[style]` | Everyone |
 | `/random` | | Everyone |
 | `/subscribe` | `project-id` `[custom-channel]` | Manage role |
+| `/unsubscribe` | `project` | Manage role |
 
 - `/search`: search projects by slug, ID or search term and show the first result
 - `/user`: show a Modrinth user, by ID or username
@@ -18,17 +19,22 @@ Options in `[brackets]` are optional. "Manage role" means Administrator or the r
   [message style](/guides/manage#notifications) if not set.
 - `/random`: show a random project
 - `/subscribe`: add a project to the watched list, updates go to `custom-channel` or the current channel
+- `/unsubscribe`: remove a project from the watched list after you confirm. `project` is an ID, slug or link and
+  suggests the server's subscriptions.
 
 ## Following
 
 | Command | Options | Who can use it |
 | --- | --- | --- |
 | `/follow user` | `username` `[channel]` `[events]` `[new_project_channel]` | Manage role |
+| `/unfollow user` | `user` | Manage role |
 
 - `username`: username, ID or link of the Modrinth user
 - `channel`: channel for the messages, the current channel if not set
 - `events`: project updates and new projects (default), only project updates, or only new projects
 - `new_project_channel`: channel for new project messages, `channel` if not set
+- `/unfollow user`: stop following a creator after you confirm. `user` is a username, ID or link and suggests the
+  server's followed creators.
 
 ## Charts
 

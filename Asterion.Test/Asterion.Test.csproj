@@ -15,7 +15,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.13" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.14" />
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
         <PackageReference Include="Modrinth.Net" Version="3.8.2" />
         <PackageReference Include="NSubstitute" Version="6.2.0" />

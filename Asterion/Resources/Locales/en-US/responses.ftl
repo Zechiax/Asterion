@@ -165,6 +165,7 @@ button-back = Back
 button-unsubscribe = Unsubscribe
 button-confirm = Confirm
 button-cancel = Cancel
+removal-cancelled = Cancelled, nothing was removed
 
 ## Charts
 chart-caption-downloads = Downloads of **{ $title }** per { $range ->

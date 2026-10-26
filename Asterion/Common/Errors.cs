@@ -1,5 +1,6 @@
 using Asterion.Services.Modrinth;
 using Discord;
+using Humanizer;
 
 namespace Asterion.Common;
 
@@ -71,7 +72,8 @@ public static class Errors
                 nameof(result))
         };
 
-        return new StatusCard(StatusKind.Error, key, new { query = Format.Sanitize(result.Query) },
+        // Options have no length limit, a long query would not fit the message
+        return new StatusCard(StatusKind.Error, key, new { query = Format.Sanitize(result.Query.Truncate(100)) },
             "error-search-unsuccessful");
     }
 }
@@ -83,6 +85,7 @@ public static class Warnings
 {
     public static readonly StatusCard AlreadySubscribed = new(StatusKind.Warning, "warning-already-subscribed");
     public static readonly StatusCard AlreadyUnsubscribed = new(StatusKind.Warning, "warning-already-unsubscribed");
+    public static readonly StatusCard NotFollowing = new(StatusKind.Warning, "warning-not-following");
 
     public static StatusCard BotCannotSend(string channelMention)
     {

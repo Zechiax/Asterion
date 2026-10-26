@@ -11,14 +11,29 @@ hero:
   actions:
     - theme: brand
       text: Invite
-      link: https://discord.com/api/oauth2/authorize?client_id=986993814671614094&permissions=537316416&scope=bot%20applications.commands
+      link: https://discord.com/api/oauth2/authorize?client_id=986993814671614094&permissions=537054208&scope=bot%20applications.commands
     - theme: alt
       text: Quick start
       link: /quick-start
     - theme: alt
       text: Commands
       link: /commands
----
 
-<!-- notes: features list from README could go here as `features:` in the frontmatter, or as plain markdown below.
-Screenshots available in docs/public: search.png, user.png, release_notes.png -->
+features:
+  - title: Search Modrinth
+    details: Look up projects and users without leaving Discord.
+    link: /commands
+    linkText: Commands
+  - title: Project updates
+    details: Get a message in your channel when a project publishes a new version.
+    link: /guides/subscriptions
+    linkText: Subscriptions
+  - title: Follow creators
+    details: Follow a Modrinth user and hear about their new projects and every update.
+    link: /guides/following
+    linkText: Following
+  - title: Download charts
+    details: Chart the downloads and new followers of a project over time.
+    link: /guides/charts
+    linkText: Charts
+---

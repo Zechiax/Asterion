@@ -1,4 +1,5 @@
-using Asterion.Common;
+﻿using Asterion.Common;
+using Asterion.Database.Models;
 
 namespace Asterion.Test.Follows;
 
@@ -29,5 +30,17 @@ public class SubscriptionInputTests
     public void ProjectLinkIsNotAUser(string input)
     {
         Assert.That(Subscriptions.ParseUserInput(input), Is.Null);
+    }
+
+    [TestCase("u1")]
+    [TestCase("JellySquid3")]
+    public void MatchesFollowByIdOrName(string user)
+    {
+        var follows = new List<ModrinthFollow>
+        {
+            new() { Id = 7, TargetType = FollowTargetType.User, TargetId = "u1", TargetName = "jellysquid3" }
+        };
+
+        Assert.That(Subscriptions.MatchFollow(follows, user)?.Id, Is.EqualTo(7));
     }
 }

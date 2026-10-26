@@ -39,7 +39,7 @@ public class FollowModule(
 {
     [SlashCommand("user", "Follow a Modrinth user and get updates for all of their projects")]
     public async Task FollowUser(
-        [Summary("username", "Username, ID or link of the Modrinth user")] [MaxLength(60)]
+        [Summary("username", "Username, ID or link of the Modrinth user")]
         string username,
         [Summary("channel", "Channel for the messages, this channel if not set")] [AnnouncementChannelPrecondition]
         IGuildChannel? channel = null,

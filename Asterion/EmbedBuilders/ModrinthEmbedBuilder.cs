@@ -164,14 +164,16 @@ public static class ModrinthEmbedBuilder
         return embed;
     }
 
+    /// <param name="style">Overrides the guild's message style if set</param>
     public static EmbedBuilder VersionUpdateEmbed(GuildSettings settings, Project project, Version version,
-        IEnumerable<TeamMember>? teamMembers = null)
+        IEnumerable<TeamMember>? teamMembers = null, MessageStyle? style = null)
     {
-        return settings.MessageStyle switch
+        var messageStyle = style ?? settings.MessageStyle;
+        return messageStyle switch
         {
             MessageStyle.Full => GetFullVersionUpdateEmbed(project, version, settings, teamMembers),
             MessageStyle.Compact => GetCompactVersionUpdateEmbed(project, version, teamMembers),
-            _ => throw new ArgumentOutOfRangeException(nameof(settings.MessageStyle), settings.MessageStyle, null)
+            _ => throw new ArgumentOutOfRangeException(nameof(style), messageStyle, null)
         };
     }
 

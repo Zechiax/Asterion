@@ -14,7 +14,7 @@ export default defineConfig({
     nav: [
       { text: 'Quick start', link: '/quick-start' },
       { text: 'Commands', link: '/commands' },
-      { text: 'Invite', link: 'https://discord.com/api/oauth2/authorize?client_id=986993814671614094&permissions=537316416&scope=bot%20applications.commands' }
+      { text: 'Invite', link: 'https://discord.com/api/oauth2/authorize?client_id=986993814671614094&permissions=537054208&scope=bot%20applications.commands' }
     ],
 
     sidebar: [

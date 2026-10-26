@@ -6,7 +6,7 @@
 
 Access all of [Modrinth](https://modrinth.com/) within Discord
 
-**[Invite](https://discord.com/api/oauth2/authorize?client_id=986993814671614094&permissions=537316416&scope=bot%20applications.commands)** · **[Documentation](https://zechiax.github.io/Asterion/)**
+**[Invite](https://discord.com/api/oauth2/authorize?client_id=986993814671614094&permissions=537054208&scope=bot%20applications.commands)** · **[Documentation](https://zechiax.github.io/Asterion/)**
 
 </div>
 
@@ -14,8 +14,9 @@ Access all of [Modrinth](https://modrinth.com/) within Discord
 - Search for Modrinth projects
 - Find user on Modrinth
 - Auto embed when message contains URL to a Modrinth project (opt-in feature)
-- Subscribe for project updates and send them to custom channel
-- Follow Modrinth users with `/follow user` and get updates for all of their projects, including new ones
+- Subscribe for project updates and send them to custom channel, `/subscribe` and `/unsubscribe`
+- Follow Modrinth users with `/follow user` (and stop with `/unfollow user`) and get updates for all of their
+  projects, including new ones
     - Get a message when a followed user publishes a new project, with its own ping role
     - Ignore single projects of a followed user, filter by release type and loader
 - Manage everything from one place with `/manage`: subscribed projects, followed users and the server settings

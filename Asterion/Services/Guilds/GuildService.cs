@@ -26,7 +26,7 @@ public class GuildService : IGuildService
 
         if (await db.Guilds.AnyAsync(g => g.GuildId == guildId, ct))
         {
-            _logger.LogError("Guild id {Id} is already registered in database", guildId);
+            _logger.LogInformation("Guild id {Id} is already registered in database", guildId);
             return false;
         }
 
@@ -54,7 +54,12 @@ public class GuildService : IGuildService
         using var scope = _services.CreateScope();
         await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
 
-        var guild = await db.Guilds.FirstOrDefaultAsync(g => g.GuildId == guildId, ct);
+        // Loaded so they are deleted with the guild, not only by the database cascade
+        var guild = await db.Guilds
+            .Include(g => g.ModrinthArray)
+            .Include(g => g.GuildSettings)
+            .FirstOrDefaultAsync(g => g.GuildId == guildId, ct);
+
         if (guild is null)
         {
             _logger.LogError("No guild with ID {ID} found in database, guild removal interrupted", guildId);
@@ -73,6 +78,8 @@ public class GuildService : IGuildService
         db.ModrinthEntries.RemoveRange(entries);
         db.ModrinthFollows.RemoveRange(follows);
         db.Guilds.Remove(guild);
+        // The guild references its array, deleting the guild alone would leave the array behind
+        db.Arrays.Remove(guild.ModrinthArray);
         await db.SaveChangesAsync(ct);
 
         await ProjectCleanup.RemoveUnusedProjectsAsync(db, projectIds, ct);
@@ -87,7 +94,6 @@ public class GuildService : IGuildService
 
         return await db.Guilds
             .AsNoTracking()
-            .Include(g => g.ModrinthArray)
             .Include(g => g.GuildSettings)
             .FirstOrDefaultAsync(g => g.GuildId == guildId, ct);
     }
@@ -98,7 +104,6 @@ public class GuildService : IGuildService
         await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
 
         var guild = await db.Guilds
-            .Include(g => g.ModrinthArray)
             .Include(g => g.GuildSettings)
             .FirstOrDefaultAsync(g => g.GuildId == guildId, ct);
 

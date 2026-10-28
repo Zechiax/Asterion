@@ -18,8 +18,9 @@ public class SubscriptionService : ISubscriptionService
         _logger = logger;
     }
 
-    public async Task<bool> AddSubscriptionAsync(ulong guildId, string projectId, string lastCheckVersion,
-        DateTime lastUpdated, ulong channelId, string? projectTitle = null, CancellationToken ct = default)
+    public async Task<AddSubscriptionResult> AddSubscriptionAsync(ulong guildId, string projectId,
+        string lastCheckVersion, DateTime lastUpdated, ulong channelId, string? projectTitle = null,
+        CancellationToken ct = default)
     {
         using var scope = _services.CreateScope();
         await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
@@ -28,8 +29,11 @@ public class SubscriptionService : ISubscriptionService
         if (guild is null)
         {
             _logger.LogError("No guild with ID {ID}", guildId);
-            return false;
+            return AddSubscriptionResult.GuildNotFound;
         }
+
+        if (await IsSubscribedAsync(db, guildId, projectId, ct))
+            return AddSubscriptionResult.AlreadySubscribed;
 
         var project = await db.ModrinthProjects.FirstOrDefaultAsync(p => p.ProjectId == projectId, ct)
                       ?? db.ModrinthProjects.Add(new ModrinthProject
@@ -50,9 +54,20 @@ public class SubscriptionService : ISubscriptionService
             Project = project
         });
 
-        await db.SaveChangesAsync(ct);
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException)
+        {
+            // Lost the race to a concurrent subscribe, the unique index rejected the second entry
+            if (await IsSubscribedAsync(db, guildId, projectId, ct))
+                return AddSubscriptionResult.AlreadySubscribed;
 
-        return true;
+            throw;
+        }
+
+        return AddSubscriptionResult.Added;
     }
 
     public async Task<ModrinthEntry?> RemoveSubscriptionAsync(ulong guildId, string projectId,
@@ -122,7 +137,13 @@ public class SubscriptionService : ISubscriptionService
         using var scope = _services.CreateScope();
         await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
 
-        return await db.ModrinthEntries.AnyAsync(e => e.GuildId == guildId && e.ProjectId == projectId, ct);
+        return await IsSubscribedAsync(db, guildId, projectId, ct);
+    }
+
+    private static Task<bool> IsSubscribedAsync(DataContext db, ulong guildId, string projectId,
+        CancellationToken ct)
+    {
+        return db.ModrinthEntries.AnyAsync(e => e.GuildId == guildId && e.ProjectId == projectId, ct);
     }
 
     public async Task<ModrinthEntry?> UpdateSubscriptionAsync(ulong guildId, string projectId,

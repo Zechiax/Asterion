@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Asterion.Database.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace Asterion.Database;
 
@@ -10,26 +11,17 @@ namespace Asterion.Database;
 public static class ProjectCleanup
 {
     /// <summary>
-    ///     Removes the given projects if they are unused. Pass null to check every project.
+    ///     Removes the given projects if they are unused
     /// </summary>
     /// <returns>IDs of the removed projects</returns>
     public static async Task<IList<string>> RemoveUnusedProjectsAsync(DataContext db,
-        IEnumerable<string>? projectIds = null, CancellationToken ct = default)
+        IEnumerable<string> projectIds, CancellationToken ct = default)
     {
-        var query = db.ModrinthProjects.AsQueryable();
+        var ids = projectIds.Distinct().ToList();
+        if (ids.Count == 0)
+            return [];
 
-        if (projectIds is not null)
-        {
-            var ids = projectIds.Distinct().ToList();
-            if (ids.Count == 0)
-                return [];
-
-            query = query.Where(p => ids.Contains(p.ProjectId));
-        }
-
-        var unused = await query
-            .Where(p => !db.ModrinthEntries.Any(e => e.ProjectId == p.ProjectId)
-                        && !db.FollowProjects.Any(fp => fp.ProjectId == p.ProjectId))
+        var unused = await WhereUnused(db.ModrinthProjects.Where(p => ids.Contains(p.ProjectId)), db)
             .ToListAsync(ct);
 
         if (unused.Count == 0)
@@ -39,5 +31,21 @@ public static class ProjectCleanup
         await db.SaveChangesAsync(ct);
 
         return unused.Select(p => p.ProjectId).ToList();
+    }
+
+    /// <summary>
+    ///     Removes every unused project in a single statement, so an entry or follow added meanwhile
+    ///     can't lose its project (the delete would cascade to it)
+    /// </summary>
+    /// <returns>Number of removed projects</returns>
+    public static Task<int> RemoveAllUnusedProjectsAsync(DataContext db, CancellationToken ct = default)
+    {
+        return WhereUnused(db.ModrinthProjects, db).ExecuteDeleteAsync(ct);
+    }
+
+    private static IQueryable<ModrinthProject> WhereUnused(IQueryable<ModrinthProject> projects, DataContext db)
+    {
+        return projects.Where(p => !db.ModrinthEntries.Any(e => e.ProjectId == p.ProjectId)
+                                   && !db.FollowProjects.Any(fp => fp.ProjectId == p.ProjectId));
     }
 }

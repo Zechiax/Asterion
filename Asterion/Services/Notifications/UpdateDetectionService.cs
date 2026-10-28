@@ -148,7 +148,10 @@ public class UpdateDetectionService : BackgroundService
             .OrderBy(v => v.DatePublished)
             .ToList();
 
-        var entries = await db.ModrinthEntries.Where(e => e.ProjectId == project.Id).ToListAsync(ct);
+        // Left guilds that kept their data get no messages
+        var entries = await db.ModrinthEntries
+            .Where(e => e.ProjectId == project.Id && e.Guild.Active != false)
+            .ToListAsync(ct);
         var guildIdsWithEntry = entries.Select(e => e.GuildId).ToHashSet();
 
         var follows = await GetFollowTargetsAsync(db, project.Id, ct);
@@ -219,13 +222,13 @@ public class UpdateDetectionService : BackgroundService
 
             var entries = await db.ModrinthEntries
                 .Include(e => e.Guild).ThenInclude(g => g.GuildSettings)
-                .Where(e => e.ProjectId == project.Id)
+                .Where(e => e.ProjectId == project.Id && e.Guild.Active != false)
                 .ToListAsync(ct);
 
             var follows = await db.FollowProjects
                 .Where(fp => fp.ProjectId == project.Id && !fp.Ignored)
                 .Select(fp => fp.Follow)
-                .Where(f => (f.Events & FollowEvents.DownloadMilestone) != 0)
+                .Where(f => (f.Events & FollowEvents.DownloadMilestone) != 0 && f.Guild.Active != false)
                 .Include(f => f.Guild).ThenInclude(g => g.GuildSettings)
                 .ToListAsync(ct);
 
@@ -245,7 +248,8 @@ public class UpdateDetectionService : BackgroundService
 
     /// <summary>
     ///     Returns the follows that want update messages for the project: they have the ProjectUpdate event
-    ///     and a FollowProject row for the project that is not ignored.
+    ///     and a FollowProject row for the project that is not ignored. Follows of left guilds that kept
+    ///     their data are skipped.
     /// </summary>
     public static Task<List<ModrinthFollow>> GetFollowTargetsAsync(DataContext db, string projectId,
         CancellationToken ct = default)
@@ -253,7 +257,7 @@ public class UpdateDetectionService : BackgroundService
         return db.FollowProjects
             .Where(fp => fp.ProjectId == projectId && !fp.Ignored)
             .Select(fp => fp.Follow)
-            .Where(f => (f.Events & FollowEvents.ProjectUpdate) != 0)
+            .Where(f => (f.Events & FollowEvents.ProjectUpdate) != 0 && f.Guild.Active != false)
             .ToListAsync(ct);
     }
 

@@ -18,6 +18,7 @@ public class GuildSyncService
     private readonly IGuildService _guildService;
     private readonly ILogger<GuildSyncService> _logger;
     private readonly IServiceProvider _services;
+    private readonly SemaphoreSlim _syncLock = new(1, 1);
 
     public GuildSyncService(IServiceProvider services, DiscordSocketClient client, IGuildService guildService,
         ILogger<GuildSyncService> logger)
@@ -30,16 +31,68 @@ public class GuildSyncService
 
     public void Initialize()
     {
-        _client.JoinedGuild += guild => _guildService.AddGuildAsync(guild.Id);
-        _client.LeftGuild += guild => _guildService.RemoveGuildAsync(guild.Id);
-        _client.Ready += SyncAsync;
+        _client.JoinedGuild += guild => HandleJoinedAsync(guild.Id);
+        _client.LeftGuild += guild => HandleLeftAsync(guild.Id);
+
+        // Off the gateway task, a long sync would block it and miss heartbeats
+        _client.Ready += () =>
+        {
+            _ = Task.Run(RunSyncAsync);
+            return Task.CompletedTask;
+        };
     }
 
-    private async Task SyncAsync()
+    /// <summary>
+    ///     Registers the guild, or activates it again if its data was kept when the bot left
+    /// </summary>
+    private async Task HandleJoinedAsync(ulong guildId)
     {
-        await CreateMissingGuildSettingsAsync();
-        await RegisterNewGuildsAsync();
-        await RemoveLeftGuildsAsync();
+        if (!await _guildService.AddGuildAsync(guildId))
+            await _guildService.UpdateGuildAsync(guildId, g => g.Active = true);
+    }
+
+    /// <summary>
+    ///     Removes the guild, or only deactivates it if its settings say to keep its data
+    /// </summary>
+    private async Task HandleLeftAsync(ulong guildId)
+    {
+        var guild = await _guildService.GetGuildAsync(guildId);
+        if (guild is null)
+            return;
+
+        if (guild.GuildSettings.RemoveOnLeave == false)
+        {
+            _logger.LogInformation("Keeping data of left guild ID {ID}, deactivating it", guildId);
+            await _guildService.UpdateGuildAsync(guildId, g => g.Active = false);
+            return;
+        }
+
+        await _guildService.RemoveGuildAsync(guildId);
+    }
+
+    private async Task RunSyncAsync()
+    {
+        // A reconnect fires Ready again, the previous sync may still be running
+        if (!await _syncLock.WaitAsync(0))
+        {
+            _logger.LogInformation("Guild sync is already running, skipping");
+            return;
+        }
+
+        try
+        {
+            await CreateMissingGuildSettingsAsync();
+            await RegisterNewGuildsAsync();
+            await RemoveLeftGuildsAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Guild sync failed");
+        }
+        finally
+        {
+            _syncLock.Release();
+        }
     }
 
     private async Task CreateMissingGuildSettingsAsync()
@@ -63,22 +116,31 @@ public class GuildSyncService
     }
 
     /// <summary>
-    ///     Registers new guilds to which the bot has been invited while offline
+    ///     Registers new guilds to which the bot has been invited while offline, and activates kept ones again
     /// </summary>
     private async Task RegisterNewGuildsAsync()
     {
         _logger.LogInformation("Registering new guilds");
 
-        var storedIds = await GetStoredGuildIdsAsync();
-        var newGuilds = _client.Guilds.Where(g => !storedIds.Contains(g.Id)).ToList();
+        var stored = await GetStoredGuildsAsync();
+        var connected = _client.Guilds.Select(g => g.Id).ToList();
 
-        foreach (var guild in newGuilds)
+        var newIds = connected.Where(id => !stored.ContainsKey(id)).ToList();
+        foreach (var guildId in newIds)
         {
-            _logger.LogInformation("New guild id {Id} found, registering", guild.Id);
-            await _guildService.AddGuildAsync(guild.Id);
+            _logger.LogInformation("New guild id {Id} found, registering", guildId);
+            await _guildService.AddGuildAsync(guildId);
         }
 
-        _logger.LogInformation("Registered {Count} new guilds", newGuilds.Count);
+        var inactiveIds = connected.Where(id => stored.TryGetValue(id, out var active) && !active).ToList();
+        foreach (var guildId in inactiveIds)
+        {
+            _logger.LogInformation("Kept guild id {Id} is connected again, activating", guildId);
+            await _guildService.UpdateGuildAsync(guildId, g => g.Active = true);
+        }
+
+        _logger.LogInformation("Registered {Count} new guilds, activated {Activated} kept guilds", newIds.Count,
+            inactiveIds.Count);
     }
 
     /// <summary>
@@ -101,22 +163,29 @@ public class GuildSyncService
             return;
         }
 
-        var leftIds = (await GetStoredGuildIdsAsync()).Where(id => !connectedIds.Contains(id)).ToList();
+        // Inactive guilds were already left, their data is kept on purpose
+        var leftIds = (await GetStoredGuildsAsync())
+            .Where(g => g.Value && !connectedIds.Contains(g.Key))
+            .Select(g => g.Key)
+            .ToList();
 
         foreach (var guildId in leftIds)
         {
-            _logger.LogInformation("Removing guild ID {ID}", guildId);
-            await _guildService.RemoveGuildAsync(guildId);
+            _logger.LogInformation("Guild ID {ID} was left", guildId);
+            await HandleLeftAsync(guildId);
         }
 
-        _logger.LogInformation("Removed {Count} guilds", leftIds.Count);
+        _logger.LogInformation("Handled {Count} left guilds", leftIds.Count);
     }
 
-    private async Task<HashSet<ulong>> GetStoredGuildIdsAsync()
+    /// <returns>Stored guild IDs with whether the guild is active</returns>
+    private async Task<Dictionary<ulong, bool>> GetStoredGuildsAsync()
     {
         using var scope = _services.CreateScope();
         await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
 
-        return (await db.Guilds.Select(g => g.GuildId).ToListAsync()).ToHashSet();
+        return await db.Guilds
+            .Select(g => new { g.GuildId, Active = g.Active != false })
+            .ToDictionaryAsync(g => g.GuildId, g => g.Active);
     }
 }

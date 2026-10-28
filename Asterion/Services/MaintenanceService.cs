@@ -69,9 +69,9 @@ public class MaintenanceService : BackgroundService
         using var scope = _services.CreateScope();
         await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
 
-        var removed = await ProjectCleanup.RemoveUnusedProjectsAsync(db, ct: ct);
+        var removed = await ProjectCleanup.RemoveAllUnusedProjectsAsync(db, ct);
 
-        _logger.LogInformation("Removed {Count} unused projects", removed.Count);
+        _logger.LogInformation("Removed {Count} unused projects", removed);
     }
 
     /// <summary>

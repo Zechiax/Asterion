@@ -52,7 +52,14 @@ public static partial class Subscriptions
         var added = await subscriptionService.AddSubscriptionAsync(guildId, project.Id, lastVersion.Id,
             project.Updated, channelId, project.Title);
 
-        return new SubscribeResult(added ? SubscribeStatus.Subscribed : SubscribeStatus.Failed, project);
+        var status = added switch
+        {
+            AddSubscriptionResult.Added => SubscribeStatus.Subscribed,
+            AddSubscriptionResult.AlreadySubscribed => SubscribeStatus.AlreadySubscribed,
+            _ => SubscribeStatus.Failed
+        };
+
+        return new SubscribeResult(status, project);
     }
 
     /// <summary>

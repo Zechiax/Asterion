@@ -67,6 +67,11 @@ public class DataContext : DbContext
         modelBuilder.Entity<ModrinthEntry>()
             .Ignore(e => e.LoaderFilter);
 
+        // A guild can subscribe to a project only once
+        modelBuilder.Entity<ModrinthEntry>()
+            .HasIndex(e => new { e.GuildId, e.ProjectId })
+            .IsUnique();
+
         modelBuilder.Entity<ModrinthFollow>()
             .Property(f => f.ReleaseFilter)
             .HasDefaultValue(ReleaseType.Alpha | ReleaseType.Beta | ReleaseType.Release);

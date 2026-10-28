@@ -96,7 +96,7 @@ public class ServerSettingsInteractionModule(
         if (channelId is not null && !BotCanSendIn(channelId.Value))
         {
             // Show the tab again, so the picker goes back to the saved channel
-            await UpdateAsync(ownerId, ManageTab.Notifications, _ => { });
+            await UpdateAsync(ownerId, ManageTab.Notifications);
             await SendStatusAsync(Warnings.BotCannotSend(MentionUtils.MentionChannel(channelId.Value)));
             return;
         }
@@ -238,13 +238,14 @@ public class ServerSettingsInteractionModule(
     /// <summary>
     ///     Applies a change to the guild and shows the tab with the saved state
     /// </summary>
+    /// <param name="update">The change, null to only show the tab</param>
     /// <param name="afterSave">Runs after the change is saved, before the panel is built</param>
-    private async Task UpdateAsync(ulong ownerId, ManageTab tab, Action<Guild> update,
+    private async Task UpdateAsync(ulong ownerId, ManageTab tab, Action<Guild>? update = null,
         Func<Task>? afterSave = null)
     {
         await DeferAsync();
 
-        if (await guildService.UpdateGuildAsync(Context.Guild.Id, update) is null)
+        if (update is not null && await guildService.UpdateGuildAsync(Context.Guild.Id, update) is null)
         {
             await SendStatusAsync(Errors.Internal);
             return;

@@ -15,7 +15,7 @@ namespace Asterion.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "10.0.13");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.14");
 
             modelBuilder.Entity("Asterion.Database.Models.Array", b =>
                 {
@@ -243,9 +243,10 @@ namespace Asterion.Migrations
 
                     b.HasIndex("ArrayId");
 
-                    b.HasIndex("GuildId");
-
                     b.HasIndex("ProjectId");
+
+                    b.HasIndex("GuildId", "ProjectId")
+                        .IsUnique();
 
                     b.ToTable("ModrinthEntries");
                 });

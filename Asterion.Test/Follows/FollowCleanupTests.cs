@@ -33,7 +33,7 @@ public class FollowCleanupTests
 
         await using (var db = OpenDb(provider))
         {
-            var removed = await ProjectCleanup.RemoveUnusedProjectsAsync(db);
+            var removed = await ProjectCleanup.RemoveUnusedProjectsAsync(db, ["a"]);
             Assert.That(removed, Is.Empty);
         }
 

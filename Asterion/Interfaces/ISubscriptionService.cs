@@ -2,6 +2,13 @@ using Asterion.Database.Models;
 
 namespace Asterion.Interfaces;
 
+public enum AddSubscriptionResult
+{
+    Added,
+    AlreadySubscribed,
+    GuildNotFound
+}
+
 /// <summary>
 ///     Projects a guild subscribed to manually, stored as <see cref="ModrinthEntry" />
 /// </summary>
@@ -12,8 +19,7 @@ public interface ISubscriptionService
     /// </summary>
     /// <param name="lastCheckVersion">ID of the latest version of the project</param>
     /// <param name="channelId">Channel the updates are sent to</param>
-    /// <returns>False if the guild is not in the database</returns>
-    public Task<bool> AddSubscriptionAsync(ulong guildId, string projectId, string lastCheckVersion,
+    public Task<AddSubscriptionResult> AddSubscriptionAsync(ulong guildId, string projectId, string lastCheckVersion,
         DateTime lastUpdated, ulong channelId, string? projectTitle = null, CancellationToken ct = default);
 
     /// <summary>

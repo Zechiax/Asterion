@@ -19,6 +19,10 @@ public static class ConfigValidator
         if (!string.IsNullOrEmpty(testChannel) && !ulong.TryParse(testChannel, out _))
             errors.Add($"'{ConfigKeys.TestChannel}' must be a number");
 
+        var checkInterval = config[ConfigKeys.UpdateCheckIntervalMinutes];
+        if (!string.IsNullOrEmpty(checkInterval) && (!int.TryParse(checkInterval, out var minutes) || minutes < 1))
+            errors.Add($"'{ConfigKeys.UpdateCheckIntervalMinutes}' must be a whole number of minutes, at least 1");
+
         return errors;
     }
 }

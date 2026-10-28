@@ -5,6 +5,7 @@ using Asterion.Services.Modrinth;
 using Asterion.Services.Notifications;
 using Discord.Interactions;
 using Discord.WebSocket;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Modrinth;
 using NSubstitute;
@@ -31,6 +32,7 @@ public class FollowModuleTests
             .AddSingleton(Substitute.For<IHttpClientFactory>())
             .AddSingleton(Substitute.For<INotificationScheduler>())
             .AddSingleton(Substitute.For<INotificationSignal>())
+            .AddSingleton<IConfiguration>(new ConfigurationBuilder().Build())
             .AddSingleton<ProjectStatisticsManager>()
             .AddSingleton<UpdateDetectionService>()
             .AddSingleton<ModrinthService>()

@@ -1,8 +1,10 @@
-﻿using Asterion.Database;
+﻿using Asterion.Configuration;
+using Asterion.Database;
 using Asterion.Database.Models;
 using Asterion.Extensions;
 using Asterion.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -18,8 +20,8 @@ namespace Asterion.Services.Notifications;
 public class UpdateDetectionService : BackgroundService
 {
     private const int SplitSize = 100;
-    private static readonly TimeSpan CheckInterval = TimeSpan.FromMinutes(10);
 
+    private readonly TimeSpan _checkInterval;
     private readonly IModrinthClient _client;
     private readonly IDataService _dataService;
     private readonly ILogger<UpdateDetectionService> _logger;
@@ -30,8 +32,10 @@ public class UpdateDetectionService : BackgroundService
 
     public UpdateDetectionService(IServiceProvider services, IModrinthClient client, IDataService dataService,
         ProjectStatisticsManager projectStatisticsManager, INotificationScheduler notificationScheduler,
-        INotificationSignal notificationSignal, ILogger<UpdateDetectionService> logger)
+        INotificationSignal notificationSignal, IConfiguration config, ILogger<UpdateDetectionService> logger)
     {
+        _checkInterval = TimeSpan.FromMinutes(config.GetValue(ConfigKeys.UpdateCheckIntervalMinutes,
+            ConfigKeys.DefaultUpdateCheckIntervalMinutes));
         _services = services;
         _client = client;
         _dataService = dataService;
@@ -43,7 +47,7 @@ public class UpdateDetectionService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        using var timer = new PeriodicTimer(CheckInterval);
+        using var timer = new PeriodicTimer(_checkInterval);
 
         do
         {

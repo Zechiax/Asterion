@@ -42,11 +42,10 @@ The message goes to the first channel that is set:
 
 1. **Milestone channel override** in the settings of the subscription or follow
 2. **Milestone channel** in the server settings
-3. For a subscription, its update channel. For a follow, its new projects channel, or its update channel if that is
-   not set.
+3. The update channel of the subscription or follow
 
 **Milestone channel override** only shows up in the settings of a subscription or follow while milestones are on for
-the server.
+the server, and also on for the subscription, or included in the follow's events.
 
 ## Ping role
 

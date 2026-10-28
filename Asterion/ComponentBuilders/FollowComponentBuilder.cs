@@ -57,8 +57,8 @@ public static class FollowComponentBuilder
                     loc.Get("settings-new-project-ping-role-placeholder", culture)))
         };
 
-        // The channel does nothing while the server has milestones off
-        if (serverMilestones)
+        // The channel does nothing while the server has milestones off or the follow lacks the milestone event
+        if (serverMilestones && follow.Events.HasFlag(FollowEvents.DownloadMilestone))
             fields.Add(new SettingsField(loc.Get("settings-milestone-channel", culture),
                 SettingsPanelBuilder.ChannelPicker(Id(MilestoneChannelMenuId), follow.MilestoneChannel,
                     loc.Get("settings-milestone-channel-placeholder", culture), optional: true)));

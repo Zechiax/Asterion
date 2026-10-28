@@ -65,7 +65,7 @@ namespace Asterion.Modules
                                         (await dataService.GetModrinthProjectByIdAsync(entry.ProjectId))?.Title ??
                                         entry.ProjectId);
 
-            var serverMilestones = await MilestonesEnabledAsync(dataService, entry.GuildId);
+            var serverMilestones = await dataService.MilestonesEnabledAsync(entry.GuildId);
 
             var fields = new List<SettingsField>
             {
@@ -77,8 +77,8 @@ namespace Asterion.Modules
                         loc.Get("settings-ping-role-placeholder", culture)))
             };
 
-            // Milestone settings do nothing while the server has milestones off
-            if (serverMilestones)
+            // The channel does nothing while the server or this subscription has milestones off
+            if (serverMilestones && entry.NotifyMilestones)
                 fields.Add(new SettingsField(loc.Get("settings-milestone-channel", culture),
                     SettingsPanelBuilder.ChannelPicker(Id(MilestoneChannelMenuId), entry.MilestoneChannel,
                         loc.Get("settings-milestone-channel-placeholder", culture), optional: true)));
@@ -102,14 +102,6 @@ namespace Asterion.Modules
             return SettingsPanelBuilder.Build(
                 loc.Get("settings-subscription-title", culture, new { title, id = entry.ProjectId }),
                 SettingsPanelBuilder.SubscriptionAccent, fields, buttons, notice);
-        }
-
-        /// <summary>
-        ///     If the server has milestone messages turned on in its settings
-        /// </summary>
-        public static async Task<bool> MilestonesEnabledAsync(IDataService dataService, ulong guildId)
-        {
-            return (await dataService.GetGuildByIdAsync(guildId))?.GuildSettings.MilestonesEnabled ?? false;
         }
 
         /// <summary>

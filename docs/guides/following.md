@@ -59,7 +59,7 @@ See [Download milestones](/guides/milestones) for the milestone sets, channels a
 | **New projects channel override** | Where new project messages go. Leave it empty to use **Channel**. |
 | **Ping role override** | Role to ping instead of the server's default ping role |
 | **New projects ping role override** | Role to ping for new projects. Leave it empty to use the ping role above. |
-| **Milestone channel override** | Where milestone messages go. Leave it empty to use the server's **Milestone channel**. Shown only while milestones are on for the server. |
+| **Milestone channel override** | Where milestone messages go. Leave it empty to use the server's **Milestone channel**. Shown only while milestones are on for the server and **Events** includes **Project download milestones**. |
 | **Events** | **Project updates**, **New projects** and **Project download milestones**. With nothing selected, no messages are sent. |
 | **Release types** | Which versions are posted: Alpha, Beta, Release |
 | **Loaders** | Only post versions for these loaders. Leave it empty to post all of them. |

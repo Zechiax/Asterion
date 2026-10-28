@@ -35,6 +35,7 @@ public interface INotificationScheduler
     /// </summary>
     /// <param name="candidateEntries">Entries of the project, with Guild.GuildSettings loaded</param>
     /// <param name="candidateFollows">Follows tracking the project, with Guild.GuildSettings loaded</param>
-    void EnqueueMilestone(DataContext db, Project project, long previousDownloads, long currentDownloads,
+    /// <returns>Number of rows added</returns>
+    int EnqueueMilestone(DataContext db, Project project, long previousDownloads, long currentDownloads,
         IEnumerable<ModrinthEntry> candidateEntries, IEnumerable<ModrinthFollow> candidateFollows);
 }

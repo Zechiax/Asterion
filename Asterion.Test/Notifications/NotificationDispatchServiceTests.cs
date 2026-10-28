@@ -168,4 +168,44 @@ public class NotificationDispatchServiceTests
 
         Assert.That(row!.Status, Is.EqualTo(NotificationStatus.DeadLettered));
     }
+
+    [Test]
+    public async Task MilestoneDeadLettersWhenMilestonesWereTurnedOff()
+    {
+        await using var provider = InMemoryDb.BuildServiceProvider();
+        // The seeded guild has milestones off, as if they were turned off after the row was enqueued
+        await SeedAsync(provider);
+
+        int id;
+        using (var seedScope = provider.CreateScope())
+        {
+            await using var seedDb = seedScope.ServiceProvider.GetRequiredService<DataContext>();
+            var row = new PendingNotification
+            {
+                ProjectId = ProjectId,
+                SerializedProject = JsonSerializer.Serialize(new Project
+                    { Id = ProjectId, Title = "Test Project", Team = "team-1" }),
+                Milestone = 1_000,
+                Kind = NotificationKind.DownloadMilestone,
+                GuildId = GuildId,
+                EntryId = EntryId,
+                Status = NotificationStatus.Pending,
+                CreatedAt = DateTime.UtcNow
+            };
+            seedDb.PendingNotifications.Add(row);
+            await seedDb.SaveChangesAsync();
+            id = row.Id;
+        }
+
+        var sender = new RecordingNotificationSender();
+        await BuildService(provider, sender).ProcessDueNotificationsAsync();
+
+        Assert.That(sender.Sent, Is.Empty);
+
+        using var scope = provider.CreateScope();
+        await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
+        var saved = await db.PendingNotifications.FindAsync(id);
+
+        Assert.That(saved!.Status, Is.EqualTo(NotificationStatus.DeadLettered));
+    }
 }

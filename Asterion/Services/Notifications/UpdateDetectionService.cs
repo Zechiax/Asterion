@@ -79,7 +79,7 @@ public class UpdateDetectionService : BackgroundService
         // A failed milestone check must not stop the update messages
         try
         {
-            await ProcessMilestonesAsync(projectList, ct);
+            await ProcessMilestonesAsync(projectsDto, projectList, ct);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -167,53 +167,60 @@ public class UpdateDetectionService : BackgroundService
     ///     The first check of a project only records its downloads, so nothing is sent for milestones reached
     ///     before the bot tracked it.
     /// </summary>
-    private async Task ProcessMilestonesAsync(IReadOnlyCollection<Project> projects, CancellationToken ct)
+    /// <param name="projectsDto">The projects read at the start of the pass, holding the last checked downloads</param>
+    private async Task ProcessMilestonesAsync(IEnumerable<ModrinthProject> projectsDto,
+        IReadOnlyCollection<Project> projects, CancellationToken ct)
     {
+        var checkedDownloads = projectsDto.ToDictionary(p => p.ProjectId, p => p.MilestoneCheckedDownloads);
+
+        // Only projects never checked or with more downloads are loaded and saved. Ignores decreases, so a
+        // milestone is not sent again after Modrinth removes downloads.
+        var changed = projects
+            .Where(p => checkedDownloads.TryGetValue(p.Id, out var previous) &&
+                        (previous is null || p.Downloads > previous))
+            .ToList();
+
+        if (changed.Count == 0)
+            return;
+
         using var scope = _services.CreateScope();
         await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
 
-        var dbProjects = await db.ModrinthProjects.ToDictionaryAsync(p => p.ProjectId, ct);
+        var changedIds = changed.Select(p => p.Id).ToList();
+        var dbProjects = await db.ModrinthProjects
+            .Where(p => changedIds.Contains(p.ProjectId))
+            .ToDictionaryAsync(p => p.ProjectId, ct);
         var enqueued = 0;
 
-        foreach (var project in projects)
+        foreach (var project in changed)
         {
+            // Removed since the pass started
             if (!dbProjects.TryGetValue(project.Id, out var dbProject))
                 continue;
 
-            var previous = dbProject.MilestoneCheckedDownloads;
+            var previous = checkedDownloads[project.Id];
             var current = (long)project.Downloads;
-
-            if (previous is null)
-            {
-                dbProject.MilestoneCheckedDownloads = current;
-                continue;
-            }
-
-            // Ignores decreases, so a milestone is not sent again after Modrinth removes downloads
-            if (current <= previous)
-                continue;
+            dbProject.MilestoneCheckedDownloads = current;
 
             // The standard ladder has every milestone of the other ladders, no guild can have one if it has none
-            if (DownloadMilestones.HighestCrossed(previous.Value, current, MilestoneLadder.Standard) is not null)
-            {
-                var entries = await db.ModrinthEntries
-                    .Include(e => e.Guild).ThenInclude(g => g.GuildSettings)
-                    .Where(e => e.ProjectId == project.Id)
-                    .ToListAsync(ct);
+            if (previous is null ||
+                DownloadMilestones.HighestCrossed(previous.Value, current, MilestoneLadder.Standard) is null)
+                continue;
 
-                var follows = await db.FollowProjects
-                    .Where(fp => fp.ProjectId == project.Id && !fp.Ignored)
-                    .Select(fp => fp.Follow)
-                    .Where(f => (f.Events & FollowEvents.DownloadMilestone) != 0)
-                    .Include(f => f.Guild).ThenInclude(g => g.GuildSettings)
-                    .ToListAsync(ct);
+            var entries = await db.ModrinthEntries
+                .Include(e => e.Guild).ThenInclude(g => g.GuildSettings)
+                .Where(e => e.ProjectId == project.Id)
+                .ToListAsync(ct);
 
-                var before = db.ChangeTracker.Entries<PendingNotification>().Count();
-                _notificationScheduler.EnqueueMilestone(db, project, previous.Value, current, entries, follows);
-                enqueued += db.ChangeTracker.Entries<PendingNotification>().Count() - before;
-            }
+            var follows = await db.FollowProjects
+                .Where(fp => fp.ProjectId == project.Id && !fp.Ignored)
+                .Select(fp => fp.Follow)
+                .Where(f => (f.Events & FollowEvents.DownloadMilestone) != 0)
+                .Include(f => f.Guild).ThenInclude(g => g.GuildSettings)
+                .ToListAsync(ct);
 
-            dbProject.MilestoneCheckedDownloads = current;
+            enqueued += _notificationScheduler.EnqueueMilestone(db, project, previous.Value, current, entries,
+                follows);
         }
 
         // Single atomic commit: the checked downloads and the milestone rows land together

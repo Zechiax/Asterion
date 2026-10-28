@@ -1,5 +1,5 @@
 ﻿using System.Globalization;
-using System.Reflection;
+using Asterion.Common;
 using Asterion.Configuration;
 using Figgle.Fonts;
 using Microsoft.Extensions.Configuration;
@@ -15,7 +15,7 @@ public class Program
         if (args.Length > 0 && args[0] == "migration") return;
 
         Console.WriteLine(FiggleFonts.Slant.Render("Asterion"));
-        Console.WriteLine($"v{GetVersion()}");
+        Console.WriteLine($"v{AppVersion.Display}");
 
         Thread.CurrentThread.CurrentUICulture = CultureInfo.GetCultureInfo("en-US");
 
@@ -69,14 +69,5 @@ public class Program
         {
             Log.CloseAndFlush();
         }
-    }
-    
-    private static string GetVersion()
-    {
-        var version = typeof(Program).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()
-            ?.InformationalVersion ?? "unknown";
-
-        var plus = version.IndexOf('+');
-        return plus >= 0 && version.Length > plus + 8 ? version[..(plus + 8)] : version;
     }
 }

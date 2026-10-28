@@ -427,6 +427,11 @@ public class DataService : IDataService
         }
     }
 
+    public async Task<bool> MilestonesEnabledAsync(ulong guildId)
+    {
+        return (await GetGuildByIdAsync(guildId))?.GuildSettings.MilestonesEnabled ?? false;
+    }
+
     public async Task<bool> SetReleaseFilterAsync(ulong entryId, ReleaseType releaseType)
     {
         using var scope = _services.CreateScope();

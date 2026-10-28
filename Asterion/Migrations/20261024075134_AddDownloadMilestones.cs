@@ -83,8 +83,8 @@ namespace Asterion.Migrations
                 nullable: false,
                 defaultValue: false);
 
-            // Existing follows get the milestone event, the server setting alone decides if they are sent
-            migrationBuilder.Sql("UPDATE \"ModrinthFollows\" SET \"Events\" = \"Events\" | 4;");
+            // Follows with every old event get the new one too, follows limited to some events stay limited
+            migrationBuilder.Sql("UPDATE \"ModrinthFollows\" SET \"Events\" = \"Events\" | 4 WHERE \"Events\" = 3;");
         }
 
         /// <inheritdoc />

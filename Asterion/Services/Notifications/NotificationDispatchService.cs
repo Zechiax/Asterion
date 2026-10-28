@@ -113,6 +113,13 @@ public class NotificationDispatchService : BackgroundService
             return;
         }
 
+        if (row.Kind == NotificationKind.DownloadMilestone && !delivery.MilestoneWanted)
+        {
+            _logger.LogInformation("Milestones were turned off for pending notification {Id}, not sending it", row.Id);
+            await _reader.MarkDeadLetteredAsync(row.Id, "Milestones turned off since the milestone was reached", ct);
+            return;
+        }
+
         Project project;
         Version? version;
         try
@@ -209,7 +216,8 @@ public class NotificationDispatchService : BackgroundService
             var pingRole = entry.CustomPingRole ?? entry.Guild.PingRole;
             return new DeliverySettings(settings, entry.CustomUpdateChannel, entry.CustomUpdateChannel,
                 entry.MilestoneChannel ?? settings.MilestoneChannel ?? entry.CustomUpdateChannel,
-                pingRole, pingRole, settings.MilestonePingRole, entry.WebhookUrl);
+                pingRole, pingRole, settings.MilestonePingRole, entry.WebhookUrl,
+                settings.MilestonesEnabled && entry.NotifyMilestones);
         }
 
         if (row.FollowId is { } followId)
@@ -224,12 +232,18 @@ public class NotificationDispatchService : BackgroundService
             var settings = follow.Guild.GuildSettings;
             var pingRole = follow.CustomPingRole ?? follow.Guild.PingRole;
             var newProjectPingRole = follow.NewProjectPingRole ?? pingRole;
-            var newProjectChannel = follow.NewProjectChannel ?? follow.CustomUpdateChannel;
+            // Only milestone rows need the ignore check, the query is skipped for the others
+            var milestoneWanted = settings.MilestonesEnabled
+                                  && follow.Events.HasFlag(FollowEvents.DownloadMilestone)
+                                  && (row.Kind != NotificationKind.DownloadMilestone
+                                      || await db.FollowProjects.AnyAsync(fp => fp.FollowId == followId &&
+                                          fp.ProjectId == row.ProjectId && !fp.Ignored, ct));
 
             // Follows have no webhook delivery (yet)
-            return new DeliverySettings(settings, follow.CustomUpdateChannel, newProjectChannel,
-                follow.MilestoneChannel ?? settings.MilestoneChannel ?? newProjectChannel,
-                pingRole, newProjectPingRole, settings.MilestonePingRole, null);
+            return new DeliverySettings(settings, follow.CustomUpdateChannel,
+                follow.NewProjectChannel ?? follow.CustomUpdateChannel,
+                follow.MilestoneChannel ?? settings.MilestoneChannel ?? follow.CustomUpdateChannel,
+                pingRole, newProjectPingRole, settings.MilestonePingRole, null, milestoneWanted);
         }
 
         return null;
@@ -239,6 +253,9 @@ public class NotificationDispatchService : BackgroundService
     /// <param name="MilestoneChannelId">
     ///     The entry's or follow's override, then the server's milestone channel, then its announcement channel
     /// </param>
+    /// <param name="MilestoneWanted">
+    ///     If a milestone row should still be sent, rechecked because the settings may have changed while the row waited
+    /// </param>
     private sealed record DeliverySettings(
         GuildSettings GuildSettings,
         ulong? ChannelId,
@@ -247,7 +264,8 @@ public class NotificationDispatchService : BackgroundService
         ulong? PingRoleId,
         ulong? NewProjectPingRoleId,
         ulong? MilestonePingRoleId,
-        string? WebhookUrl);
+        string? WebhookUrl,
+        bool MilestoneWanted);
 
     private async Task HandleFailureAsync(PendingNotification row, Exception ex, CancellationToken ct)
     {

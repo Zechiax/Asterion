@@ -27,7 +27,7 @@ public class SettingsPanelBuilderTests
             TargetType = FollowTargetType.User,
             TargetId = "user-id",
             TargetName = "Zechiax",
-            Events = FollowEvents.ProjectUpdate | FollowEvents.NewProject,
+            Events = FollowEvents.All,
             CustomUpdateChannel = 555,
             CustomPingRole = 666,
             LoaderFilter = ["fabric"],
@@ -104,10 +104,7 @@ public class SettingsPanelBuilderTests
     public async Task SubscriptionPanelStaysWithinDiscordLimits()
     {
         var dataService = Substitute.For<IDataService>();
-        dataService.GetGuildByIdAsync(1).Returns(new Guild
-        {
-            GuildId = 1, GuildSettings = new GuildSettings { MilestonesEnabled = true }
-        });
+        dataService.MilestonesEnabledAsync(1).Returns(true);
         var panel = await EntryInteractionModule.BuildSettingsPanelAsync(MakeEntry(), 42, 2, dataService,
             MakeClient("fabric", "quilt"), Loc, null);
         var all = ComponentTree.Flatten(panel);

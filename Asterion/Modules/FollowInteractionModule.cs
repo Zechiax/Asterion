@@ -44,7 +44,7 @@ public class FollowInteractionModule(
     {
         var loaders = await GetLoaderOptionsAsync(followService, follow);
         var backButton = ManageInteractionModule.BackButton(ownerId, ManageTab.Creators, listPage, loc, culture);
-        var serverMilestones = await EntryInteractionModule.MilestonesEnabledAsync(dataService, follow.GuildId);
+        var serverMilestones = await dataService.MilestonesEnabledAsync(follow.GuildId);
 
         return FollowComponentBuilder.GetSettingsPanel(follow, loaders, ownerId, listPage, backButton, loc, culture,
             notice, serverMilestones);

@@ -101,12 +101,13 @@ public class NotificationSchedulerTests
 
         var project = new Project { Id = "project", Title = "Test Project", Team = "team-1", Downloads = 10_500 };
 
-        new NotificationScheduler().EnqueueMilestone(db, project, 9_000, 10_500,
+        var added = new NotificationScheduler().EnqueueMilestone(db, project, 9_000, 10_500,
             [Entry(1, standard), Entry(3, disabled), Entry(4, optedOut, notify: false)],
             [Follow(1, standard), Follow(2, round), Follow(4, optedOut), Follow(5, major)]);
         await db.SaveChangesAsync();
 
         var rows = await db.PendingNotifications.OrderBy(r => r.GuildId).ToListAsync();
+        Assert.That(added, Is.EqualTo(rows.Count));
 
         // The entry wins in its guild, an opted out entry blocks its guild's follow, Major has no 10k milestone
         Assert.That(rows.Select(r => (r.GuildId, r.EntryId, r.FollowId, r.Milestone)), Is.EqualTo(new[]

@@ -51,7 +51,7 @@ public class NotificationScheduler : INotificationScheduler
         db.PendingNotifications.Add(snapshot.CreateRow(follow.GuildId, NotificationKind.NewProject, followId: follow.Id));
     }
 
-    public void EnqueueMilestone(DataContext db, Project project, long previousDownloads, long currentDownloads,
+    public int EnqueueMilestone(DataContext db, Project project, long previousDownloads, long currentDownloads,
         IEnumerable<ModrinthEntry> candidateEntries, IEnumerable<ModrinthFollow> candidateFollows)
     {
         var snapshot = new Snapshot(project, null);
@@ -87,6 +87,9 @@ public class NotificationScheduler : INotificationScheduler
 
             TryAdd(follow.GuildId, follow.Guild.GuildSettings, followId: follow.Id);
         }
+
+        // One row per notified guild
+        return notifiedGuilds.Count;
     }
 
     /// <summary>

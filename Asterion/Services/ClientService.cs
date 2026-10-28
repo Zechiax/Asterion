@@ -1,5 +1,6 @@
-﻿using Asterion.Interfaces;
+﻿using Asterion.Database;
 using Discord.WebSocket;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Asterion.Services;
@@ -7,12 +8,12 @@ namespace Asterion.Services;
 public class ClientService
 {
     private readonly DiscordSocketClient _client;
-    private readonly IDataService _data;
+    private readonly IServiceProvider _services;
 
     public ClientService(IServiceProvider serviceProvider)
     {
         _client = serviceProvider.GetRequiredService<DiscordSocketClient>();
-        _data = serviceProvider.GetRequiredService<IDataService>();
+        _services = serviceProvider;
     }
 
     public void Initialize()
@@ -22,7 +23,10 @@ public class ClientService
 
     public async Task SetGameAsync()
     {
-        var count = (await _data.GetAllModrinthProjectsAsync()).Count;
+        using var scope = _services.CreateScope();
+        await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
+
+        var count = await db.ModrinthProjects.CountAsync();
 
         await _client.SetGameAsync(
             $"Monitoring {count} project{(count == 1 ? null : 's')} for updates in {_client.Guilds.Count} servers");

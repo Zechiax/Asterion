@@ -1,9 +1,8 @@
 ﻿using Asterion.Database;
 using Asterion.Database.Models;
-using Asterion.Services;
+using Asterion.Services.Subscriptions;
 using Asterion.Test.Fakes;
 using Asterion.Test.Notifications;
-using Discord.WebSocket;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -58,14 +57,13 @@ public class FollowCleanupTests
         source.SetProjects(MakeProject("a", LongAgo));
         var followService = BuildService(provider, source);
 
-        using var discordClient = new DiscordSocketClient();
-        var dataService = new DataService(provider, NullLogger<DataService>.Instance, discordClient);
+        var subscriptionService = new SubscriptionService(provider, NullLogger<SubscriptionService>.Instance);
 
-        await dataService.AddModrinthProjectToGuildAsync(GuildId, "a", "a-v1", LongAgo, 555, "Project a");
+        await subscriptionService.AddSubscriptionAsync(GuildId, "a", "a-v1", LongAgo, 555, "Project a");
         await followService.AddFollowAsync(GuildId, FollowTargetType.User, UserId, "user", null,
             FollowEvents.ProjectUpdate);
 
-        Assert.That(await dataService.RemoveModrinthProjectFromGuildAsync(GuildId, "a"), Is.True);
+        Assert.That(await subscriptionService.RemoveSubscriptionAsync(GuildId, "a"), Is.Not.Null);
 
         await using var db = OpenDb(provider);
         using (Assert.EnterMultipleScope())
@@ -84,10 +82,9 @@ public class FollowCleanupTests
         source.SetProjects(MakeProject("a", LongAgo));
         var followService = BuildService(provider, source);
 
-        using var discordClient = new DiscordSocketClient();
-        var dataService = new DataService(provider, NullLogger<DataService>.Instance, discordClient);
+        var subscriptionService = new SubscriptionService(provider, NullLogger<SubscriptionService>.Instance);
 
-        await dataService.AddModrinthProjectToGuildAsync(GuildId, "a", "a-v1", LongAgo, 555, "Project a");
+        await subscriptionService.AddSubscriptionAsync(GuildId, "a", "a-v1", LongAgo, 555, "Project a");
         var add = await followService.AddFollowAsync(GuildId, FollowTargetType.User, UserId, "user", null,
             FollowEvents.ProjectUpdate);
 
@@ -137,15 +134,14 @@ public class FollowCleanupTests
         source.SetProjects(MakeProject("a", LongAgo));
         var followService = BuildService(provider, source);
 
-        using var discordClient = new DiscordSocketClient();
-        var dataService = new DataService(provider, NullLogger<DataService>.Instance, discordClient);
+        var subscriptionService = new SubscriptionService(provider, NullLogger<SubscriptionService>.Instance);
 
-        await dataService.AddModrinthProjectToGuildAsync(GuildId, "a", "a-v1", LongAgo, 555, "Project a");
-        await dataService.AddModrinthProjectToGuildAsync(GuildId, "b", "b-v1", LongAgo, 555, "Project b");
+        await subscriptionService.AddSubscriptionAsync(GuildId, "a", "a-v1", LongAgo, 555, "Project a");
+        await subscriptionService.AddSubscriptionAsync(GuildId, "b", "b-v1", LongAgo, 555, "Project b");
         await followService.AddFollowAsync(GuildId, FollowTargetType.User, UserId, "user", null,
             FollowEvents.ProjectUpdate);
 
-        Assert.That(await dataService.RemoveAllModrinthProjectsFromGuildAsync(GuildId), Is.EqualTo(2));
+        Assert.That(await subscriptionService.RemoveAllSubscriptionsAsync(GuildId), Is.EqualTo(2));
 
         await using var db = OpenDb(provider);
         using (Assert.EnterMultipleScope())

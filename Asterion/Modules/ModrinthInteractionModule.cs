@@ -16,14 +16,16 @@ namespace Asterion.Modules;
 [RequireContext(ContextType.Guild)]
 public class ModrinthInteractionModule : AsterionInteractionModuleBase
 {
-    private readonly IDataService _dataService;
+    private readonly IGuildService _guildService;
+    private readonly ISubscriptionService _subscriptionService;
     private readonly IFollowService _followService;
     private readonly ModrinthService _modrinthService;
 
     public ModrinthInteractionModule(IServiceProvider serviceProvider, ILocalizationService localizationService, IGuildCultureProvider cultureProvider) :
         base(localizationService, cultureProvider)
     {
-        _dataService = serviceProvider.GetRequiredService<IDataService>();
+        _guildService = serviceProvider.GetRequiredService<IGuildService>();
+        _subscriptionService = serviceProvider.GetRequiredService<ISubscriptionService>();
         _followService = serviceProvider.GetRequiredService<IFollowService>();
         _modrinthService = serviceProvider.GetRequiredService<ModrinthService>();
     }
@@ -53,7 +55,7 @@ public class ModrinthInteractionModule : AsterionInteractionModuleBase
 
         var guildId = Context.Guild.Id;
         var channel = Context.Guild.GetTextChannel(Context.Channel.Id);
-        var guild = await _dataService.GetGuildByIdAsync(guildId);
+        var guild = await _guildService.GetGuildAsync(guildId);
 
         if (channel is null)
         {
@@ -67,7 +69,7 @@ public class ModrinthInteractionModule : AsterionInteractionModuleBase
             return;
         }
 
-        var result = await Subscriptions.SubscribeAsync(_modrinthService, _dataService, guildId, projectId, channel.Id);
+        var result = await Subscriptions.SubscribeAsync(_modrinthService, _subscriptionService, guildId, projectId, channel.Id);
 
         if (result.Status is SubscribeStatus.ProjectNotFound)
         {
@@ -112,7 +114,7 @@ public class ModrinthInteractionModule : AsterionInteractionModuleBase
         var guildId = Context.Guild.Id;
 
         var project = await _modrinthService.GetProject(projectId);
-        var guild = await _dataService.GetGuildByIdAsync(guildId);
+        var guild = await _guildService.GetGuildAsync(guildId);
 
         if (guild is null)
         {
@@ -127,7 +129,7 @@ public class ModrinthInteractionModule : AsterionInteractionModuleBase
             return;
         }
         
-        var subscribed = await _dataService.IsGuildSubscribedToProjectAsync(guildId, project.Id);        
+        var subscribed = await _subscriptionService.IsSubscribedAsync(guildId, project.Id);        
 
         var team = await _modrinthService.GetProjectsTeamMembersAsync(project.Id);
 
@@ -142,7 +144,7 @@ public class ModrinthInteractionModule : AsterionInteractionModuleBase
             return;
         }
 
-        await _dataService.RemoveModrinthProjectFromGuildAsync(guildId, projectId);
+        await _subscriptionService.RemoveSubscriptionAsync(guildId, projectId);
 
         await ModifyOriginalResponseAsync(x =>
         {
@@ -217,7 +219,7 @@ public class ModrinthInteractionModule : AsterionInteractionModuleBase
         //await DeferAsync();
 
         var searchResult = await _modrinthService.FindProject(projectId);
-        var guild = await _dataService.GetGuildByIdAsync(Context.Guild.Id);
+        var guild = await _guildService.GetGuildAsync(Context.Guild.Id);
 
         if (guild is null)
         {
@@ -236,7 +238,7 @@ public class ModrinthInteractionModule : AsterionInteractionModuleBase
 
         var team = await _modrinthService.GetProjectsTeamMembersAsync(project.Id);
 
-        var subscribedToProject = await _dataService.IsGuildSubscribedToProjectAsync(Context.Guild.Id, project.Id);
+        var subscribedToProject = await _subscriptionService.IsSubscribedAsync(Context.Guild.Id, project.Id);
         await ModifyOriginalResponseAsync(x =>
         {
             x.Embed = ModrinthEmbedBuilder.GetProjectEmbed(searchResult, team).Build();

@@ -34,13 +34,13 @@ public static partial class Subscriptions
     ///     Subscribes the guild to the project, updates are sent to the channel
     /// </summary>
     public static async Task<SubscribeResult> SubscribeAsync(ModrinthService modrinthService,
-        IDataService dataService, ulong guildId, string slugOrId, ulong channelId)
+        ISubscriptionService subscriptionService, ulong guildId, string slugOrId, ulong channelId)
     {
         var project = await modrinthService.GetProject(slugOrId);
         if (project is null)
             return new SubscribeResult(SubscribeStatus.ProjectNotFound);
 
-        if (await dataService.IsGuildSubscribedToProjectAsync(guildId, project.Id))
+        if (await subscriptionService.IsSubscribedAsync(guildId, project.Id))
             return new SubscribeResult(SubscribeStatus.AlreadySubscribed, project);
 
         var lastVersion = (await modrinthService.GetVersionListAsync(project.Id))?
@@ -49,7 +49,7 @@ public static partial class Subscriptions
         if (lastVersion is null)
             return new SubscribeResult(SubscribeStatus.Failed, project);
 
-        var added = await dataService.AddModrinthProjectToGuildAsync(guildId, project.Id, lastVersion.Id,
+        var added = await subscriptionService.AddSubscriptionAsync(guildId, project.Id, lastVersion.Id,
             project.Updated, channelId, project.Title);
 
         return new SubscribeResult(added ? SubscribeStatus.Subscribed : SubscribeStatus.Failed, project);
@@ -79,10 +79,10 @@ public static partial class Subscriptions
     /// </summary>
     /// <param name="input">Slug, ID or link, see <see cref="ParseProjectInput" /></param>
     public static async Task<LookupResult<ModrinthEntry>> FindSubscriptionAsync(ModrinthService modrinthService,
-        IDataService dataService, ulong guildId, string input)
+        ISubscriptionService subscriptionService, ulong guildId, string input)
     {
-        var entries = await dataService.GetAllGuildsSubscribedProjectsAsync(guildId);
-        if (entries is null || entries.Count == 0)
+        var entries = await subscriptionService.GetSubscriptionsAsync(guildId);
+        if (entries.Count == 0)
             return new LookupResult<ModrinthEntry>(null);
 
         var query = ParseProjectInput(input);

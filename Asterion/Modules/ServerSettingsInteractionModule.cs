@@ -19,7 +19,8 @@ namespace Asterion.Modules;
 public class ServerSettingsInteractionModule(
     ILocalizationService localizationService,
     IGuildCultureProvider cultureProvider,
-    IDataService dataService,
+    IGuildService guildService,
+    ISubscriptionService subscriptionService,
     IFollowService followService)
     : AsterionInteractionModuleBase(localizationService, cultureProvider)
 {
@@ -123,7 +124,7 @@ public class ServerSettingsInteractionModule(
     [ComponentInteraction(ServerSettingsPanelBuilder.ChangelogLengthButtonId + ":*")]
     public async Task HandleChangelogLengthAsync(ulong ownerId)
     {
-        var guild = await dataService.GetGuildByIdAsync(Context.Guild.Id);
+        var guild = await guildService.GetGuildAsync(Context.Guild.Id);
         if (guild is null)
         {
             await SendStatusAsync(Errors.Internal);
@@ -159,7 +160,7 @@ public class ServerSettingsInteractionModule(
     {
         await DeferAsync();
 
-        var guild = await dataService.GetGuildByIdAsync(Context.Guild.Id);
+        var guild = await guildService.GetGuildAsync(Context.Guild.Id);
         if (guild is null)
         {
             await SendStatusAsync(Errors.Internal);
@@ -173,7 +174,7 @@ public class ServerSettingsInteractionModule(
     [ComponentInteraction(ServerSettingsPanelBuilder.UnsubscribeAllButtonId + ":*")]
     public async Task HandleUnsubscribeAllAsync(ulong ownerId)
     {
-        var count = (await dataService.GetAllGuildsSubscribedProjectsAsync(Context.Guild.Id))?.Count ?? 0;
+        var count = (await subscriptionService.GetSubscriptionsAsync(Context.Guild.Id)).Count;
 
         await RespondWithModalAsync(ServerSettingsPanelBuilder.BuildDangerModal(
             ServerSettingsPanelBuilder.UnsubscribeAllModalId, "server-unsubscribe-all", count, LocalizationService,
@@ -188,7 +189,7 @@ public class ServerSettingsInteractionModule(
 
         await DeferAsync();
 
-        var count = await dataService.RemoveAllModrinthProjectsFromGuildAsync(Context.Guild.Id);
+        var count = await subscriptionService.RemoveAllSubscriptionsAsync(Context.Guild.Id);
 
         // Only the owner of the panel could open the modal
         await ShowPanelAsync(Context.User.Id, ManageTab.General, Loc("server-unsubscribed-all", new { count }));
@@ -243,16 +244,7 @@ public class ServerSettingsInteractionModule(
     {
         await DeferAsync();
 
-        var guild = await dataService.GetGuildByIdAsync(Context.Guild.Id);
-        if (guild is null)
-        {
-            await SendStatusAsync(Errors.Internal);
-            return;
-        }
-
-        update(guild);
-
-        if (!await dataService.UpdateGuildAsync(guild))
+        if (await guildService.UpdateGuildAsync(Context.Guild.Id, update) is null)
         {
             await SendStatusAsync(Errors.Internal);
             return;
@@ -266,8 +258,8 @@ public class ServerSettingsInteractionModule(
 
     private async Task ShowPanelAsync(ulong ownerId, ManageTab tab, string? notice = null)
     {
-        var components = await ManageInteractionModule.BuildPanelAsync(dataService, followService, Context.Guild.Id,
-            ownerId, tab, 0, true, LocalizationService, CommandCultureInfo, notice);
+        var components = await ManageInteractionModule.BuildPanelAsync(subscriptionService, guildService,
+            followService, Context.Guild.Id, ownerId, tab, 0, true, LocalizationService, CommandCultureInfo, notice);
 
         await ModifyOriginalResponseAsync(msg => msg.Components = components);
     }

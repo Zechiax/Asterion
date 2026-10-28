@@ -23,14 +23,13 @@ public class UpdateDetectionService : BackgroundService
 
     private readonly TimeSpan _checkInterval;
     private readonly IModrinthClient _client;
-    private readonly IDataService _dataService;
     private readonly ILogger<UpdateDetectionService> _logger;
     private readonly INotificationScheduler _notificationScheduler;
     private readonly INotificationSignal _notificationSignal;
     private readonly ProjectStatisticsManager _projectStatisticsManager;
     private readonly IServiceProvider _services;
 
-    public UpdateDetectionService(IServiceProvider services, IModrinthClient client, IDataService dataService,
+    public UpdateDetectionService(IServiceProvider services, IModrinthClient client,
         ProjectStatisticsManager projectStatisticsManager, INotificationScheduler notificationScheduler,
         INotificationSignal notificationSignal, IConfiguration config, ILogger<UpdateDetectionService> logger)
     {
@@ -38,7 +37,6 @@ public class UpdateDetectionService : BackgroundService
             ConfigKeys.DefaultUpdateCheckIntervalMinutes));
         _services = services;
         _client = client;
-        _dataService = dataService;
         _projectStatisticsManager = projectStatisticsManager;
         _notificationScheduler = notificationScheduler;
         _notificationSignal = notificationSignal;
@@ -72,7 +70,7 @@ public class UpdateDetectionService : BackgroundService
     {
         _logger.LogInformation("Update detection pass started");
 
-        var projectsDto = await _dataService.GetAllModrinthProjectsAsync();
+        var projectsDto = await GetStoredProjectsAsync(ct);
         _logger.LogDebug("Found {Count} projects", projectsDto.Count);
 
         var projects = await _client.Project.GetMultipleAsync(projectsDto.Select(p => p.ProjectId), ct);
@@ -117,6 +115,14 @@ public class UpdateDetectionService : BackgroundService
 
             await ProcessProjectUpdateAsync(project, projectVersions, ct);
         }
+    }
+
+    private async Task<IList<ModrinthProject>> GetStoredProjectsAsync(CancellationToken ct)
+    {
+        using var scope = _services.CreateScope();
+        await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
+
+        return await db.ModrinthProjects.AsNoTracking().ToListAsync(ct);
     }
 
     private async Task ProcessProjectUpdateAsync(Project project, IList<Version> versions, CancellationToken ct)

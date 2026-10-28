@@ -103,9 +103,9 @@ public class SettingsPanelBuilderTests
     [Test]
     public async Task SubscriptionPanelStaysWithinDiscordLimits()
     {
-        var dataService = Substitute.For<IDataService>();
-        dataService.MilestonesEnabledAsync(1).Returns(true);
-        var panel = await EntryInteractionModule.BuildSettingsPanelAsync(MakeEntry(), 42, 2, dataService,
+        var guildService = Substitute.For<IGuildService>();
+        guildService.MilestonesEnabledAsync(1).Returns(true);
+        var panel = await EntryInteractionModule.BuildSettingsPanelAsync(MakeEntry(), 42, 2, guildService,
             MakeClient("fabric", "quilt"), Loc, null);
         var all = ComponentTree.Flatten(panel);
 
@@ -131,11 +131,11 @@ public class SettingsPanelBuilderTests
         var client = Substitute.For<IModrinthClient>();
         client.Project.GetAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .ThrowsAsync(new HttpRequestException("down"));
-        var dataService = Substitute.For<IDataService>();
-        dataService.GetModrinthProjectByIdAsync("AANobbMI")
-            .Returns(new ModrinthProject { ProjectId = "AANobbMI", Title = "Sodium", LastCheckVersion = "v" });
+        var entry = MakeEntry();
+        entry.Project = new ModrinthProject { ProjectId = "AANobbMI", Title = "Sodium", LastCheckVersion = "v" };
 
-        var panel = await EntryInteractionModule.BuildSettingsPanelAsync(MakeEntry(), 42, 2, dataService, client, Loc, null);
+        var panel = await EntryInteractionModule.BuildSettingsPanelAsync(entry, 42, 2,
+            Substitute.For<IGuildService>(), client, Loc, null);
 
         // Discord rejects a select menu without options
         Assert.That(Menus(panel).Select(m => m.CustomId), Does.Not.Contain("loader_filter:42:AANobbMI:2"));

@@ -17,13 +17,9 @@ public class SubscribedIdAutocompletionHandler : AutocompleteHandler
         if (permission is not null)
             return permission.Value;
 
-        var data = services.GetRequiredService<IDataService>();
+        var subscriptionService = services.GetRequiredService<ISubscriptionService>();
         var userInput = autocompleteInteraction.Data.Current.Value.ToString();
-        var projects = await data.GetAllGuildsSubscribedProjectsAsync(context.Guild.Id);
-
-        if (projects is null)
-            // If we return error, the user can't unsubscribe any project, this will display no results for the user
-            return AutocompletionResult.FromSuccess();
+        var projects = await subscriptionService.GetSubscriptionsAsync(context.Guild.Id);
 
         var results = projects.Select(project =>
                 new AutocompleteResult(

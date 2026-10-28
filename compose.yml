@@ -11,5 +11,6 @@ services:
       ASTERION_TOKEN: ${ASTERION_TOKEN:?Set ASTERION_TOKEN in .env}
       # Optional; an empty variable would override the value in config.toml, so it's off by default
       # ASTERION_TOP_GG_TOKEN: ${ASTERION_TOP_GG_TOKEN}
+      # ASTERION_UPDATE_CHECK_INTERVAL_MINUTES: ${ASTERION_UPDATE_CHECK_INTERVAL_MINUTES}
     volumes:
       - ./data:/data

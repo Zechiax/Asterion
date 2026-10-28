@@ -15,4 +15,7 @@ public static class ConfigKeys
     public const string TestGuild = "test_guild";
     public const string TestChannel = "test_channel";
     public const string TopGgToken = "top_gg_token";
+    public const string UpdateCheckIntervalMinutes = "update_check_interval_minutes";
+
+    public const int DefaultUpdateCheckIntervalMinutes = 5;
 }

@@ -71,6 +71,9 @@ public static class ConfigBootstrapper
 
         # top.gg API token for publishing server stats. Optional, leave empty to disable.
         {ConfigKeys.TopGgToken} = {Quote(topGgToken)}
+
+        # How often to check Modrinth for project updates, in minutes. Optional.
+        {ConfigKeys.UpdateCheckIntervalMinutes} = {ConfigKeys.DefaultUpdateCheckIntervalMinutes}
         """;
 
     // JSON string escaping is also valid for TOML basic strings

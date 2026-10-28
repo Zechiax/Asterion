@@ -10,13 +10,16 @@ namespace Asterion.Modules;
 
 public class ModrinthTextModule : ModuleBase<SocketCommandContext>
 {
-    private readonly IDataService _data;
+    private readonly IGuildService _guildService;
     private readonly ModrinthService _modrinth;
+    private readonly ISubscriptionService _subscriptionService;
 
-    public ModrinthTextModule(ModrinthService modrinth, IDataService data)
+    public ModrinthTextModule(ModrinthService modrinth, IGuildService guildService,
+        ISubscriptionService subscriptionService)
     {
         _modrinth = modrinth;
-        _data = data;
+        _guildService = guildService;
+        _subscriptionService = subscriptionService;
     }
 
     [RequireBotPermission(ChannelPermission.SendMessages)]
@@ -32,7 +35,7 @@ public class ModrinthTextModule : ModuleBase<SocketCommandContext>
         var embed = ModrinthEmbedBuilder.GetProjectEmbed(searchResult, team);
         var components = new ComponentBuilder();
 
-        var guild = await _data.GetGuildByIdAsync(Context.Guild.Id);
+        var guild = await _guildService.GetGuildAsync(Context.Guild.Id);
 
         if (guild is null)
             // Won't do anything
@@ -41,7 +44,7 @@ public class ModrinthTextModule : ModuleBase<SocketCommandContext>
         if ((bool) guild.GuildSettings.ShowSubscribeButton!)
         {
             var guildSubscribed =
-                await _data.IsGuildSubscribedToProjectAsync(Context.Guild.Id, searchResult.Payload.Project.Id);
+                await _subscriptionService.IsSubscribedAsync(Context.Guild.Id, searchResult.Payload.Project.Id);
             components.WithButton(ModrinthComponentBuilder.GetSubscribeButtons(Context.User.Id,
                 searchResult.Payload.Project.Id,
                 !guildSubscribed));

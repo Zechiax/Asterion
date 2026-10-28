@@ -24,7 +24,7 @@ public class MilestoneDebugModule(
     ILocalizationService localizationService,
     IGuildCultureProvider cultureProvider,
     IServiceProvider services,
-    IDataService dataService,
+    IGuildService guildService,
     IModrinthClient modrinthClient,
     UpdateDetectionService updateDetectionService)
     : AsterionInteractionModuleBase(localizationService, cultureProvider)
@@ -50,7 +50,7 @@ public class MilestoneDebugModule(
             return;
         }
 
-        var settings = (await dataService.GetGuildByIdAsync(Context.Guild.Id))?.GuildSettings;
+        var settings = (await guildService.GetGuildAsync(Context.Guild.Id))?.GuildSettings;
         var ladder = settings?.MilestoneLadder ?? MilestoneLadder.Standard;
         var milestone = DownloadMilestones.HighestCrossed(0, project.Downloads, ladder);
         if (milestone is null)

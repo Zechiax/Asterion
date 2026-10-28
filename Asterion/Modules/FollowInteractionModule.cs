@@ -23,7 +23,8 @@ public class FollowInteractionModule(
     ILocalizationService localizationService,
     IGuildCultureProvider cultureProvider,
     IFollowService followService,
-    IDataService dataService)
+    IGuildService guildService,
+    ISubscriptionService subscriptionService)
     : AsterionInteractionModuleBase(localizationService, cultureProvider)
 {
     public static Task<IReadOnlyList<string>> GetLoaderOptionsAsync(IFollowService followService,
@@ -39,12 +40,12 @@ public class FollowInteractionModule(
     /// <param name="ownerId">The only user who can use the panel</param>
     /// <param name="notice">Short note under the title, e.g. "Following X"</param>
     public static async Task<MessageComponent> BuildSettingsPanelAsync(IFollowService followService,
-        IDataService dataService, ModrinthFollow follow, ulong ownerId, int listPage, ILocalizationService loc,
+        IGuildService guildService, ModrinthFollow follow, ulong ownerId, int listPage, ILocalizationService loc,
         CultureInfo? culture, string? notice = null)
     {
         var loaders = await GetLoaderOptionsAsync(followService, follow);
         var backButton = ManageInteractionModule.BackButton(ownerId, ManageTab.Creators, listPage, loc, culture);
-        var serverMilestones = await dataService.MilestonesEnabledAsync(follow.GuildId);
+        var serverMilestones = await guildService.MilestonesEnabledAsync(follow.GuildId);
 
         return FollowComponentBuilder.GetSettingsPanel(follow, loaders, ownerId, listPage, backButton, loc, culture,
             notice, serverMilestones);
@@ -306,7 +307,7 @@ public class FollowInteractionModule(
 
     private async Task ShowPanelAsync(ModrinthFollow follow, ulong ownerId, int listPage)
     {
-        var panel = await BuildSettingsPanelAsync(followService, dataService, follow, ownerId, listPage,
+        var panel = await BuildSettingsPanelAsync(followService, guildService, follow, ownerId, listPage,
             LocalizationService, CommandCultureInfo);
         await ModifyOriginalResponseAsync(msg => msg.Components = panel);
     }
@@ -316,8 +317,9 @@ public class FollowInteractionModule(
     /// </summary>
     private async Task ShowResultAsync(ulong ownerId, int listPage, string text)
     {
-        var components = await ManageInteractionModule.BuildPanelAsync(dataService, followService, Context.Guild.Id,
-            ownerId, ManageTab.Creators, listPage, CanManageServerHere, LocalizationService, CommandCultureInfo, text);
+        var components = await ManageInteractionModule.BuildPanelAsync(subscriptionService, guildService,
+            followService, Context.Guild.Id, ownerId, ManageTab.Creators, listPage, CanManageServerHere,
+            LocalizationService, CommandCultureInfo, text);
 
         await ModifyOriginalResponseAsync(msg => msg.Components = components);
     }

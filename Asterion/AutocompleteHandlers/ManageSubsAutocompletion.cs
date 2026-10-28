@@ -20,7 +20,7 @@ internal static class ManageSubsAutocompletion
         if (guildUser.GuildPermissions.Administrator)
             return null;
 
-        var manageRoleId = await services.GetRequiredService<IDataService>().GetManageRoleIdAsync(context.Guild.Id);
+        var manageRoleId = await services.GetRequiredService<IGuildService>().GetManageRoleIdAsync(context.Guild.Id);
         if (manageRoleId.HasValue && guildUser.RoleIds.Contains(manageRoleId.Value))
             return null;
 

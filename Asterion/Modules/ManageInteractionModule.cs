@@ -35,7 +35,8 @@ public enum ManageTab
 public class ManageInteractionModule(
     ILocalizationService localizationService,
     IGuildCultureProvider cultureProvider,
-    IDataService dataService,
+    IGuildService guildService,
+    ISubscriptionService subscriptionService,
     IFollowService followService,
     IModrinthClient modrinthClient,
     ModrinthService modrinthService)
@@ -76,11 +77,11 @@ public class ManageInteractionModule(
     /// <param name="ownerId">The only user who can use the panel's buttons</param>
     /// <param name="canManageServer">If the owner may open the server tabs (is an administrator)</param>
     /// <param name="notice">Short note under the header, e.g. "Stopped following X"</param>
-    public static async Task<MessageComponent> BuildPanelAsync(IDataService dataService,
-        IFollowService followService, ulong guildId, ulong ownerId, ManageTab? tab, int page, bool canManageServer,
-        ILocalizationService loc, CultureInfo? culture, string? notice = null)
+    public static async Task<MessageComponent> BuildPanelAsync(ISubscriptionService subscriptionService,
+        IGuildService guildService, IFollowService followService, ulong guildId, ulong ownerId, ManageTab? tab,
+        int page, bool canManageServer, ILocalizationService loc, CultureInfo? culture, string? notice = null)
     {
-        var entries = ((await dataService.GetAllGuildsSubscribedProjectsAsync(guildId)) ?? [])
+        var entries = (await subscriptionService.GetSubscriptionsAsync(guildId))
             .OrderBy(e => e.Project.Title ?? e.ProjectId, StringComparer.OrdinalIgnoreCase)
             .ThenBy(e => e.ProjectId)
             .ToList();
@@ -110,7 +111,7 @@ public class ManageInteractionModule(
         {
             case ManageTab.General or ManageTab.Notifications:
             {
-                var guild = await dataService.GetGuildByIdAsync(guildId);
+                var guild = await guildService.GetGuildAsync(guildId);
                 if (guild is null)
                     return SettingsPanelBuilder.BuildMessage(loc.Get("error-internal", culture),
                         ServerSettingsPanelBuilder.Accent);
@@ -157,8 +158,8 @@ public class ManageInteractionModule(
     {
         await DeferAsync(true);
 
-        var components = await BuildPanelAsync(dataService, followService, Context.Guild.Id, Context.User.Id, null,
-            0, CanManageServerHere, LocalizationService, CommandCultureInfo);
+        var components = await BuildPanelAsync(subscriptionService, guildService, followService, Context.Guild.Id,
+            Context.User.Id, null, 0, CanManageServerHere, LocalizationService, CommandCultureInfo);
 
         await FollowupAsync(components: components, ephemeral: true,
             flags: MessageFlags.ComponentsV2 | MessageFlags.Ephemeral);
@@ -231,7 +232,7 @@ public class ManageInteractionModule(
             return;
         }
 
-        var result = await Subscriptions.SubscribeAsync(modrinthService, dataService, Context.Guild.Id, query,
+        var result = await Subscriptions.SubscribeAsync(modrinthService, subscriptionService, Context.Guild.Id, query,
             channelId.Value);
 
         var notice = result.Status switch
@@ -249,14 +250,14 @@ public class ManageInteractionModule(
         // Open the project's settings, so the new subscription can be set up right away
         var entry = result.Project is null
             ? null
-            : await dataService.GetModrinthEntryAsync(Context.Guild.Id, result.Project.Id);
+            : await subscriptionService.GetSubscriptionAsync(Context.Guild.Id, result.Project.Id);
         if (entry is null)
         {
             await ShowPanelAsync(Context.User.Id, ManageTab.Projects, 0, notice);
             return;
         }
 
-        var panel = await EntryInteractionModule.BuildSettingsPanelAsync(entry, Context.User.Id, 0, dataService,
+        var panel = await EntryInteractionModule.BuildSettingsPanelAsync(entry, Context.User.Id, 0, guildService,
             modrinthClient, LocalizationService, CommandCultureInfo, notice);
         await ModifyOriginalResponseAsync(msg => msg.Components = panel);
     }
@@ -317,15 +318,15 @@ public class ManageInteractionModule(
         }
 
         var follow = await followService.GetFollowAsync(Context.Guild.Id, result.Follow.Id) ?? result.Follow;
-        var panel = await FollowInteractionModule.BuildSettingsPanelAsync(followService, dataService, follow,
+        var panel = await FollowInteractionModule.BuildSettingsPanelAsync(followService, guildService, follow,
             Context.User.Id, 0, LocalizationService, CommandCultureInfo, notice);
         await ModifyOriginalResponseAsync(msg => msg.Components = panel);
     }
 
     private async Task ShowPanelAsync(ulong ownerId, ManageTab tab, int page, string? notice = null)
     {
-        var components = await BuildPanelAsync(dataService, followService, Context.Guild.Id, ownerId, tab, page,
-            CanManageServerHere, LocalizationService, CommandCultureInfo, notice);
+        var components = await BuildPanelAsync(subscriptionService, guildService, followService, Context.Guild.Id,
+            ownerId, tab, page, CanManageServerHere, LocalizationService, CommandCultureInfo, notice);
 
         await ModifyOriginalResponseAsync(msg => msg.Components = components);
     }

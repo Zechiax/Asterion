@@ -24,7 +24,8 @@ public class FollowModuleTests
             .AddSingleton(Substitute.For<ILocalizationService>())
             .AddSingleton(Substitute.For<IGuildCultureProvider>())
             .AddSingleton(Substitute.For<IFollowService>())
-            .AddSingleton(Substitute.For<IDataService>())
+            .AddSingleton(Substitute.For<IGuildService>())
+            .AddSingleton(Substitute.For<ISubscriptionService>())
             .AddSingleton(Substitute.For<IModrinthClient>())
             // The real ModrinthService, built from substitutes, it is never called
             .AddLogging()

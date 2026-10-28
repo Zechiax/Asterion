@@ -23,14 +23,13 @@ public class UpdateDetectionService : BackgroundService
 
     private readonly TimeSpan _checkInterval;
     private readonly IModrinthClient _client;
-    private readonly IDataService _dataService;
     private readonly ILogger<UpdateDetectionService> _logger;
     private readonly INotificationScheduler _notificationScheduler;
     private readonly INotificationSignal _notificationSignal;
     private readonly ProjectStatisticsManager _projectStatisticsManager;
     private readonly IServiceProvider _services;
 
-    public UpdateDetectionService(IServiceProvider services, IModrinthClient client, IDataService dataService,
+    public UpdateDetectionService(IServiceProvider services, IModrinthClient client,
         ProjectStatisticsManager projectStatisticsManager, INotificationScheduler notificationScheduler,
         INotificationSignal notificationSignal, IConfiguration config, ILogger<UpdateDetectionService> logger)
     {
@@ -38,7 +37,6 @@ public class UpdateDetectionService : BackgroundService
             ConfigKeys.DefaultUpdateCheckIntervalMinutes));
         _services = services;
         _client = client;
-        _dataService = dataService;
         _projectStatisticsManager = projectStatisticsManager;
         _notificationScheduler = notificationScheduler;
         _notificationSignal = notificationSignal;
@@ -72,7 +70,7 @@ public class UpdateDetectionService : BackgroundService
     {
         _logger.LogInformation("Update detection pass started");
 
-        var projectsDto = await _dataService.GetAllModrinthProjectsAsync();
+        var projectsDto = await GetStoredProjectsAsync(ct);
         _logger.LogDebug("Found {Count} projects", projectsDto.Count);
 
         var projects = await _client.Project.GetMultipleAsync(projectsDto.Select(p => p.ProjectId), ct);
@@ -119,6 +117,14 @@ public class UpdateDetectionService : BackgroundService
         }
     }
 
+    private async Task<IList<ModrinthProject>> GetStoredProjectsAsync(CancellationToken ct)
+    {
+        using var scope = _services.CreateScope();
+        await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
+
+        return await db.ModrinthProjects.AsNoTracking().ToListAsync(ct);
+    }
+
     private async Task ProcessProjectUpdateAsync(Project project, IList<Version> versions, CancellationToken ct)
     {
         using var scope = _services.CreateScope();
@@ -142,7 +148,10 @@ public class UpdateDetectionService : BackgroundService
             .OrderBy(v => v.DatePublished)
             .ToList();
 
-        var entries = await db.ModrinthEntries.Where(e => e.ProjectId == project.Id).ToListAsync(ct);
+        // Left guilds that kept their data get no messages
+        var entries = await db.ModrinthEntries
+            .Where(e => e.ProjectId == project.Id && e.Guild.Active != false)
+            .ToListAsync(ct);
         var guildIdsWithEntry = entries.Select(e => e.GuildId).ToHashSet();
 
         var follows = await GetFollowTargetsAsync(db, project.Id, ct);
@@ -213,13 +222,13 @@ public class UpdateDetectionService : BackgroundService
 
             var entries = await db.ModrinthEntries
                 .Include(e => e.Guild).ThenInclude(g => g.GuildSettings)
-                .Where(e => e.ProjectId == project.Id)
+                .Where(e => e.ProjectId == project.Id && e.Guild.Active != false)
                 .ToListAsync(ct);
 
             var follows = await db.FollowProjects
                 .Where(fp => fp.ProjectId == project.Id && !fp.Ignored)
                 .Select(fp => fp.Follow)
-                .Where(f => (f.Events & FollowEvents.DownloadMilestone) != 0)
+                .Where(f => (f.Events & FollowEvents.DownloadMilestone) != 0 && f.Guild.Active != false)
                 .Include(f => f.Guild).ThenInclude(g => g.GuildSettings)
                 .ToListAsync(ct);
 
@@ -239,7 +248,8 @@ public class UpdateDetectionService : BackgroundService
 
     /// <summary>
     ///     Returns the follows that want update messages for the project: they have the ProjectUpdate event
-    ///     and a FollowProject row for the project that is not ignored.
+    ///     and a FollowProject row for the project that is not ignored. Follows of left guilds that kept
+    ///     their data are skipped.
     /// </summary>
     public static Task<List<ModrinthFollow>> GetFollowTargetsAsync(DataContext db, string projectId,
         CancellationToken ct = default)
@@ -247,7 +257,7 @@ public class UpdateDetectionService : BackgroundService
         return db.FollowProjects
             .Where(fp => fp.ProjectId == projectId && !fp.Ignored)
             .Select(fp => fp.Follow)
-            .Where(f => (f.Events & FollowEvents.ProjectUpdate) != 0)
+            .Where(f => (f.Events & FollowEvents.ProjectUpdate) != 0 && f.Guild.Active != false)
             .ToListAsync(ct);
     }
 

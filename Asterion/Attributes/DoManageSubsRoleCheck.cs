@@ -15,10 +15,10 @@ public class DoManageSubsRoleCheck : PreconditionAttribute
         if (context.User is not IGuildUser guildUser)
             return LocalizedPreconditionResult.FromError(Errors.GuildOnly);
 
-        var data = services.GetRequiredService<IDataService>();
+        var guildService = services.GetRequiredService<IGuildService>();
 
         // Get manage role id
-        var roleId = await data.GetManageRoleIdAsync(context.Guild.Id);
+        var roleId = await guildService.GetManageRoleIdAsync(context.Guild.Id);
 
         // Check if it has been set
         if (roleId.HasValue == false) return LocalizedPreconditionResult.FromError(Errors.ManagePermission);

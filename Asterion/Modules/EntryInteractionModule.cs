@@ -20,7 +20,8 @@ namespace Asterion.Modules
     public class EntryInteractionModule(
         ILocalizationService localizationService,
         IGuildCultureProvider cultureProvider,
-        IDataService dataService,
+        IGuildService guildService,
+        ISubscriptionService subscriptionService,
         IFollowService followService,
         IModrinthClient modrinthClient)
         : AsterionInteractionModuleBase(localizationService, cultureProvider)
@@ -45,7 +46,7 @@ namespace Asterion.Modules
         /// <param name="ownerId">The only user who can use the panel</param>
         /// <param name="notice">Short note under the title, e.g. "Subscribed to X"</param>
         public static async Task<MessageComponent> BuildSettingsPanelAsync(ModrinthEntry entry, ulong ownerId,
-            int listPage, IDataService dataService, IModrinthClient modrinthClient, ILocalizationService loc,
+            int listPage, IGuildService guildService, IModrinthClient modrinthClient, ILocalizationService loc,
             CultureInfo? culture, string? notice = null)
         {
             string Id(string prefix) => $"{prefix}:{ownerId}:{entry.ProjectId}:{listPage}";
@@ -61,11 +62,9 @@ namespace Asterion.Modules
                 // Modrinth API unavailable
             }
 
-            var title = Format.Sanitize(project?.Title ??
-                                        (await dataService.GetModrinthProjectByIdAsync(entry.ProjectId))?.Title ??
-                                        entry.ProjectId);
+            var title = Format.Sanitize(project?.Title ?? entry.Project?.Title ?? entry.ProjectId);
 
-            var serverMilestones = await dataService.MilestonesEnabledAsync(entry.GuildId);
+            var serverMilestones = await guildService.MilestonesEnabledAsync(entry.GuildId);
 
             var fields = new List<SettingsField>
             {
@@ -122,7 +121,7 @@ namespace Asterion.Modules
         [ComponentInteraction(OpenButtonId + ":*:*:*")]
         public Task HandleOpenAsync(ulong ownerId, string projectId, int listPage)
         {
-            return UpdateAsync(ownerId, projectId, listPage, _ => Task.CompletedTask);
+            return UpdateAsync(ownerId, projectId, listPage);
         }
 
         [DoUserCheck]
@@ -131,16 +130,15 @@ namespace Asterion.Modules
         {
             await DeferAsync();
 
-            var entry = await dataService.GetModrinthEntryAsync(Context.Guild.Id, projectId);
+            var entry = await subscriptionService.GetSubscriptionAsync(Context.Guild.Id, projectId);
             if (entry == null)
             {
                 await ShowResultAsync(ownerId, listPage, LocalizationService.Get("entry-not-found", CommandCultureInfo));
                 return;
             }
 
-            var project = await dataService.GetModrinthProjectByIdAsync(projectId);
             var question = LocalizationService.Get("entry-unsub-confirm-question", CommandCultureInfo,
-                new { title = Format.Sanitize(project?.Title ?? projectId), id = projectId });
+                new { title = Format.Sanitize(entry.Project?.Title ?? projectId), id = projectId });
 
             await ModifyOriginalResponseAsync(msg => msg.Components = SettingsPanelBuilder.BuildMessage(question,
                 SettingsPanelBuilder.SubscriptionAccent,
@@ -156,24 +154,23 @@ namespace Asterion.Modules
         {
             await DeferAsync();
 
-            var project = await dataService.GetModrinthProjectByIdAsync(projectId);
-
             // Also removes the shared project state if nothing else uses it
-            if (!await dataService.RemoveModrinthProjectFromGuildAsync(Context.Guild.Id, projectId))
+            var removed = await subscriptionService.RemoveSubscriptionAsync(Context.Guild.Id, projectId);
+            if (removed is null)
             {
                 await ShowResultAsync(ownerId, listPage, LocalizationService.Get("entry-not-found", CommandCultureInfo));
                 return;
             }
 
             await ShowResultAsync(ownerId, listPage, LocalizationService.Get("entry-unsubscribed", CommandCultureInfo,
-                new { title = Format.Sanitize(project?.Title ?? projectId), id = projectId }));
+                new { title = Format.Sanitize(removed.Project?.Title ?? projectId), id = projectId }));
         }
 
         [DoUserCheck]
         [ComponentInteraction(UnsubscribeCancelButtonId + ":*:*:*")]
         public Task HandleUnsubscribeCancelAsync(ulong ownerId, string projectId, int listPage)
         {
-            return UpdateAsync(ownerId, projectId, listPage, _ => Task.CompletedTask);
+            return UpdateAsync(ownerId, projectId, listPage);
         }
 
         [DoUserCheck]
@@ -184,20 +181,19 @@ namespace Asterion.Modules
             var channelId = SettingsPanelBuilder.ParseSelectedId(selectedValues);
             if (channelId is null)
             {
-                await UpdateAsync(ownerId, projectId, listPage, _ => Task.CompletedTask);
+                await UpdateAsync(ownerId, projectId, listPage);
                 return;
             }
 
             if (!BotCanSendIn(channelId.Value))
             {
                 // Show the panel again, so the picker goes back to the saved channel
-                await UpdateAsync(ownerId, projectId, listPage, _ => Task.CompletedTask);
+                await UpdateAsync(ownerId, projectId, listPage);
                 await SendStatusAsync(Warnings.BotCannotSend(MentionUtils.MentionChannel(channelId.Value)));
                 return;
             }
 
-            await UpdateAsync(ownerId, projectId, listPage,
-                _ => dataService.ChangeModrinthEntryChannel(Context.Guild.Id, projectId, channelId.Value));
+            await UpdateAsync(ownerId, projectId, listPage, e => e.CustomUpdateChannel = channelId);
         }
 
         [DoUserCheck]
@@ -211,22 +207,19 @@ namespace Asterion.Modules
             if (channelId is not null && !BotCanSendIn(channelId.Value))
             {
                 // Show the panel again, so the picker goes back to the saved channel
-                await UpdateAsync(ownerId, projectId, listPage, _ => Task.CompletedTask);
+                await UpdateAsync(ownerId, projectId, listPage);
                 await SendStatusAsync(Warnings.BotCannotSend(MentionUtils.MentionChannel(channelId.Value)));
                 return;
             }
 
-            await UpdateAsync(ownerId, projectId, listPage,
-                entry => dataService.UpdateModrinthEntryAsync(entry.EntryId, e => e.MilestoneChannel = channelId));
+            await UpdateAsync(ownerId, projectId, listPage, e => e.MilestoneChannel = channelId);
         }
 
         [DoUserCheck]
         [ComponentInteraction(MilestoneToggleButtonId + ":*:*:*")]
         public Task HandleMilestoneToggleAsync(ulong ownerId, string projectId, int listPage)
         {
-            return UpdateAsync(ownerId, projectId, listPage,
-                entry => dataService.UpdateModrinthEntryAsync(entry.EntryId,
-                    e => e.NotifyMilestones = !e.NotifyMilestones));
+            return UpdateAsync(ownerId, projectId, listPage, e => e.NotifyMilestones = !e.NotifyMilestones);
         }
 
         [DoUserCheck]
@@ -234,8 +227,7 @@ namespace Asterion.Modules
         public Task HandlePingRoleSelectionAsync(ulong ownerId, string projectId, int listPage, string[] selectedValues)
         {
             var roleId = SettingsPanelBuilder.ParseSelectedId(selectedValues);
-            return UpdateAsync(ownerId, projectId, listPage,
-                _ => dataService.SetPingRoleAsync(Context.Guild.Id, roleId, projectId));
+            return UpdateAsync(ownerId, projectId, listPage, e => e.CustomPingRole = roleId);
         }
 
         [DoUserCheck]
@@ -248,8 +240,7 @@ namespace Asterion.Modules
                 if (int.TryParse(value, out var flag))
                     releaseFilter |= (ReleaseType)flag;
 
-            return UpdateAsync(ownerId, projectId, listPage,
-                entry => dataService.SetReleaseFilterAsync(entry.EntryId, releaseFilter));
+            return UpdateAsync(ownerId, projectId, listPage, e => e.ReleaseFilter = releaseFilter);
         }
 
         [DoUserCheck]
@@ -257,30 +248,29 @@ namespace Asterion.Modules
         public Task HandleLoaderFilterSelectionAsync(ulong ownerId, string projectId, int listPage, string[] selectedValues)
         {
             var loaderFilter = selectedValues.Length > 0 ? selectedValues : null;
-            return UpdateAsync(ownerId, projectId, listPage,
-                entry => dataService.SetLoaderFilterAsync(entry.EntryId, loaderFilter));
+            return UpdateAsync(ownerId, projectId, listPage, e => e.LoaderFilter = loaderFilter);
         }
 
         /// <summary>
         ///     Applies a change to the guild's entry of the project and shows the panel with the saved state
         /// </summary>
-        private async Task UpdateAsync(ulong ownerId, string projectId, int listPage, Func<ModrinthEntry, Task> update)
+        /// <param name="update">The change, null to only show the panel</param>
+        private async Task UpdateAsync(ulong ownerId, string projectId, int listPage,
+            Action<ModrinthEntry>? update = null)
         {
             await DeferAsync();
 
-            var entry = await dataService.GetModrinthEntryAsync(Context.Guild.Id, projectId);
+            var entry = update is null
+                ? await subscriptionService.GetSubscriptionAsync(Context.Guild.Id, projectId)
+                : await subscriptionService.UpdateSubscriptionAsync(Context.Guild.Id, projectId, update);
+
             if (entry == null)
             {
                 await ShowResultAsync(ownerId, listPage, LocalizationService.Get("entry-not-found", CommandCultureInfo));
                 return;
             }
 
-            await update(entry);
-
-            // Reload, the data service saves through its own context
-            entry = await dataService.GetModrinthEntryAsync(Context.Guild.Id, projectId) ?? entry;
-
-            var panel = await BuildSettingsPanelAsync(entry, ownerId, listPage, dataService, modrinthClient,
+            var panel = await BuildSettingsPanelAsync(entry, ownerId, listPage, guildService, modrinthClient,
                 LocalizationService, CommandCultureInfo);
 
             await ModifyOriginalResponseAsync(msg => msg.Components = panel);
@@ -291,7 +281,7 @@ namespace Asterion.Modules
         /// </summary>
         private async Task ShowResultAsync(ulong ownerId, int listPage, string text)
         {
-            var components = await ManageInteractionModule.BuildPanelAsync(dataService, followService,
+            var components = await ManageInteractionModule.BuildPanelAsync(subscriptionService, guildService, followService,
                 Context.Guild.Id, ownerId, ManageTab.Projects, listPage, CanManageServerHere, LocalizationService,
                 CommandCultureInfo, text);
 

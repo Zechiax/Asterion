@@ -18,7 +18,7 @@ public class ManagePanelTests
     private static readonly ILocalizationService Loc = new LocalizationService(
         new FluentBundleStore(NullLogger<FluentBundleStore>.Instance), NullLogger<LocalizationService>.Instance);
 
-    private static IDataService MakeDataService(int entryCount)
+    private static ISubscriptionService MakeSubscriptionService(int entryCount)
     {
         var entries = Enumerable.Range(1, entryCount).Select(i => new ModrinthEntry
         {
@@ -29,15 +29,21 @@ public class ManagePanelTests
             Project = new ModrinthProject { ProjectId = $"p{i:D2}", Title = $"Project {i:D2}", LastCheckVersion = "v" }
         }).ToList();
 
-        var dataService = Substitute.For<IDataService>();
-        dataService.GetAllGuildsSubscribedProjectsAsync(GuildId).Returns(entries);
-        dataService.GetGuildByIdAsync(GuildId).Returns(new Guild
+        var subscriptionService = Substitute.For<ISubscriptionService>();
+        subscriptionService.GetSubscriptionsAsync(GuildId).Returns(entries);
+        return subscriptionService;
+    }
+
+    private static IGuildService MakeGuildService()
+    {
+        var guildService = Substitute.For<IGuildService>();
+        guildService.GetGuildAsync(GuildId).Returns(new Guild
         {
             GuildId = GuildId,
             ManageRole = 777,
             GuildSettings = new GuildSettings { GuildId = GuildId }
         });
-        return dataService;
+        return guildService;
     }
 
     private static IFollowService MakeFollowService(int followCount)
@@ -60,8 +66,8 @@ public class ManagePanelTests
     private static Task<MessageComponent> Build(int entries, int follows, ManageTab? tab, int page,
         bool canManageServer = true, string? notice = null)
     {
-        return ManageInteractionModule.BuildPanelAsync(MakeDataService(entries), MakeFollowService(follows), GuildId,
-            Owner, tab, page, canManageServer, Loc, null, notice);
+        return ManageInteractionModule.BuildPanelAsync(MakeSubscriptionService(entries), MakeGuildService(),
+            MakeFollowService(follows), GuildId, Owner, tab, page, canManageServer, Loc, null, notice);
     }
 
     private static List<ButtonComponent> Buttons(MessageComponent components)

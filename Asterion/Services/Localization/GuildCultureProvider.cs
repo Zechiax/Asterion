@@ -9,12 +9,12 @@ public class GuildCultureProvider : IGuildCultureProvider
 {
     private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
 
-    private readonly IDataService _dataService;
+    private readonly IGuildService _guildService;
     private readonly IMemoryCache _cache;
 
-    public GuildCultureProvider(IDataService dataService, IMemoryCache cache)
+    public GuildCultureProvider(IGuildService guildService, IMemoryCache cache)
     {
-        _dataService = dataService;
+        _guildService = guildService;
         _cache = cache;
     }
 
@@ -47,7 +47,7 @@ public class GuildCultureProvider : IGuildCultureProvider
         return _cache.GetOrCreateAsync(CacheKey(guildId), async entry =>
         {
             entry.SlidingExpiration = CacheDuration;
-            var guild = await _dataService.GetGuildByIdAsync(guildId);
+            var guild = await _guildService.GetGuildAsync(guildId);
             return guild?.GuildSettings.Language;
         });
     }

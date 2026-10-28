@@ -9,7 +9,7 @@ namespace Asterion.Services;
 
 /// <summary>
 ///     Deletes old hourly statistics and purges old terminal-status PendingNotifications so neither
-///     table grows unbounded. Daily statistics are kept forever.
+///     table grows unbounded. Daily statistics are kept forever. Also removes projects nothing uses anymore.
 /// </summary>
 public class MaintenanceService : BackgroundService
 {
@@ -36,6 +36,7 @@ public class MaintenanceService : BackgroundService
             {
                 await RunHourlyStatsCleanupAsync(stoppingToken);
                 await RunPendingNotificationPurgeAsync(stoppingToken);
+                await RemoveUnusedProjectsAsync(stoppingToken);
                 await ReclaimFreePagesAsync(stoppingToken);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
@@ -59,6 +60,18 @@ public class MaintenanceService : BackgroundService
 
         _logger.LogInformation("Finished statistics database cleanup, removed {RemovedEntries} entries",
             removedEntries);
+    }
+
+    private async Task RemoveUnusedProjectsAsync(CancellationToken ct)
+    {
+        _logger.LogInformation("Removing projects with no entries or follows");
+
+        using var scope = _services.CreateScope();
+        await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
+
+        var removed = await ProjectCleanup.RemoveAllUnusedProjectsAsync(db, ct);
+
+        _logger.LogInformation("Removed {Count} unused projects", removed);
     }
 
     /// <summary>

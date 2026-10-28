@@ -9,11 +9,11 @@ namespace Asterion.Modules;
 [RequireOwner]
 public class BotManagement : AsterionInteractionModuleBase
 {
-    private readonly IDataService _dataService;
+    private readonly IGuildService _guildService;
 
     public BotManagement(IServiceProvider serviceProvider, ILocalizationService localizationService, IGuildCultureProvider cultureProvider) : base(localizationService, cultureProvider)
     {
-        _dataService = serviceProvider.GetRequiredService<IDataService>();
+        _guildService = serviceProvider.GetRequiredService<IGuildService>();
     }
 
 #if DEBUG
@@ -21,7 +21,7 @@ public class BotManagement : AsterionInteractionModuleBase
     public async Task Register()
     {
         await RespondAsync("Registering this guild", ephemeral: true);
-        await _dataService.AddGuildAsync(Context.Guild.Id);
+        await _guildService.AddGuildAsync(Context.Guild.Id);
         await FollowupAsync("Registered", ephemeral: true);
     }
 
@@ -29,7 +29,7 @@ public class BotManagement : AsterionInteractionModuleBase
     public async Task Unregister()
     {
         await RespondAsync("Unregistering this guild", ephemeral: true);
-        await _dataService.RemoveGuildAsync(Context.Guild.Id);
+        await _guildService.RemoveGuildAsync(Context.Guild.Id);
         await FollowupAsync("Unregistered", ephemeral: true);
     }
 

@@ -5,10 +5,12 @@ using Asterion.Database;
 using Asterion.Interfaces;
 using Asterion.Services;
 using Asterion.Services.Follows;
+using Asterion.Services.Guilds;
 using Asterion.Services.Localization;
 using Asterion.Services.Modrinth;
 using Asterion.Services.Notifications;
 using Asterion.Services.Notifications.Delivery;
+using Asterion.Services.Subscriptions;
 using Discord;
 using Discord.Commands;
 using Discord.Interactions;
@@ -72,8 +74,8 @@ public class Asterion
         // Setup interaction command handler
         await services.GetRequiredService<InteractionCommandHandler>().InitializeAsync();
 
-        // Initialize data service after client has been connected
-        client.Ready += services.GetRequiredService<IDataService>().InitializeAsync;
+        // Syncs the stored guilds once the client is ready, and on every joined or left guild
+        services.GetRequiredService<GuildSyncService>().Initialize();
         services.GetRequiredService<ClientService>().Initialize();
 
         var commandsRegistered = false;
@@ -161,7 +163,9 @@ public class Asterion
             .AddSingleton(new CommandService(commandConfig))
             .AddSingleton<InteractionCommandHandler>()
             .AddSingleton<LoggingService>()
-            .AddSingleton<IDataService, DataService>()
+            .AddSingleton<IGuildService, GuildService>()
+            .AddSingleton<ISubscriptionService, SubscriptionService>()
+            .AddSingleton<GuildSyncService>()
             .AddSingleton<ModrinthService>()
             .AddSingleton<InteractiveService>()
             .AddSingleton<ClientService>()

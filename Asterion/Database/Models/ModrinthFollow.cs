@@ -24,7 +24,7 @@ public class ModrinthFollow : IReleaseFilterable
     /// <summary>Display name of the target, refreshed on each sync.</summary>
     [Required] public string TargetName { get; set; } = null!;
 
-    [Required] public FollowEvents Events { get; set; } = FollowEvents.ProjectUpdate | FollowEvents.NewProject;
+    [Required] public FollowEvents Events { get; set; } = FollowEvents.All;
 
     public ulong? CustomUpdateChannel { get; set; }
 
@@ -36,6 +36,9 @@ public class ModrinthFollow : IReleaseFilterable
 
     /// <summary>Ping role for new project messages, falls back to <see cref="CustomPingRole" />.</summary>
     public ulong? NewProjectPingRole { get; set; }
+
+    /// <summary>Channel for milestone messages, falls back to the server's milestone channel</summary>
+    public ulong? MilestoneChannel { get; set; }
 
     [Required] public ReleaseType ReleaseFilter { get; set; } = ReleaseType.Alpha | ReleaseType.Beta | ReleaseType.Release;
 
@@ -70,5 +73,7 @@ public enum FollowEvents
 {
     None = 0,
     ProjectUpdate = 1,
-    NewProject = 2
+    NewProject = 2,
+    DownloadMilestone = 4,
+    All = ProjectUpdate | NewProject | DownloadMilestone
 }

@@ -113,12 +113,23 @@ public class NotificationDispatchService : BackgroundService
             return;
         }
 
+        if (row.Kind == NotificationKind.DownloadMilestone && !delivery.MilestoneWanted)
+        {
+            _logger.LogInformation("Milestones were turned off for pending notification {Id}, not sending it", row.Id);
+            await _reader.MarkDeadLetteredAsync(row.Id, "Milestones turned off since the milestone was reached", ct);
+            return;
+        }
+
         Project project;
-        Version version;
+        Version? version;
         try
         {
             project = JsonSerializer.Deserialize<Project>(row.SerializedProject)!;
-            version = JsonSerializer.Deserialize<Version>(row.SerializedVersion)!;
+
+            // Milestones are not about a version and have none
+            version = row.Kind == NotificationKind.DownloadMilestone
+                ? null
+                : JsonSerializer.Deserialize<Version>(row.SerializedVersion!)!;
         }
         catch (Exception ex)
         {
@@ -136,27 +147,36 @@ public class NotificationDispatchService : BackgroundService
             }
 
             NotificationContent content;
-            if (row.Kind == NotificationKind.NewProject)
+            ulong? channelId;
+            if (row.Kind == NotificationKind.DownloadMilestone)
             {
-                var embed = ModrinthEmbedBuilder.NewProjectEmbed(project, version, team).Build();
+                var embed = ModrinthEmbedBuilder.MilestoneEmbed(project, row.Milestone ?? project.Downloads, team)
+                    .Build();
+                var components = new ComponentBuilder()
+                    .WithButton(ModrinthComponentBuilder.GetProjectLinkButton(project)).Build();
+
+                content = new NotificationContent(PingText(delivery.MilestonePingRoleId), embed, components);
+                channelId = delivery.MilestoneChannelId;
+            }
+            else if (row.Kind == NotificationKind.NewProject)
+            {
+                var embed = ModrinthEmbedBuilder.NewProjectEmbed(project, version!, team).Build();
                 var components = new ComponentBuilder()
                     .WithButton(ModrinthComponentBuilder.GetProjectLinkButton(project)).Build();
 
                 content = new NotificationContent(PingText(delivery.NewProjectPingRoleId), embed, components);
+                channelId = delivery.NewProjectChannelId;
             }
             else
             {
-                var embed = ModrinthEmbedBuilder.VersionUpdateEmbed(delivery.GuildSettings, project, version, team)
+                var embed = ModrinthEmbedBuilder.VersionUpdateEmbed(delivery.GuildSettings, project, version!, team)
                     .Build();
                 var components = new ComponentBuilder()
-                    .WithButton(ModrinthComponentBuilder.GetVersionUrlButton(project, version)).Build();
+                    .WithButton(ModrinthComponentBuilder.GetVersionUrlButton(project, version!)).Build();
 
                 content = new NotificationContent(PingText(delivery.PingRoleId), embed, components);
+                channelId = delivery.ChannelId;
             }
-
-            var channelId = row.Kind == NotificationKind.NewProject
-                ? delivery.NewProjectChannelId
-                : delivery.ChannelId;
 
             DeliveryTarget target = delivery.WebhookUrl is not null
                 ? new WebhookDeliveryTarget(delivery.WebhookUrl)
@@ -192,9 +212,12 @@ public class NotificationDispatchService : BackgroundService
             if (entry is null)
                 return null;
 
+            var settings = entry.Guild.GuildSettings;
             var pingRole = entry.CustomPingRole ?? entry.Guild.PingRole;
-            return new DeliverySettings(entry.Guild.GuildSettings, entry.CustomUpdateChannel,
-                entry.CustomUpdateChannel, pingRole, pingRole, entry.WebhookUrl);
+            return new DeliverySettings(settings, entry.CustomUpdateChannel, entry.CustomUpdateChannel,
+                entry.MilestoneChannel ?? settings.MilestoneChannel ?? entry.CustomUpdateChannel,
+                pingRole, pingRole, settings.MilestonePingRole, entry.WebhookUrl,
+                settings.MilestonesEnabled && entry.NotifyMilestones);
         }
 
         if (row.FollowId is { } followId)
@@ -206,25 +229,43 @@ public class NotificationDispatchService : BackgroundService
             if (follow is null)
                 return null;
 
+            var settings = follow.Guild.GuildSettings;
             var pingRole = follow.CustomPingRole ?? follow.Guild.PingRole;
             var newProjectPingRole = follow.NewProjectPingRole ?? pingRole;
+            // Only milestone rows need the ignore check, the query is skipped for the others
+            var milestoneWanted = settings.MilestonesEnabled
+                                  && follow.Events.HasFlag(FollowEvents.DownloadMilestone)
+                                  && (row.Kind != NotificationKind.DownloadMilestone
+                                      || await db.FollowProjects.AnyAsync(fp => fp.FollowId == followId &&
+                                          fp.ProjectId == row.ProjectId && !fp.Ignored, ct));
 
             // Follows have no webhook delivery (yet)
-            return new DeliverySettings(follow.Guild.GuildSettings, follow.CustomUpdateChannel,
-                follow.NewProjectChannel ?? follow.CustomUpdateChannel, pingRole, newProjectPingRole, null);
+            return new DeliverySettings(settings, follow.CustomUpdateChannel,
+                follow.NewProjectChannel ?? follow.CustomUpdateChannel,
+                follow.MilestoneChannel ?? settings.MilestoneChannel ?? follow.CustomUpdateChannel,
+                pingRole, newProjectPingRole, settings.MilestonePingRole, null, milestoneWanted);
         }
 
         return null;
     }
 
     /// <summary>Delivery settings resolved from either an entry or a follow.</summary>
+    /// <param name="MilestoneChannelId">
+    ///     The entry's or follow's override, then the server's milestone channel, then its announcement channel
+    /// </param>
+    /// <param name="MilestoneWanted">
+    ///     If a milestone row should still be sent, rechecked because the settings may have changed while the row waited
+    /// </param>
     private sealed record DeliverySettings(
         GuildSettings GuildSettings,
         ulong? ChannelId,
         ulong? NewProjectChannelId,
+        ulong? MilestoneChannelId,
         ulong? PingRoleId,
         ulong? NewProjectPingRoleId,
-        string? WebhookUrl);
+        ulong? MilestonePingRoleId,
+        string? WebhookUrl,
+        bool MilestoneWanted);
 
     private async Task HandleFailureAsync(PendingNotification row, Exception ex, CancellationToken ct)
     {

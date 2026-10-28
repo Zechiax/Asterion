@@ -15,6 +15,7 @@ public static class FollowComponentBuilder
     public const string NewProjectChannelMenuId = "follow_newchannel";
     public const string PingRoleMenuId = "follow_ping";
     public const string NewProjectPingRoleMenuId = "follow_newping";
+    public const string MilestoneChannelMenuId = "follow_mschannel";
     public const string EventsMenuId = "follow_events";
     public const string ReleaseMenuId = "follow_release";
     public const string LoaderMenuId = "follow_loader";
@@ -33,8 +34,10 @@ public static class FollowComponentBuilder
     /// <param name="listPage">List page the panel was opened from, carried in all IDs of the panel</param>
     /// <param name="backButton">Button back to the list</param>
     /// <param name="notice">Short note under the title, e.g. "Following X"</param>
+    /// <param name="serverMilestones">If the server has milestones on, the milestone channel is hidden otherwise</param>
     public static MessageComponent GetSettingsPanel(ModrinthFollow follow, IEnumerable<string> loaders, ulong ownerId,
-        int listPage, ButtonBuilder backButton, ILocalizationService loc, CultureInfo? culture, string? notice = null)
+        int listPage, ButtonBuilder backButton, ILocalizationService loc, CultureInfo? culture, string? notice = null,
+        bool serverMilestones = false)
     {
         string Id(string prefix) => $"{prefix}:{ownerId}:{follow.Id}:{listPage}";
 
@@ -51,12 +54,20 @@ public static class FollowComponentBuilder
                     loc.Get("settings-ping-role-placeholder", culture))),
             new(loc.Get("settings-new-project-ping-role", culture),
                 SettingsPanelBuilder.RolePicker(Id(NewProjectPingRoleMenuId), follow.NewProjectPingRole,
-                    loc.Get("settings-new-project-ping-role-placeholder", culture))),
-            new(loc.Get("settings-events", culture), GetEventsMenu(follow, Id(EventsMenuId), loc, culture)),
-            new(loc.Get("settings-release-filter", culture),
-                SettingsPanelBuilder.ReleaseFilterMenu(Id(ReleaseMenuId), follow.ReleaseFilter,
-                    loc.Get("settings-release-placeholder", culture)))
+                    loc.Get("settings-new-project-ping-role-placeholder", culture)))
         };
+
+        // The channel does nothing while the server has milestones off or the follow lacks the milestone event
+        if (serverMilestones && follow.Events.HasFlag(FollowEvents.DownloadMilestone))
+            fields.Add(new SettingsField(loc.Get("settings-milestone-channel", culture),
+                SettingsPanelBuilder.ChannelPicker(Id(MilestoneChannelMenuId), follow.MilestoneChannel,
+                    loc.Get("settings-milestone-channel-placeholder", culture), optional: true)));
+
+        fields.Add(new SettingsField(loc.Get("settings-events", culture),
+            GetEventsMenu(follow, Id(EventsMenuId), loc, culture)));
+        fields.Add(new SettingsField(loc.Get("settings-release-filter", culture),
+            SettingsPanelBuilder.ReleaseFilterMenu(Id(ReleaseMenuId), follow.ReleaseFilter,
+                loc.Get("settings-release-placeholder", culture))));
 
         var loaderMenu = SettingsPanelBuilder.LoaderFilterMenu(Id(LoaderMenuId), loaders, follow.LoaderFilter,
             loc.Get("settings-loader-placeholder", culture));
@@ -109,14 +120,30 @@ public static class FollowComponentBuilder
     private static SelectMenuBuilder GetEventsMenu(ModrinthFollow follow, string customId, ILocalizationService loc,
         CultureInfo? culture)
     {
-        return new SelectMenuBuilder()
+        return AddEventOptions(new SelectMenuBuilder()
             .WithCustomId(customId)
             .WithPlaceholder(loc.Get("settings-events-placeholder", culture))
-            .WithMinValues(0)
-            .WithMaxValues(2)
-            .AddOption(loc.Get("follow-event-project-update", culture), ((int)FollowEvents.ProjectUpdate).ToString(),
-                isDefault: follow.Events.HasFlag(FollowEvents.ProjectUpdate))
-            .AddOption(loc.Get("follow-event-new-project", culture), ((int)FollowEvents.NewProject).ToString(),
-                isDefault: follow.Events.HasFlag(FollowEvents.NewProject));
+            .WithMinValues(0), follow.Events, loc, culture);
+    }
+
+    /// <summary>
+    ///     Adds an option with a description for every event, the values are the event flags
+    /// </summary>
+    /// <param name="selected">Events selected by default</param>
+    public static SelectMenuBuilder AddEventOptions(SelectMenuBuilder menu, FollowEvents selected,
+        ILocalizationService loc, CultureInfo? culture)
+    {
+        (FollowEvents Event, string Key)[] events =
+        [
+            (FollowEvents.ProjectUpdate, "follow-event-project-update"),
+            (FollowEvents.NewProject, "follow-event-new-project"),
+            (FollowEvents.DownloadMilestone, "follow-event-download-milestone")
+        ];
+
+        foreach (var (followEvent, key) in events)
+            menu.AddOption(loc.Get(key, culture), ((int)followEvent).ToString(),
+                loc.Get($"{key}-description", culture), isDefault: selected.HasFlag(followEvent));
+
+        return menu.WithMaxValues(events.Length);
     }
 }

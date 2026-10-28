@@ -31,7 +31,8 @@ Options in `[brackets]` are optional. "Manage role" means Administrator or the r
 
 - `username`: username, ID or link of the Modrinth user
 - `channel`: channel for the messages, the current channel if not set
-- `events`: project updates and new projects (default), only project updates, or only new projects
+- `events`: project updates, new projects and download milestones (default), only project updates, or only new
+  projects
 - `new_project_channel`: channel for new project messages, `channel` if not set
 - `/unfollow user`: stop following a creator after you confirm. `user` is a username, ID or link and suggests the
   server's followed creators.

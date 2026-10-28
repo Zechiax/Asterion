@@ -40,4 +40,21 @@ public class GuildSettings
     ///     Discord locale code chosen by a server admin (e.g. "cs", "de"). Null = follow Discord's own locale.
     /// </summary>
     public string? Language { get; set; }
+
+    /// <summary>
+    ///     If messages are sent when a project reaches a download milestone
+    /// </summary>
+    public bool MilestonesEnabled { get; set; }
+
+    public MilestoneLadder MilestoneLadder { get; set; } = MilestoneLadder.Standard;
+
+    /// <summary>
+    ///     Channel for all milestone messages, null = the channel of each subscription or follow
+    /// </summary>
+    public ulong? MilestoneChannel { get; set; }
+
+    /// <summary>
+    ///     Role pinged in milestone messages, null = nobody is pinged
+    /// </summary>
+    public ulong? MilestonePingRole { get; set; }
 }

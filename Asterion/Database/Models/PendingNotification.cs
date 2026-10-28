@@ -11,13 +11,17 @@ public class PendingNotification
     [Required] public string ProjectId { get; set; } = null!;
     public virtual ModrinthProject Project { get; set; } = null!;
 
-    [Required] public string VersionId { get; set; } = null!;
+    // Null for milestones, they are not about a version
+    public string? VersionId { get; set; }
 
     // Snapshot of the Modrinth Project + Version at detection time, so dispatch
     // never needs to re-hit the Modrinth API and is immune to the project/version
     // having changed (or the API being down) by the time it's actually sent.
     [Required] public string SerializedProject { get; set; } = null!;
-    [Required] public string SerializedVersion { get; set; } = null!;
+    public string? SerializedVersion { get; set; }
+
+    /// <summary>The download milestone reached, set only for <see cref="NotificationKind.DownloadMilestone" /></summary>
+    public long? Milestone { get; set; }
 
     [Required] public ulong GuildId { get; set; }
 
@@ -47,7 +51,10 @@ public enum NotificationKind
     Update = 0,
 
     /// <summary>A followed target published a new project.</summary>
-    NewProject = 1
+    NewProject = 1,
+
+    /// <summary>A project reached a download milestone.</summary>
+    DownloadMilestone = 2
 }
 
 public enum NotificationStatus

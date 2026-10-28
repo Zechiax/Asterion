@@ -205,7 +205,7 @@ public class ModrinthInteractionModule : AsterionInteractionModuleBase
 
         var user = findUser.Payload.User;
         var result = await _followService.AddFollowAsync(Context.Guild.Id, FollowTargetType.User, user.Id,
-            user.Username, channel.Id, FollowEvents.ProjectUpdate | FollowEvents.NewProject);
+            user.Username, channel.Id, FollowEvents.All);
 
         await FollowupAsync(FollowEmbedBuilder.DescribeAddResult(result, user.Username, channel.Mention,
             LocalizationService, CommandCultureInfo), ephemeral: true);

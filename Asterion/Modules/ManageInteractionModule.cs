@@ -194,13 +194,9 @@ public class ManageInteractionModule(
     [ComponentInteraction(AddFollowButtonId + ":*")]
     public Task HandleAddFollowAsync(ulong ownerId)
     {
-        var events = new SelectMenuBuilder()
-            .WithCustomId(EventsInputId)
-            .WithMinValues(1)
-            .WithMaxValues(2)
-            .AddOption(Loc("follow-event-project-update"), ((int)FollowEvents.ProjectUpdate).ToString(),
-                isDefault: true)
-            .AddOption(Loc("follow-event-new-project"), ((int)FollowEvents.NewProject).ToString(), isDefault: true);
+        var events = FollowComponentBuilder.AddEventOptions(
+            new SelectMenuBuilder().WithCustomId(EventsInputId).WithMinValues(1), FollowEvents.All,
+            LocalizationService, CommandCultureInfo);
 
         var modal = new ModalBuilder()
             .WithTitle(Loc("manage-add-follow-title"))
@@ -321,8 +317,8 @@ public class ManageInteractionModule(
         }
 
         var follow = await followService.GetFollowAsync(Context.Guild.Id, result.Follow.Id) ?? result.Follow;
-        var panel = await FollowInteractionModule.BuildSettingsPanelAsync(followService, follow, Context.User.Id, 0,
-            LocalizationService, CommandCultureInfo, notice);
+        var panel = await FollowInteractionModule.BuildSettingsPanelAsync(followService, dataService, follow,
+            Context.User.Id, 0, LocalizationService, CommandCultureInfo, notice);
         await ModifyOriginalResponseAsync(msg => msg.Components = panel);
     }
 

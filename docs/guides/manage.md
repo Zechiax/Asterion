@@ -63,3 +63,16 @@ An update message in **Compact** style:
 For the **Full** style, see [Update messages](/guides/subscriptions#update-messages).
 
 Click **Preview** to see an example message with the current settings. Only you can see it.
+
+### Download milestones
+
+Click **Enable** to post a message when a subscribed or followed project reaches a download milestone. Milestones are
+off by default. The other settings show up once they are on:
+
+| Setting | What it does |
+| --- | --- |
+| **Milestones** | Which milestones are posted: **Standard** (default), **Round** or **Major** |
+| **Milestone channel** | Where milestone messages go. Each subscription and follow can override it. Empty means the channel of each subscription or follow. |
+| **Milestone ping role** | Pinged on every milestone message. Empty means nobody is pinged. |
+
+See [Download milestones](/guides/milestones) for details.

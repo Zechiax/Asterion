@@ -16,6 +16,8 @@ public static class FollowEmbedBuilder
             names.Add(loc.Get("follow-event-project-update", culture));
         if (events.HasFlag(FollowEvents.NewProject))
             names.Add(loc.Get("follow-event-new-project", culture));
+        if (events.HasFlag(FollowEvents.DownloadMilestone))
+            names.Add(loc.Get("follow-event-download-milestone", culture));
 
         return names.Count == 0 ? loc.Get("follow-event-none", culture) : string.Join(", ", names);
     }

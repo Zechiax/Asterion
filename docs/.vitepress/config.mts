@@ -30,6 +30,7 @@ export default defineConfig({
         items: [
           { text: 'Project subscriptions', link: '/guides/subscriptions' },
           { text: 'Following creators', link: '/guides/following' },
+          { text: 'Download milestones', link: '/guides/milestones' },
           { text: 'The /manage panel', link: '/guides/manage' },
           { text: 'Charts', link: '/guides/charts' }
         ]

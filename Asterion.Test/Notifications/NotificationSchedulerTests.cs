@@ -59,4 +59,62 @@ public class NotificationSchedulerTests
             Assert.That(rows[0].AttemptCount, Is.EqualTo(0));
         }
     }
+
+    [Test]
+    public async Task EnqueuesOneMilestonePerEnabledGuild()
+    {
+        await using var provider = InMemoryDb.BuildServiceProvider();
+        using var scope = provider.CreateScope();
+        await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
+
+        Guild MakeGuild(ulong id, bool enabled, MilestoneLadder ladder)
+        {
+            return new Guild
+            {
+                GuildId = id,
+                GuildSettings = new GuildSettings { MilestonesEnabled = enabled, MilestoneLadder = ladder }
+            };
+        }
+
+        ModrinthEntry Entry(ulong entryId, Guild guild, bool notify = true)
+        {
+            var entry = MakeEntry(entryId, guild.GuildId, ReleaseType.Release);
+            entry.Guild = guild;
+            entry.NotifyMilestones = notify;
+            return entry;
+        }
+
+        ModrinthFollow Follow(int id, Guild guild)
+        {
+            return new ModrinthFollow
+            {
+                Id = id, GuildId = guild.GuildId, Guild = guild, TargetId = "user", TargetName = "user",
+                Events = FollowEvents.All
+            };
+        }
+
+        var standard = MakeGuild(100, true, MilestoneLadder.Standard);
+        var round = MakeGuild(200, true, MilestoneLadder.Round);
+        var disabled = MakeGuild(300, false, MilestoneLadder.Standard);
+        var optedOut = MakeGuild(400, true, MilestoneLadder.Standard);
+        var major = MakeGuild(500, true, MilestoneLadder.Major);
+
+        var project = new Project { Id = "project", Title = "Test Project", Team = "team-1", Downloads = 10_500 };
+
+        var added = new NotificationScheduler().EnqueueMilestone(db, project, 9_000, 10_500,
+            [Entry(1, standard), Entry(3, disabled), Entry(4, optedOut, notify: false)],
+            [Follow(1, standard), Follow(2, round), Follow(4, optedOut), Follow(5, major)]);
+        await db.SaveChangesAsync();
+
+        var rows = await db.PendingNotifications.OrderBy(r => r.GuildId).ToListAsync();
+        Assert.That(added, Is.EqualTo(rows.Count));
+
+        // The entry wins in its guild, an opted out entry blocks its guild's follow, Major has no 10k milestone
+        Assert.That(rows.Select(r => (r.GuildId, r.EntryId, r.FollowId, r.Milestone)), Is.EqualTo(new[]
+        {
+            (100UL, (ulong?)1UL, (int?)null, (long?)10_000L),
+            (200UL, null, 2, 10_000L)
+        }));
+        Assert.That(rows.All(r => r.Kind == NotificationKind.DownloadMilestone && r.VersionId == null));
+    }
 }

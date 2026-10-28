@@ -141,6 +141,18 @@ namespace Asterion.Migrations
                         .HasColumnType("INTEGER")
                         .HasDefaultValue(0);
 
+                    b.Property<ulong?>("MilestoneChannel")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("MilestoneLadder")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<ulong?>("MilestonePingRole")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("MilestonesEnabled")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool?>("RemoveOnLeave")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER")
@@ -206,6 +218,12 @@ namespace Asterion.Migrations
                     b.Property<ulong>("GuildId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<ulong?>("MilestoneChannel")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("NotifyMilestones")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("ProjectId")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -259,6 +277,9 @@ namespace Asterion.Migrations
                     b.Property<DateTime?>("LastSyncedAt")
                         .HasColumnType("TEXT");
 
+                    b.Property<ulong?>("MilestoneChannel")
+                        .HasColumnType("INTEGER");
+
                     b.Property<ulong?>("NewProjectChannel")
                         .HasColumnType("INTEGER");
 
@@ -309,6 +330,9 @@ namespace Asterion.Migrations
                     b.Property<DateTime?>("LastUpdated")
                         .HasColumnType("TEXT");
 
+                    b.Property<long?>("MilestoneCheckedDownloads")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Title")
                         .HasColumnType("TEXT");
 
@@ -347,6 +371,9 @@ namespace Asterion.Migrations
                     b.Property<string>("LastError")
                         .HasColumnType("TEXT");
 
+                    b.Property<long?>("Milestone")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime?>("NextRetryAt")
                         .HasColumnType("TEXT");
 
@@ -359,14 +386,12 @@ namespace Asterion.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("SerializedVersion")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<int>("Status")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("VersionId")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");

@@ -27,7 +27,7 @@ public class SettingsPanelBuilderTests
             TargetType = FollowTargetType.User,
             TargetId = "user-id",
             TargetName = "Zechiax",
-            Events = FollowEvents.ProjectUpdate | FollowEvents.NewProject,
+            Events = FollowEvents.All,
             CustomUpdateChannel = 555,
             CustomPingRole = 666,
             LoaderFilter = ["fabric"],
@@ -69,7 +69,7 @@ public class SettingsPanelBuilderTests
     public void FollowPanelHasAllSettingsWithinDiscordLimits()
     {
         var panel = FollowComponentBuilder.GetSettingsPanel(MakeFollow(), ["fabric", "quilt"], 42, 2, Back(), Loc,
-            null);
+            null, serverMilestones: true);
         var all = ComponentTree.Flatten(panel);
 
         using (Assert.EnterMultipleScope())
@@ -77,8 +77,8 @@ public class SettingsPanelBuilderTests
             Assert.That(all, Has.Count.LessThanOrEqualTo(ComponentTree.MaxComponentsPerMessage));
             Assert.That(Menus(panel).Select(m => m.CustomId), Is.EqualTo(new[]
             {
-                "follow_channel:42:7:2", "follow_newchannel:42:7:2", "follow_ping:42:7:2", "follow_newping:42:7:2", "follow_events:42:7:2", "follow_release:42:7:2",
-                "follow_loader:42:7:2"
+                "follow_channel:42:7:2", "follow_newchannel:42:7:2", "follow_ping:42:7:2", "follow_newping:42:7:2",
+                "follow_mschannel:42:7:2", "follow_events:42:7:2", "follow_release:42:7:2", "follow_loader:42:7:2"
             }));
             Assert.That(all.OfType<ButtonComponent>().Select(b => b.CustomId),
                 Is.EqualTo(new[] { "list:42:c:2:back", "follow-ign:42:7:2:0:open", "follow-remove:42:7:2" }));
@@ -104,6 +104,7 @@ public class SettingsPanelBuilderTests
     public async Task SubscriptionPanelStaysWithinDiscordLimits()
     {
         var dataService = Substitute.For<IDataService>();
+        dataService.MilestonesEnabledAsync(1).Returns(true);
         var panel = await EntryInteractionModule.BuildSettingsPanelAsync(MakeEntry(), 42, 2, dataService,
             MakeClient("fabric", "quilt"), Loc, null);
         var all = ComponentTree.Flatten(panel);
@@ -113,10 +114,14 @@ public class SettingsPanelBuilderTests
             Assert.That(all, Has.Count.LessThanOrEqualTo(ComponentTree.MaxComponentsPerMessage));
             Assert.That(Menus(panel).Select(m => m.CustomId), Is.EqualTo(new[]
             {
-                "entry_channel:42:AANobbMI:2", "entry_ping:42:AANobbMI:2", "release_filter:42:AANobbMI:2", "loader_filter:42:AANobbMI:2"
+                "entry_channel:42:AANobbMI:2", "entry_ping:42:AANobbMI:2", "entry_mschannel:42:AANobbMI:2",
+                "release_filter:42:AANobbMI:2", "loader_filter:42:AANobbMI:2"
             }));
             Assert.That(all.OfType<ButtonComponent>().Select(b => b.CustomId),
-                Is.EqualTo(new[] { "list:42:p:2:back", "entry-unsub:42:AANobbMI:2" }));
+                Is.EqualTo(new[]
+                {
+                    "list:42:p:2:back", "entry-ms-toggle:42:AANobbMI:2", "entry-unsub:42:AANobbMI:2"
+                }));
         }
     }
 

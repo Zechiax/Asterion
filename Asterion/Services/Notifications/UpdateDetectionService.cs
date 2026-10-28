@@ -76,6 +76,16 @@ public class UpdateDetectionService : BackgroundService
 
         await UpdateStatisticsDataAsync(projectList, ct);
 
+        // A failed milestone check must not stop the update messages
+        try
+        {
+            await ProcessMilestonesAsync(projectsDto, projectList, ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogError(ex, "Download milestone check failed");
+        }
+
         var updatedProjects = FilterUpdatedProjects(projectsDto, projectList).ToArray();
 
         if (updatedProjects.Length == 0)
@@ -149,6 +159,77 @@ public class UpdateDetectionService : BackgroundService
         _logger.LogInformation("Enqueued notifications for {VersionCount} new version(s) of project {ProjectId}",
             keepVersions.Count, project.Id);
 
+        _notificationSignal.Signal();
+    }
+
+    /// <summary>
+    ///     Enqueues milestone messages for projects whose downloads passed a milestone since the last check.
+    ///     The first check of a project only records its downloads, so nothing is sent for milestones reached
+    ///     before the bot tracked it.
+    /// </summary>
+    /// <param name="projectsDto">The projects read at the start of the pass, holding the last checked downloads</param>
+    private async Task ProcessMilestonesAsync(IEnumerable<ModrinthProject> projectsDto,
+        IReadOnlyCollection<Project> projects, CancellationToken ct)
+    {
+        var checkedDownloads = projectsDto.ToDictionary(p => p.ProjectId, p => p.MilestoneCheckedDownloads);
+
+        // Only projects never checked or with more downloads are loaded and saved. Ignores decreases, so a
+        // milestone is not sent again after Modrinth removes downloads.
+        var changed = projects
+            .Where(p => checkedDownloads.TryGetValue(p.Id, out var previous) &&
+                        (previous is null || p.Downloads > previous))
+            .ToList();
+
+        if (changed.Count == 0)
+            return;
+
+        using var scope = _services.CreateScope();
+        await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
+
+        var changedIds = changed.Select(p => p.Id).ToList();
+        var dbProjects = await db.ModrinthProjects
+            .Where(p => changedIds.Contains(p.ProjectId))
+            .ToDictionaryAsync(p => p.ProjectId, ct);
+        var enqueued = 0;
+
+        foreach (var project in changed)
+        {
+            // Removed since the pass started
+            if (!dbProjects.TryGetValue(project.Id, out var dbProject))
+                continue;
+
+            var previous = checkedDownloads[project.Id];
+            var current = (long)project.Downloads;
+            dbProject.MilestoneCheckedDownloads = current;
+
+            // The standard ladder has every milestone of the other ladders, no guild can have one if it has none
+            if (previous is null ||
+                DownloadMilestones.HighestCrossed(previous.Value, current, MilestoneLadder.Standard) is null)
+                continue;
+
+            var entries = await db.ModrinthEntries
+                .Include(e => e.Guild).ThenInclude(g => g.GuildSettings)
+                .Where(e => e.ProjectId == project.Id)
+                .ToListAsync(ct);
+
+            var follows = await db.FollowProjects
+                .Where(fp => fp.ProjectId == project.Id && !fp.Ignored)
+                .Select(fp => fp.Follow)
+                .Where(f => (f.Events & FollowEvents.DownloadMilestone) != 0)
+                .Include(f => f.Guild).ThenInclude(g => g.GuildSettings)
+                .ToListAsync(ct);
+
+            enqueued += _notificationScheduler.EnqueueMilestone(db, project, previous.Value, current, entries,
+                follows);
+        }
+
+        // Single atomic commit: the checked downloads and the milestone rows land together
+        await db.SaveChangesAsync(ct);
+
+        if (enqueued == 0)
+            return;
+
+        _logger.LogInformation("Enqueued {Count} download milestone notification(s)", enqueued);
         _notificationSignal.Signal();
     }
 

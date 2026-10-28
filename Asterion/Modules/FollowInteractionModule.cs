@@ -39,14 +39,15 @@ public class FollowInteractionModule(
     /// <param name="ownerId">The only user who can use the panel</param>
     /// <param name="notice">Short note under the title, e.g. "Following X"</param>
     public static async Task<MessageComponent> BuildSettingsPanelAsync(IFollowService followService,
-        ModrinthFollow follow, ulong ownerId, int listPage, ILocalizationService loc, CultureInfo? culture,
-        string? notice = null)
+        IDataService dataService, ModrinthFollow follow, ulong ownerId, int listPage, ILocalizationService loc,
+        CultureInfo? culture, string? notice = null)
     {
         var loaders = await GetLoaderOptionsAsync(followService, follow);
         var backButton = ManageInteractionModule.BackButton(ownerId, ManageTab.Creators, listPage, loc, culture);
+        var serverMilestones = await dataService.MilestonesEnabledAsync(follow.GuildId);
 
         return FollowComponentBuilder.GetSettingsPanel(follow, loaders, ownerId, listPage, backButton, loc, culture,
-            notice);
+            notice, serverMilestones);
     }
 
     /// <summary>
@@ -212,6 +213,22 @@ public class FollowInteractionModule(
         await SetChannelAsync(ownerId, followId, listPage, channelId.Value, f => f.NewProjectChannel = channelId);
     }
 
+    [ComponentInteraction(FollowComponentBuilder.MilestoneChannelMenuId + ":*:*:*")]
+    public async Task HandleMilestoneChannelSelectionAsync(ulong ownerId, int followId, int listPage,
+        string[] selectedValues)
+    {
+        var channelId = SettingsPanelBuilder.ParseSelectedId(selectedValues);
+
+        // Deselecting sends milestones to the server's milestone channel again
+        if (channelId is null)
+        {
+            await UpdateAsync(ownerId, followId, listPage, f => f.MilestoneChannel = null);
+            return;
+        }
+
+        await SetChannelAsync(ownerId, followId, listPage, channelId.Value, f => f.MilestoneChannel = channelId);
+    }
+
     /// <summary>
     ///     Saves the channel if the bot can send messages there, otherwise shows the saved state with a warning
     /// </summary>
@@ -289,8 +306,8 @@ public class FollowInteractionModule(
 
     private async Task ShowPanelAsync(ModrinthFollow follow, ulong ownerId, int listPage)
     {
-        var panel = await BuildSettingsPanelAsync(followService, follow, ownerId, listPage, LocalizationService,
-            CommandCultureInfo);
+        var panel = await BuildSettingsPanelAsync(followService, dataService, follow, ownerId, listPage,
+            LocalizationService, CommandCultureInfo);
         await ModifyOriginalResponseAsync(msg => msg.Components = panel);
     }
 

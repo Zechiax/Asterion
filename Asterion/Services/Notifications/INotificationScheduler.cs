@@ -27,4 +27,15 @@ public interface INotificationScheduler
     ///     Adds a NewProject PendingNotification row for the follow. Filters do not apply.
     /// </summary>
     void EnqueueNewProject(DataContext db, Project project, Version latestVersion, ModrinthFollow follow);
+
+    /// <summary>
+    ///     Adds DownloadMilestone PendingNotification rows for guilds with milestones enabled whose ladder has a
+    ///     milestone between the two download counts. Sends at most one row per guild: an entry decides for its
+    ///     guild (no row if it has milestones turned off), otherwise the first follow with the milestone event.
+    /// </summary>
+    /// <param name="candidateEntries">Entries of the project, with Guild.GuildSettings loaded</param>
+    /// <param name="candidateFollows">Follows tracking the project, with Guild.GuildSettings loaded</param>
+    /// <returns>Number of rows added</returns>
+    int EnqueueMilestone(DataContext db, Project project, long previousDownloads, long currentDownloads,
+        IEnumerable<ModrinthEntry> candidateEntries, IEnumerable<ModrinthFollow> candidateFollows);
 }

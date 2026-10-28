@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Globalization;
+using System.Text;
 using Asterion.Database.Models;
 using Asterion.Extensions;
 using Asterion.Services.Modrinth;
@@ -224,6 +225,46 @@ public static class ModrinthEmbedBuilder
         };
 
         return embed;
+    }
+
+    public static EmbedBuilder MilestoneEmbed(Project project, long milestone,
+        IEnumerable<TeamMember>? teamMembers = null)
+    {
+        var (emoji, color) = MilestoneTier(milestone);
+        var reached = milestone.ToString("#,0", CultureInfo.InvariantCulture);
+
+        return new EmbedBuilder
+        {
+            Author = GetEmbedAuthor(project, teamMembers),
+            Title = $"{emoji} {Format.Bold(project.Title)} reached {reached} downloads!",
+            Url = project.Url,
+            ThumbnailUrl = project.IconUrl,
+            Color = color,
+            Fields = new List<EmbedFieldBuilder>
+            {
+                new() {Name = "Downloads", Value = project.Downloads.SeparateThousands(), IsInline = true},
+                new() {Name = "Followers", Value = project.Followers.SeparateThousands(), IsInline = true}
+            },
+            Footer = new EmbedFooterBuilder
+            {
+                Text = "Download milestone"
+            },
+            Timestamp = DateTimeOffset.UtcNow
+        };
+    }
+
+    /// <summary>
+    ///     Emoji and color of the milestone's tier: bronze, silver, gold and diamond
+    /// </summary>
+    private static (string Emoji, Color Color) MilestoneTier(long milestone)
+    {
+        return milestone switch
+        {
+            < 10_000 => ("🥉", new Color(205, 127, 50)),
+            < 100_000 => ("🥈", new Color(192, 192, 192)),
+            < 1_000_000 => ("🥇", new Color(255, 215, 0)),
+            _ => ("💎", new Color(80, 200, 255))
+        };
     }
 
     private static EmbedBuilder GetCompactVersionUpdateEmbed(Project project, Version version,

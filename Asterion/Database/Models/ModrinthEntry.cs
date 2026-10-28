@@ -29,6 +29,11 @@ public class ModrinthEntry : IReleaseFilterable
 
     [Required] public DateTime Created { get; set; }
     
+    /// <summary>Channel for milestone messages, falls back to the server's milestone channel</summary>
+    public ulong? MilestoneChannel { get; set; }
+
+    [Required] public bool NotifyMilestones { get; set; } = true;
+
     [Required] public ReleaseType ReleaseFilter { get; set; } = ReleaseType.Alpha | ReleaseType.Beta | ReleaseType.Release;
 
     [NotMapped]

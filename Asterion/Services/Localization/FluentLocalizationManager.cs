@@ -5,13 +5,12 @@ namespace Asterion.Services.Localization;
 
 public class FluentLocalizationManager(FluentBundleStore store) : ILocalizationManager
 {
+    // Command and option names stay in English everywhere: the texts of the bot refer to them (e.g. `/manage`)
+    // and the same name in docs and support is easier to find than one per language
     public IDictionary<string, string> GetAllNames(IList<string> key, LocalizationTarget destinationType)
-        => GetAll(key, "name");
+        => new Dictionary<string, string>();
 
     public IDictionary<string, string> GetAllDescriptions(IList<string> key, LocalizationTarget destinationType)
-        => GetAll(key, "description");
-
-    private IDictionary<string, string> GetAll(IList<string> key, string attribute)
     {
         var messageId = "command-" + string.Join("-", key);
         var result = new Dictionary<string, string>();
@@ -20,7 +19,7 @@ public class FluentLocalizationManager(FluentBundleStore store) : ILocalizationM
         {
             if (locale == FluentBundleStore.DefaultLocale) continue; // the attribute literal is already the default
             if (!store.TryGet(locale, out var bundle)) continue;
-            if (bundle.TryGetMessage(messageId, attribute, null, out _, out var value))
+            if (bundle.TryGetMessage(messageId, "description", null, out _, out var value))
                 result[locale] = value!;
         }
 

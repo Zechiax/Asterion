@@ -40,6 +40,8 @@ list-subscriptions-description = Updates are sent for these projects
 list-subscriptions-empty = You are not subscribed to any projects. Use **Add project** to subscribe to one.
 list-subscription-entry = **{ $title }** ({ $id })
     In { $channel } since { $since }
+list-subscription-entry-no-channel = **{ $title }** ({ $id })
+    Since { $since } · :warning: No channel set
 entry-not-found = This server is not subscribed to this project
 entry-unsub-confirm-question = Unsubscribe from **{ $title }** ({ $id })?
 entry-unsubscribed = Unsubscribed from updates for **{ $title }** ({ $id }) :white_check_mark:
@@ -64,7 +66,7 @@ settings-release-filter = Release types
 settings-release-placeholder = Select release types
 settings-loader-filter = Loaders
 settings-loader-placeholder = All loaders
-settings-none = None
+settings-channel-none = Not set
 
 ## Manage panel
 manage-tab-general = General

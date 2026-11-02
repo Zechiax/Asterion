@@ -151,7 +151,7 @@ public class Asterion
 
         var modrinthClientConfig = new ModrinthClientConfig
         {
-            UserAgent = $"Zechiax/Asterion/{AppVersion.Core} (https://github.com/Zechiax/Asterion)",
+            UserAgent = $"Zechiax-Asterion/{AppVersion.Core} (https://github.com/Zechiax/Asterion)",
             RateLimitRetryCount = 3
         };
         

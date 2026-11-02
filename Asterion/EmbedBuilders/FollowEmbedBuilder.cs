@@ -57,7 +57,7 @@ public static class FollowEmbedBuilder
             events = FormatEvents(follow.Events, loc, culture),
             channel = follow.CustomUpdateChannel.HasValue
                 ? MentionUtils.MentionChannel(follow.CustomUpdateChannel.Value)
-                : loc.Get("settings-none", culture),
+                : loc.Get("settings-channel-none", culture),
             projects = follow.Projects.Count,
             ignored = follow.Projects.Count(fp => fp.Ignored)
         });

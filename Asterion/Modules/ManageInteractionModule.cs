@@ -378,14 +378,19 @@ public class ManageInteractionModule(
 
     private static string FormatSubscriptionEntry(ModrinthEntry entry, ILocalizationService loc, CultureInfo? culture)
     {
+        var title = Format.Sanitize(entry.Project.Title ?? entry.ProjectId);
+        var since = TimestampTag.FromDateTime(entry.Created, TimestampTagStyles.ShortDate).ToString();
+
+        if (entry.CustomUpdateChannel is not { } channelId)
+            return loc.Get("list-subscription-entry-no-channel", culture,
+                new { title, id = entry.ProjectId, since });
+
         return loc.Get("list-subscription-entry", culture, new
         {
-            title = Format.Sanitize(entry.Project.Title ?? entry.ProjectId),
+            title,
             id = entry.ProjectId,
-            channel = entry.CustomUpdateChannel.HasValue
-                ? MentionUtils.MentionChannel(entry.CustomUpdateChannel.Value)
-                : loc.Get("settings-none", culture),
-            since = TimestampTag.FromDateTime(entry.Created, TimestampTagStyles.ShortDate).ToString()
+            channel = MentionUtils.MentionChannel(channelId),
+            since
         });
     }
 

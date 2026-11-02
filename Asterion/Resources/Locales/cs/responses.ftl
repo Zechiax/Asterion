@@ -41,6 +41,8 @@ list-subscriptions-description = Zprávy se posílají o těchto projektech
 list-subscriptions-empty = Tento server neodebírá žádné projekty. Nějaký můžeš začít odebírat pomocí **Přidat projekt**.
 list-subscription-entry = **{ $title }** ({ $id })
     V { $channel } od { $since }
+list-subscription-entry-no-channel = **{ $title }** ({ $id })
+    Od { $since } · :warning: Kanál není nastaven
 entry-not-found = Tento server tento projekt neodebírá
 entry-unsub-confirm-question = Přestat odebírat **{ $title }** ({ $id })?
 entry-unsubscribed = Odběr **{ $title }** ({ $id }) byl zrušen :white_check_mark:
@@ -65,7 +67,7 @@ settings-release-filter = Typy vydání
 settings-release-placeholder = Vyber typy vydání
 settings-loader-filter = Loadery
 settings-loader-placeholder = Všechny loadery
-settings-none = Žádné
+settings-channel-none = Nenastaven
 
 ## Manage panel
 manage-tab-general = Obecné

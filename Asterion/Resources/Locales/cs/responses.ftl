@@ -9,11 +9,11 @@ follow-event-new-project-description = Projekty, které tvůrce zveřejní
 follow-event-download-milestone-description = Když některý z projektů tvůrce dosáhne milníku
 follow-event-none = Žádné
 follow-added =
-    Sleduji **{ $name }** :white_check_mark: Sleduji { $count ->
+    Sleduji **{ $name }** :white_check_mark: Hlídám { $count ->
         [one] { $count } projekt
         [few] { $count } projekty
        *[other] { $count } projektů
-    }, zprávy budou posílány do { $channel }.
+    }, zprávy budu posílat do { $channel }.
 follow-added-sync-failed = Sleduji **{ $name }**, ale projekty se zatím nepodařilo načíst ({ $error }). Brzy to zkusím znovu.
 follow-already-following = Tento server už sleduje **{ $name }**
 follow-limit-reached = Tento server už sleduje maximální počet tvůrců: { $max }
@@ -27,7 +27,7 @@ follow-list-entry =
     Typ: { $type }
     Události: { $events }
     Kanál: { $channel }
-    Projekty: { $projects } ({ $ignored } ignorováno)
+    Projekty: { $projects } (ignorováno: { $ignored })
 follow-target-user = Uživatel Modrinthu
 follow-target-organization = Organizace na Modrinthu
 follow-button-follow-user = Sledovat uživatele
@@ -38,12 +38,12 @@ list-tab-projects = Projekty ({ $count })
 list-tab-creators = Tvůrci ({ $count })
 list-subscriptions-title = Odebírané projekty
 list-subscriptions-description = Zprávy se posílají o těchto projektech
-list-subscriptions-empty = Neodebíráš žádné projekty. Pomocí **Přidat projekt** nějaký začni odebírat.
+list-subscriptions-empty = Tento server neodebírá žádné projekty. Nějaký můžeš začít odebírat pomocí **Přidat projekt**.
 list-subscription-entry = **{ $title }** ({ $id })
     V { $channel } od { $since }
 entry-not-found = Tento server tento projekt neodebírá
 entry-unsub-confirm-question = Přestat odebírat **{ $title }** ({ $id })?
-entry-unsubscribed = Odebírání zpráv o **{ $title }** ({ $id }) bylo zrušeno :white_check_mark:
+entry-unsubscribed = Odběr **{ $title }** ({ $id }) byl zrušen :white_check_mark:
 follow-remove-confirm-question = Přestat sledovat **{ $name }**?
 
 ## Settings panel
@@ -76,9 +76,9 @@ manage-add-project-placeholder = Slug, ID nebo odkaz, např. sodium
 manage-add-follow-title = Sledovat tvůrce
 manage-add-follow-input = Uživatel Modrinthu
 manage-add-follow-placeholder = Uživatelské jméno, ID nebo odkaz
-manage-subscribed = Odebíráš **{ $title }** :white_check_mark: Zprávy budou posílány do { $channel }.
+manage-subscribed = Odebíráš **{ $title }** :white_check_mark: Zprávy budu posílat do { $channel }.
 manage-already-subscribed = Tento server už odebírá **{ $title }**
-follow-projects-title = Projekty uživatele { $name }
+follow-projects-title = Projekty tvůrce { $name }
 follow-projects-description = O ignorovaných projektech se zprávy neposílají
 follow-projects-empty = Zatím nejsou známy žádné projekty, načtou se při příští synchronizaci
 follow-project-entry = **{ $title }** ({ $id })
@@ -102,8 +102,8 @@ server-unsubscribe-all-title = Zrušit odběr všech projektů
 server-unsubscribe-all-warning =
     ## :warning: Tím se odstraní { $count ->
         [one] { $count } odběr
-        [few] { $count } odběry
-       *[other] { $count } odběrů
+        [few] všechny { $count } odběry
+       *[other] všech { $count } odběrů
     }
     O žádném z odebíraných projektů již nebudou chodit zprávy o aktualizacích a nastavení všech odběrů (kanál, role k označení, filtry) se smaže. Tuto akci nelze vrátit zpět.
 server-unsubscribe-all-word = odebrat
@@ -111,8 +111,8 @@ server-unfollow-all-title = Přestat sledovat všechny tvůrce
 server-unfollow-all-warning =
     ## :warning: Tím se odstraní { $count ->
         [one] { $count } sledování
-        [few] { $count } sledování
-       *[other] { $count } sledování
+        [few] všechna { $count } sledování
+       *[other] všech { $count } sledování
     }
     O žádném ze sledovaných tvůrců již nebudou chodit zprávy a nastavení všech sledování (kanály, role k označení, ignorované projekty, filtry) se smaže. Tuto akci nelze vrátit zpět.
 server-unfollow-all-word = nesledovat
@@ -128,7 +128,7 @@ server-unfollowed-all = Přestal jsem sledovat { $count ->
     } :white_check_mark:
 server-notifications-title = Zprávy o aktualizacích
 server-notifications-description = Jak vypadají zprávy o nových verzích
-server-message-style = Styl zprávy
+server-message-style = Styl zpráv
 server-changelog-style = Styl seznamu změn
 server-search-title = Vyhledávání
 server-subscribe-button = Tlačítko odběru
@@ -139,7 +139,7 @@ server-changelog-length-value = { $length } znaků
 server-changelog-length-value-default = { $length } znaků (výchozí)
 server-changelog-length-title = Délka seznamu změn
 server-changelog-length-input = Maximální počet znaků
-server-changelog-length-hint = Od { $min } do { $max }. Nechej prázdné pro obnovení výchozí hodnoty ({ $default }).
+server-changelog-length-hint = Od { $min } do { $max }. Nech pole prázdné pro obnovení výchozí hodnoty ({ $default }).
 message-style-full = Úplný
 message-style-compact = Kompaktní
 changelog-style-plaintext = Prostý text
@@ -173,7 +173,7 @@ button-milestones-off = Milníky: vypnuty
 button-milestones-server-off = Milníky: vypnuty na tomto serveru
 button-ignore = Ignorovat
 button-unignore = Přestat ignorovat
-button-ignored-projects = Projekty ({ $ignored } z { $count } ignorováno)
+button-ignored-projects = Projekty (ignorováno: { $ignored } z { $count })
 button-settings = Nastavení
 button-refresh = Obnovit
 button-unfollow = Přestat sledovat
@@ -186,14 +186,14 @@ removal-cancelled = Zrušeno, nic nebylo odstraněno
 ## Charts
 chart-caption-downloads = Stažení projektu **{ $title }** { $range ->
     [day] po hodinách za posledních 24 hodin
-    [week] po 6 hodinách za posledních 7 dní
+    [week] v 6hodinových intervalech za posledních 7 dní
     [quarter] po dnech za posledních 90 dní
     [year] po týdnech za poslední rok
    *[month] po dnech za posledních 30 dní
 } (UTC)
 chart-caption-followers = Noví sledující projektu **{ $title }** { $range ->
     [day] po hodinách za posledních 24 hodin
-    [week] po 6 hodinách za posledních 7 dní
+    [week] v 6hodinových intervalech za posledních 7 dní
     [quarter] po dnech za posledních 90 dní
     [year] po týdnech za poslední rok
    *[month] po dnech za posledních 30 dní

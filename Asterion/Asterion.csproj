@@ -46,12 +46,12 @@
         <PackageReference Include="Serilog.Extensions.Logging" Version="10.0.0" />
         <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
         <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
-        <PackageReference Include="SkiaSharp" Version="4.154.0" />
-        <PackageReference Include="SkiaSharp.HarfBuzz" Version="4.154.0" />
-        <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="4.154.0" />
-        <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" Version="14.2.1.400" />
+        <PackageReference Include="SkiaSharp" Version="4.155.0" />
+        <PackageReference Include="SkiaSharp.HarfBuzz" Version="4.155.0" />
+        <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="4.155.0" />
+        <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" Version="14.4.0" />
         <PackageReference Include="System.Data.SQLite" Version="2.0.4" />
-        <PackageReference Include="Tomlyn" Version="2.10.1" />
+        <PackageReference Include="Tomlyn" Version="2.11.1" />
     </ItemGroup>
 
     <ItemGroup>

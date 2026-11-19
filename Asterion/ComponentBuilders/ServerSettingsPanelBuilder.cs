@@ -1,7 +1,6 @@
 using System.Globalization;
 using Asterion.Database.Models;
 using Asterion.Interfaces;
-using Asterion.Modules;
 using Discord;
 
 namespace Asterion.ComponentBuilders;
@@ -140,7 +139,8 @@ public static class ServerSettingsPanelBuilder
     ///     Sub-panel for the guild's default release-type and loader filters, send with <see cref="MessageFlags.ComponentsV2" />
     /// </summary>
     public static MessageComponent BuildDefaultFilters(GuildSettings settings, IEnumerable<string> loaders,
-        int overrideCount, ulong ownerId, ILocalizationService loc, CultureInfo? culture, string? notice = null)
+        int overrideCount, ulong ownerId, ButtonBuilder backButton, ILocalizationService loc, CultureInfo? culture,
+        string? notice = null)
     {
         string Id(string prefix) => $"{prefix}:{ownerId}";
 
@@ -158,7 +158,7 @@ public static class ServerSettingsPanelBuilder
 
         var buttons = new[]
         {
-            ManageInteractionModule.BackButton(ownerId, ManageTab.Notifications, 0, loc, culture),
+            backButton,
             new ButtonBuilder(loc.Get("server-reset-overrides", culture), Id(ResetOverridesButtonId),
                 ButtonStyle.Danger, isDisabled: overrideCount == 0)
         };

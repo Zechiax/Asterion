@@ -49,7 +49,7 @@ public class NotificationFilterEvaluatorTests
         var entry = MakeEntry(releaseFilter, loaderFilter);
         var version = MakeVersion(versionType, "fabric", "quilt");
 
-        Assert.That(NotificationFilterEvaluator.ShouldNotify(entry, version), Is.EqualTo(expected));
+        Assert.That(NotificationFilterEvaluator.ShouldNotify(entry, version, new GuildSettings()), Is.EqualTo(expected));
     }
 
     [TestCase(null, ReleaseType.Release, ProjectVersionType.Beta, false)]

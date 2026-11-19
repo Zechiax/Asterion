@@ -68,8 +68,9 @@ public class ServerSettingsPanelBuilderTests
             DefaultLoaderFilter = ["fabric"]
         };
 
+        var back = new ButtonBuilder("Back", "list:42:n:0:back", ButtonStyle.Secondary);
         var panel = ServerSettingsPanelBuilder.BuildDefaultFilters(settings, ["fabric", "neoforge"], overrideCount, 42,
-            Loc, null);
+            back, Loc, null);
         var all = ComponentTree.Flatten(panel);
         var buttons = all.OfType<ButtonComponent>().ToList();
 

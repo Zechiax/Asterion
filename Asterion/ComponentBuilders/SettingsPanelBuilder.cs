@@ -151,12 +151,34 @@ public static class SettingsPanelBuilder
             .WithPlaceholder(placeholder)
             .WithMinValues(optional ? 0 : 1)
             .WithMaxValues(3)
-            .AddOption("Alpha", ((int)ReleaseType.Alpha).ToString(),
-                isDefault: current is { } alpha && alpha.HasFlag(ReleaseType.Alpha))
-            .AddOption("Beta", ((int)ReleaseType.Beta).ToString(),
-                isDefault: current is { } beta && beta.HasFlag(ReleaseType.Beta))
-            .AddOption("Release", ((int)ReleaseType.Release).ToString(),
-                isDefault: current is { } release && release.HasFlag(ReleaseType.Release));
+            .AddOption("Alpha", ((int)ReleaseType.Alpha).ToString(), isDefault: current?.HasFlag(ReleaseType.Alpha) == true)
+            .AddOption("Beta", ((int)ReleaseType.Beta).ToString(), isDefault: current?.HasFlag(ReleaseType.Beta) == true)
+            .AddOption("Release", ((int)ReleaseType.Release).ToString(), isDefault: current?.HasFlag(ReleaseType.Release) == true);
+    }
+
+    public static SettingsField ReleaseFilterField(string customId, ReleaseType? current, GuildSettings guildSettings,
+        ILocalizationService loc, CultureInfo? culture)
+    {
+        var placeholder = loc.Get("settings-release-placeholder-default", culture,
+            new { value = FormatReleaseFilter(guildSettings.DefaultReleaseFilter) });
+
+        return new SettingsField(loc.Get("settings-release-filter", culture),
+            ReleaseFilterMenu(customId, current, placeholder, optional: true));
+    }
+
+    public static SettingsField? LoaderFilterField(string customId, IEnumerable<string> loaders, string[]? current,
+        GuildSettings guildSettings, ILocalizationService loc, CultureInfo? culture)
+    {
+        var hasDefaults = guildSettings.DefaultLoaderFilter is { Length: > 0 };
+        var placeholder = hasDefaults
+            ? loc.Get("settings-loader-placeholder-default", culture,
+                new { value = FormatLoaderFilter(guildSettings.DefaultLoaderFilter, loc, culture) })
+            : loc.Get("settings-loader-placeholder", culture);
+
+        var menu = LoaderFilterMenu(customId, loaders, current, placeholder,
+            hasDefaults ? loc.Get("settings-loader-all-override", culture) : null);
+
+        return menu is null ? null : new SettingsField(loc.Get("settings-loader-filter", culture), menu);
     }
 
     /// <summary>
@@ -257,31 +279,6 @@ public static class SettingsPanelBuilder
             return loc.Get("settings-loader-placeholder", culture);
 
         return string.Join(", ", loaders).Truncate(MaxSummaryLoadersLength);
-    }
-
-    public static string ReleaseFilterPlaceholder(GuildSettings? guildSettings, ILocalizationService loc,
-        CultureInfo? culture)
-    {
-        var value = FormatReleaseFilter(guildSettings?.DefaultReleaseFilter ?? GuildSettings.AllReleaseTypes);
-        return loc.Get("settings-release-placeholder-default", culture, new { value });
-    }
-
-    public static string LoaderFilterPlaceholder(GuildSettings? guildSettings, ILocalizationService loc,
-        CultureInfo? culture)
-    {
-        if (guildSettings?.DefaultLoaderFilter is { Length: > 0 } defaults)
-            return loc.Get("settings-loader-placeholder-default", culture,
-                new { value = FormatLoaderFilter(defaults, loc, culture) });
-
-        return loc.Get("settings-loader-placeholder", culture);
-    }
-
-    public static string? AllLoadersOverrideLabel(GuildSettings? guildSettings, ILocalizationService loc,
-        CultureInfo? culture)
-    {
-        return guildSettings?.DefaultLoaderFilter is { Length: > 0 }
-            ? loc.Get("settings-loader-all-override", culture)
-            : null;
     }
 
     private static int LoaderSortRank(string loader)

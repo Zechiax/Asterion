@@ -53,6 +53,9 @@ public class FollowNotificationTests
             MakeFollow(5, guildId: 40, events: FollowEvents.NewProject) // no update event
         };
 
+        foreach (var follow in follows)
+            follow.Guild = new Guild { GuildId = follow.GuildId, GuildSettings = new GuildSettings() };
+
         new NotificationScheduler().EnqueueForFollows(db, project, version, follows, new HashSet<ulong> { 10 });
         await db.SaveChangesAsync();
 

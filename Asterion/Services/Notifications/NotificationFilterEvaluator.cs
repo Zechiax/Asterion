@@ -7,9 +7,9 @@ namespace Asterion.Services.Notifications;
 
 public static class NotificationFilterEvaluator
 {
-    public static bool ShouldNotify(IReleaseFilterable entry, Version version, GuildSettings? guildSettings = null)
+    public static bool ShouldNotify(IReleaseFilterable entry, Version version, GuildSettings guildSettings)
     {
-        var releaseFilter = entry.ReleaseFilter ?? guildSettings?.DefaultReleaseFilter ?? GuildSettings.AllReleaseTypes;
+        var releaseFilter = entry.ReleaseFilter ?? guildSettings.DefaultReleaseFilter;
 
         switch (version.ProjectVersionType)
         {
@@ -19,8 +19,8 @@ public static class NotificationFilterEvaluator
                 return false;
         }
 
-        // Empty array on the entry overrides the guild default to allow all loaders; null inherits the guild default
-        var loaderFilter = entry.LoaderFilter ?? guildSettings?.DefaultLoaderFilter;
+        // Empty array overrides the guild default to allow all loaders; null inherits the guild default
+        var loaderFilter = entry.LoaderFilter ?? guildSettings.DefaultLoaderFilter;
         if (loaderFilter is { Length: > 0 } &&
             !version.Loaders.Any(l => loaderFilter.Contains(l, StringComparer.OrdinalIgnoreCase)))
             return false;

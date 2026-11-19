@@ -20,6 +20,7 @@ public class NotificationSchedulerTests
             ArrayId = 1,
             ProjectId = "project",
             GuildId = guildId,
+            Guild = new Guild { GuildId = guildId, GuildSettings = new GuildSettings() },
             Created = DateTime.UtcNow,
             ReleaseFilter = releaseFilter
         };

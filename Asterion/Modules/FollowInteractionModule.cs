@@ -43,14 +43,16 @@ public class FollowInteractionModule(
         IGuildService guildService, ModrinthFollow follow, ulong ownerId, int listPage, ILocalizationService loc,
         CultureInfo? culture, string? notice = null)
     {
+        var guild = await guildService.GetGuildAsync(follow.GuildId);
+        if (guild is null)
+            return SettingsPanelBuilder.BuildMessage(loc.Get("error-internal", culture),
+                SettingsPanelBuilder.FollowAccent);
+
         var loaders = await GetLoaderOptionsAsync(followService, follow);
         var backButton = ManageInteractionModule.BackButton(ownerId, ManageTab.Creators, listPage, loc, culture);
-        var guildSettings = (await guildService.GetGuildAsync(follow.GuildId))?.GuildSettings;
-        var serverMilestones = guildSettings?.MilestonesEnabled
-                               ?? await guildService.MilestonesEnabledAsync(follow.GuildId);
 
-        return FollowComponentBuilder.GetSettingsPanel(follow, loaders, ownerId, listPage, backButton, loc, culture,
-            notice, serverMilestones, guildSettings);
+        return FollowComponentBuilder.GetSettingsPanel(follow, loaders, ownerId, listPage, backButton,
+            guild.GuildSettings, loc, culture, notice);
     }
 
     /// <summary>

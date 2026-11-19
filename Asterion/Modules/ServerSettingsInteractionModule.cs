@@ -27,6 +27,7 @@ public class ServerSettingsInteractionModule(
     : AsterionInteractionModuleBase(localizationService, cultureProvider)
 {
     private const int ProjectBatchSize = 100;
+
     [DoUserCheck]
     [ComponentInteraction(ServerSettingsPanelBuilder.ManageRoleMenuId + ":*")]
     public Task HandleManageRoleAsync(ulong ownerId, string[] selectedValues)
@@ -125,37 +126,18 @@ public class ServerSettingsInteractionModule(
 
     [DoUserCheck]
     [ComponentInteraction(ServerSettingsPanelBuilder.DefaultReleaseMenuId + ":*")]
-    public async Task HandleDefaultReleaseFilterAsync(ulong ownerId, string[] selectedValues)
+    public Task HandleDefaultReleaseFilterAsync(ulong ownerId, string[] selectedValues)
     {
-        await DeferAsync();
-
         var filter = SettingsPanelBuilder.ParseReleaseFilter(selectedValues);
-        if (filter is not null &&
-            await guildService.UpdateGuildAsync(Context.Guild.Id,
-                guild => guild.GuildSettings.DefaultReleaseFilter = filter.Value) is null)
-        {
-            await SendStatusAsync(Errors.Internal);
-            return;
-        }
-
-        await ShowDefaultFiltersAsync(ownerId);
+        return UpdateDefaultFiltersAsync(ownerId, filter is null ? null : g => g.GuildSettings.DefaultReleaseFilter = filter.Value);
     }
 
     [DoUserCheck]
     [ComponentInteraction(ServerSettingsPanelBuilder.DefaultLoaderMenuId + ":*")]
-    public async Task HandleDefaultLoaderFilterAsync(ulong ownerId, string[] selectedValues)
+    public Task HandleDefaultLoaderFilterAsync(ulong ownerId, string[] selectedValues)
     {
-        await DeferAsync();
-
         var loaderFilter = selectedValues.Length > 0 ? selectedValues : null;
-        if (await guildService.UpdateGuildAsync(Context.Guild.Id,
-                guild => guild.GuildSettings.DefaultLoaderFilter = loaderFilter) is null)
-        {
-            await SendStatusAsync(Errors.Internal);
-            return;
-        }
-
-        await ShowDefaultFiltersAsync(ownerId);
+        return UpdateDefaultFiltersAsync(ownerId, g => g.GuildSettings.DefaultLoaderFilter = loaderFilter);
     }
 
     [DoUserCheck]
@@ -347,6 +329,19 @@ public class ServerSettingsInteractionModule(
         await ModifyOriginalResponseAsync(msg => msg.Components = components);
     }
 
+    private async Task UpdateDefaultFiltersAsync(ulong ownerId, Action<Guild>? update)
+    {
+        await DeferAsync();
+
+        if (update is not null && await guildService.UpdateGuildAsync(Context.Guild.Id, update) is null)
+        {
+            await SendStatusAsync(Errors.Internal);
+            return;
+        }
+
+        await ShowDefaultFiltersAsync(ownerId);
+    }
+
     private async Task ShowDefaultFiltersAsync(ulong ownerId, string? notice = null)
     {
         var guild = await guildService.GetGuildAsync(Context.Guild.Id);
@@ -358,8 +353,10 @@ public class ServerSettingsInteractionModule(
 
         var loaders = await GetServerLoaderOptionsAsync(Context.Guild.Id);
         var overrideCount = await guildService.CountFilterOverridesAsync(Context.Guild.Id);
+        var backButton = ManageInteractionModule.BackButton(ownerId, ManageTab.Notifications, 0, LocalizationService,
+            CommandCultureInfo);
         var panel = ServerSettingsPanelBuilder.BuildDefaultFilters(guild.GuildSettings, loaders, overrideCount, ownerId,
-            LocalizationService, CommandCultureInfo, notice);
+            backButton, LocalizationService, CommandCultureInfo, notice);
 
         await ModifyOriginalResponseAsync(msg => msg.Components = panel);
     }

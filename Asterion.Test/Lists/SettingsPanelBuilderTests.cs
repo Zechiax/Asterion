@@ -68,8 +68,8 @@ public class SettingsPanelBuilderTests
     [Test]
     public void FollowPanelHasAllSettingsWithinDiscordLimits()
     {
-        var panel = FollowComponentBuilder.GetSettingsPanel(MakeFollow(), ["fabric", "quilt"], 42, 2, Back(), Loc,
-            null, serverMilestones: true);
+        var panel = FollowComponentBuilder.GetSettingsPanel(MakeFollow(), ["fabric", "quilt"], 42, 2, Back(),
+            new GuildSettings { MilestonesEnabled = true }, Loc, null);
         var all = ComponentTree.Flatten(panel);
 
         using (Assert.EnterMultipleScope())
@@ -91,12 +91,14 @@ public class SettingsPanelBuilderTests
         var follow = MakeFollow();
 
         // The current filter stays selectable even if no project offers it
-        var loaderMenu = Menus(FollowComponentBuilder.GetSettingsPanel(follow, [], 42, 2, Back(), Loc, null))
+        var loaderMenu = Menus(FollowComponentBuilder.GetSettingsPanel(follow, [], 42, 2, Back(), new GuildSettings(),
+                Loc, null))
             .Single(m => m.CustomId == "follow_loader:42:7:2");
         Assert.That(loaderMenu.Options.Select(o => o.Value), Is.EqualTo(new[] { "fabric" }));
 
         follow.LoaderFilter = null;
-        Assert.That(Menus(FollowComponentBuilder.GetSettingsPanel(follow, [], 42, 2, Back(), Loc, null))
+        Assert.That(Menus(FollowComponentBuilder.GetSettingsPanel(follow, [], 42, 2, Back(), new GuildSettings(),
+                Loc, null))
             .Select(m => m.CustomId), Does.Not.Contain("follow_loader:42:7:2"));
     }
 
@@ -104,7 +106,7 @@ public class SettingsPanelBuilderTests
     public async Task SubscriptionPanelStaysWithinDiscordLimits()
     {
         var guildService = Substitute.For<IGuildService>();
-        guildService.MilestonesEnabledAsync(1).Returns(true);
+        guildService.GetGuildAsync(1).Returns(new Guild { GuildId = 1, GuildSettings = new GuildSettings { MilestonesEnabled = true } });
         var panel = await EntryInteractionModule.BuildSettingsPanelAsync(MakeEntry(), 42, 2, guildService,
             MakeClient("fabric", "quilt"), Loc, null);
         var all = ComponentTree.Flatten(panel);
@@ -134,8 +136,10 @@ public class SettingsPanelBuilderTests
         var entry = MakeEntry();
         entry.Project = new ModrinthProject { ProjectId = "AANobbMI", Title = "Sodium", LastCheckVersion = "v" };
 
-        var panel = await EntryInteractionModule.BuildSettingsPanelAsync(entry, 42, 2,
-            Substitute.For<IGuildService>(), client, Loc, null);
+        var guildService = Substitute.For<IGuildService>();
+        guildService.GetGuildAsync(1).Returns(new Guild { GuildId = 1, GuildSettings = new GuildSettings() });
+
+        var panel = await EntryInteractionModule.BuildSettingsPanelAsync(entry, 42, 2, guildService, client, Loc, null);
 
         // Discord rejects a select menu without options
         Assert.That(Menus(panel).Select(m => m.CustomId), Does.Not.Contain("loader_filter:42:AANobbMI:2"));

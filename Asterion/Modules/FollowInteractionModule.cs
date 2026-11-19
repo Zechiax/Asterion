@@ -45,10 +45,12 @@ public class FollowInteractionModule(
     {
         var loaders = await GetLoaderOptionsAsync(followService, follow);
         var backButton = ManageInteractionModule.BackButton(ownerId, ManageTab.Creators, listPage, loc, culture);
-        var serverMilestones = await guildService.MilestonesEnabledAsync(follow.GuildId);
+        var guildSettings = (await guildService.GetGuildAsync(follow.GuildId))?.GuildSettings;
+        var serverMilestones = guildSettings?.MilestonesEnabled
+                               ?? await guildService.MilestonesEnabledAsync(follow.GuildId);
 
         return FollowComponentBuilder.GetSettingsPanel(follow, loaders, ownerId, listPage, backButton, loc, culture,
-            notice, serverMilestones);
+            notice, serverMilestones, guildSettings);
     }
 
     /// <summary>
@@ -275,20 +277,15 @@ public class FollowInteractionModule(
     [ComponentInteraction(FollowComponentBuilder.ReleaseMenuId + ":*:*:*")]
     public Task HandleReleaseFilterSelectionAsync(ulong ownerId, int followId, int listPage, string[] selectedValues)
     {
-        // The menu requires at least one release type
-        ReleaseType releaseFilter = 0;
-        foreach (var value in selectedValues)
-            if (int.TryParse(value, out var flag))
-                releaseFilter |= (ReleaseType)flag;
-
+        var releaseFilter = SettingsPanelBuilder.ParseReleaseFilter(selectedValues);
         return UpdateAsync(ownerId, followId, listPage, f => f.ReleaseFilter = releaseFilter);
     }
 
     [ComponentInteraction(FollowComponentBuilder.LoaderMenuId + ":*:*:*")]
     public Task HandleLoaderFilterSelectionAsync(ulong ownerId, int followId, int listPage, string[] selectedValues)
     {
-        return UpdateAsync(ownerId, followId, listPage,
-            f => f.LoaderFilter = selectedValues.Length > 0 ? selectedValues : null);
+        var loaderFilter = SettingsPanelBuilder.ParseLoaderFilter(selectedValues);
+        return UpdateAsync(ownerId, followId, listPage, f => f.LoaderFilter = loaderFilter);
     }
 
     private async Task UpdateAsync(ulong ownerId, int followId, int listPage, Action<ModrinthFollow> update)

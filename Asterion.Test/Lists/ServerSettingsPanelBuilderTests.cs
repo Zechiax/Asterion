@@ -1,12 +1,18 @@
 using System.Globalization;
 using Asterion.ComponentBuilders;
 using Asterion.Database.Models;
+using Asterion.Interfaces;
+using Asterion.Services.Localization;
+using Discord;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Asterion.Test.Lists;
 
 [TestFixture]
 public class ServerSettingsPanelBuilderTests
 {
+    private static readonly ILocalizationService Loc = new LocalizationService(
+        new FluentBundleStore(NullLogger<FluentBundleStore>.Instance), NullLogger<LocalizationService>.Instance);
     [TestCase("unsubscribe", true)]
     [TestCase("  Unsubscribe ", true)]
     [TestCase("unsubscrib", false)]
@@ -49,5 +55,31 @@ public class ServerSettingsPanelBuilderTests
     public void ParsesChangelogLength(string? input, int? expected)
     {
         Assert.That(ServerSettingsPanelBuilder.ParseChangelogLength(input), Is.EqualTo(expected));
+    }
+
+    [TestCase(0, true)]
+    [TestCase(3, false)]
+    public void DefaultFiltersSubPanelStaysWithinLimitsAndDisablesResetWhenNoOverrides(int overrideCount,
+        bool expectedDisabled)
+    {
+        var settings = new GuildSettings
+        {
+            DefaultReleaseFilter = ReleaseType.Release | ReleaseType.Beta,
+            DefaultLoaderFilter = ["fabric"]
+        };
+
+        var panel = ServerSettingsPanelBuilder.BuildDefaultFilters(settings, ["fabric", "neoforge"], overrideCount, 42,
+            Loc, null);
+        var all = ComponentTree.Flatten(panel);
+        var buttons = all.OfType<ButtonComponent>().ToList();
+
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(all, Has.Count.LessThanOrEqualTo(ComponentTree.MaxComponentsPerMessage));
+            Assert.That(all.OfType<SelectMenuComponent>().Select(m => m.CustomId),
+                Is.EqualTo(new[] { "srv_relfilter:42", "srv_ldrfilter:42" }));
+            Assert.That(buttons.Single(b => b.CustomId == "srv_reset_filters:42").IsDisabled,
+                Is.EqualTo(expectedDisabled));
+        }
     }
 }

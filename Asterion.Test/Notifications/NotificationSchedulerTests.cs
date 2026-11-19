@@ -117,4 +117,33 @@ public class NotificationSchedulerTests
         }));
         Assert.That(rows.All(r => r.Kind == NotificationKind.DownloadMilestone && r.VersionId == null));
     }
+
+    [Test]
+    public async Task EnqueueAppliesGuildDefaultFiltersWhenEntryAndFollowHaveNoOverride()
+    {
+        await using var provider = InMemoryDb.BuildServiceProvider();
+        await using var db = InMemoryDb.OpenDb(provider);
+
+        var project = new Project { Id = "p", Title = "P", Team = "t" };
+        var beta = new Version
+            { Id = "v", ProjectId = "p", ProjectVersionType = ProjectVersionType.Beta, Loaders = ["fabric"] };
+
+        var entry = new ModrinthEntry
+        {
+            EntryId = 1, ProjectId = "p", GuildId = 100,
+            Guild = new Guild { GuildId = 100, GuildSettings = new GuildSettings { DefaultReleaseFilter = ReleaseType.Release } }
+        };
+        var follow = new ModrinthFollow
+        {
+            Id = 2, GuildId = 200, TargetId = "u", TargetName = "u", Events = FollowEvents.ProjectUpdate,
+            Guild = new Guild { GuildId = 200, GuildSettings = new GuildSettings { DefaultReleaseFilter = ReleaseType.Beta } }
+        };
+
+        var scheduler = new NotificationScheduler();
+        scheduler.EnqueueForEntries(db, project, beta, [entry]);
+        scheduler.EnqueueForFollows(db, project, beta, [follow], new HashSet<ulong>());
+
+        Assert.That(db.PendingNotifications.Local.Select(r => (r.GuildId, r.FollowId)),
+            Is.EqualTo(new[] { (200UL, (int?)2) }));
+    }
 }

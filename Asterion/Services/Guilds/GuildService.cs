@@ -137,4 +137,49 @@ public class GuildService : IGuildService
             .Select(s => s.MilestonesEnabled)
             .FirstOrDefaultAsync(ct);
     }
+
+    public async Task<int> CountFilterOverridesAsync(ulong guildId, CancellationToken ct = default)
+    {
+        using var scope = _services.CreateScope();
+        await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
+
+        var entries = await db.ModrinthEntries
+            .CountAsync(e => e.GuildId == guildId && (e.ReleaseFilter != null || e.SerializedLoaderFilter != null), ct);
+        var follows = await db.ModrinthFollows
+            .CountAsync(f => f.GuildId == guildId && (f.ReleaseFilter != null || f.SerializedLoaderFilter != null), ct);
+
+        return entries + follows;
+    }
+
+    public async Task<int> ResetFilterOverridesAsync(ulong guildId, CancellationToken ct = default)
+    {
+        using var scope = _services.CreateScope();
+        await using var db = scope.ServiceProvider.GetRequiredService<DataContext>();
+
+        var entries = await db.ModrinthEntries
+            .Where(e => e.GuildId == guildId && (e.ReleaseFilter != null || e.SerializedLoaderFilter != null))
+            .ToListAsync(ct);
+        var follows = await db.ModrinthFollows
+            .Where(f => f.GuildId == guildId && (f.ReleaseFilter != null || f.SerializedLoaderFilter != null))
+            .ToListAsync(ct);
+
+        var count = entries.Count + follows.Count;
+        if (count == 0)
+            return 0;
+
+        foreach (var entry in entries)
+        {
+            entry.ReleaseFilter = null;
+            entry.LoaderFilter = null;
+        }
+
+        foreach (var follow in follows)
+        {
+            follow.ReleaseFilter = null;
+            follow.LoaderFilter = null;
+        }
+
+        await db.SaveChangesAsync(ct);
+        return count;
+    }
 }

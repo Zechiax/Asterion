@@ -5,6 +5,6 @@
 /// </summary>
 public interface IReleaseFilterable
 {
-    ReleaseType ReleaseFilter { get; }
+    ReleaseType? ReleaseFilter { get; }
     string[]? LoaderFilter { get; }
 }

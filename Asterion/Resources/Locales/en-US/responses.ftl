@@ -64,8 +64,11 @@ settings-events = Events
 settings-events-placeholder = No events
 settings-release-filter = Release types
 settings-release-placeholder = Select release types
+settings-release-placeholder-default = Server default ({ $value })
 settings-loader-filter = Loaders
 settings-loader-placeholder = All loaders
+settings-loader-placeholder-default = Server default ({ $value })
+settings-loader-all-override = All loaders (ignore server default)
 settings-channel-none = Not set
 
 ## Manage panel
@@ -131,6 +134,21 @@ message-style-compact = Compact
 changelog-style-plaintext = Plain text
 changelog-style-codeblock = Code block
 changelog-style-nochangelog = No changelog
+server-default-filters = Default filters
+server-default-filters-summary = { $releases } · { $loaders }
+server-default-filters-title = Default filters
+server-default-filters-description = Applied to all subscribed projects and followed creators unless overridden in their own settings
+server-reset-overrides = Reset all overrides
+server-reset-overrides-confirm =
+    Reset custom release and loader filters on { $count ->
+        [one] { $count } project or creator
+       *[other] { $count } projects and creators
+    }? They will follow the server defaults again.
+server-reset-overrides-done =
+    Reset filter overrides on { $count ->
+        [one] { $count } project or creator
+       *[other] { $count } projects and creators
+    } :white_check_mark:
 server-milestones-title = Download milestones
 server-milestones = Milestone messages
 server-milestones-enabled = Sent when a project reaches a download milestone

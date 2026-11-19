@@ -34,8 +34,13 @@ public class ModrinthEntry : IReleaseFilterable
 
     [Required] public bool NotifyMilestones { get; set; } = true;
 
-    [Required] public ReleaseType ReleaseFilter { get; set; } = ReleaseType.Alpha | ReleaseType.Beta | ReleaseType.Release;
+    /// <summary>Release type filter override, null = inherit the server's default</summary>
+    public ReleaseType? ReleaseFilter { get; set; }
 
+    /// <summary>
+    ///     Loader filter override: null = inherit the server's default, empty array = explicitly allow all loaders,
+    ///     non-empty = only those loaders.
+    /// </summary>
     [NotMapped]
     public string[]? LoaderFilter
     {

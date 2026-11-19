@@ -169,4 +169,29 @@ public partial class ModrinthService
             return null;
         }
     }
+
+    public async Task<Loader[]?> GetLoadersAsync()
+    {
+        if (_cache.TryGetValue("loaders", out var value) && value is Loader[] loaders)
+        {
+            _logger.LogDebug("Fetched loader list from cache");
+            return loaders;
+        }
+
+        try
+        {
+            _logger.LogDebug("Loaders not in cache, fetching from api...");
+            var fetched = await _api.Tag.GetLoadersAsync();
+
+            _cache.Set("loaders", fetched, TimeSpan.FromHours(12));
+
+            _logger.LogDebug("Loaders set in cache");
+            return fetched;
+        }
+        catch (Exception e)
+        {
+            _logger.LogWarning("Could not get list of loaders: {Exception}", e.Message);
+            return null;
+        }
+    }
 }

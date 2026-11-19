@@ -214,4 +214,76 @@ public class SettingsPanelBuilderTests
     {
         Assert.That(SettingsPanelBuilder.ParseSelectedId(values), Is.EqualTo(expected));
     }
+
+    [Test]
+    public void OptionalReleaseMenuAllowsClearingToInheritDefault()
+    {
+        var menu = SettingsPanelBuilder.ReleaseFilterMenu("rel", null, "Server default", optional: true).Build();
+
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(menu.MinValues, Is.EqualTo(0));
+            Assert.That(menu.Options.All(o => o.IsDefault != true), Is.True);
+        }
+    }
+
+    [Test]
+    public void LoaderMenuIncludesAllLoadersOverrideOptionAndRespectsLimit()
+    {
+        var loaders = Enumerable.Range(0, 30).Select(i => $"loader{i:D2}");
+
+        var menu = SettingsPanelBuilder.LoaderFilterMenu("loader", loaders, [], "Server default",
+            allLoadersOptionLabel: "All loaders (ignore server default)")!.Build();
+
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(menu.Options, Has.Count.EqualTo(25));
+            Assert.That(menu.Options.First().Value, Is.EqualTo(SettingsPanelBuilder.AllLoadersOptionValue));
+            Assert.That(menu.Options.First().IsDefault, Is.True);
+        }
+    }
+
+    [Test]
+    public void LoaderMenuPreservesPriorityOrderBeforeTrimmingTo25()
+    {
+        var loaders = new[] { "zzz-tracked" }.Concat(Enumerable.Range(0, 30).Select(i => $"a-global{i:D2}"));
+
+        var menu = SettingsPanelBuilder.LoaderFilterMenu("loader", loaders, null, "All",
+            preserveLoaderOrder: true)!.Build();
+
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(menu.Options, Has.Count.EqualTo(25));
+            Assert.That(menu.Options.Select(o => o.Value), Does.Contain("zzz-tracked"));
+        }
+    }
+
+    [Test]
+    public void LoaderMenuPlacesMainLoadersFirst()
+    {
+        var menu = SettingsPanelBuilder.LoaderFilterMenu("loader", ["bukkit", "forge", "neoforge", "fabric", "sponge"],
+            null, "All")!.Build();
+
+        Assert.That(menu.Options.Select(o => o.Value),
+            Is.EqualTo(new[] { "fabric", "neoforge", "forge", "bukkit", "sponge" }));
+    }
+
+    [Test]
+    public void ParsesReleaseAndLoaderFilters()
+    {
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(SettingsPanelBuilder.ParseReleaseFilter([]), Is.Null);
+            Assert.That(SettingsPanelBuilder.ParseReleaseFilter(["4", "2"]),
+                Is.EqualTo(ReleaseType.Release | ReleaseType.Beta));
+
+            Assert.That(SettingsPanelBuilder.ParseLoaderFilter([]), Is.Null);
+            Assert.That(SettingsPanelBuilder.ParseLoaderFilter([SettingsPanelBuilder.AllLoadersOptionValue]),
+                Is.Empty);
+            Assert.That(SettingsPanelBuilder.ParseLoaderFilter([SettingsPanelBuilder.AllLoadersOptionValue, "fabric"]),
+                Is.Empty);
+            Assert.That(SettingsPanelBuilder.ParseLoaderFilter(["fabric", "quilt"]),
+                Is.EqualTo(new[] { "fabric", "quilt" }));
+        }
+    }
 }

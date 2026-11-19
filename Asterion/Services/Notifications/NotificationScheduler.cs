@@ -14,7 +14,7 @@ public class NotificationScheduler : INotificationScheduler
 
         foreach (var entry in candidateEntries)
         {
-            if (!NotificationFilterEvaluator.ShouldNotify(entry, version))
+            if (!NotificationFilterEvaluator.ShouldNotify(entry, version, entry.Guild?.GuildSettings))
                 continue;
 
             db.PendingNotifications.Add(snapshot.CreateRow(entry.GuildId, NotificationKind.Update, entryId: entry.EntryId));
@@ -37,7 +37,7 @@ public class NotificationScheduler : INotificationScheduler
             if (!follow.Events.HasFlag(FollowEvents.ProjectUpdate))
                 continue;
 
-            if (!NotificationFilterEvaluator.ShouldNotify(follow, version))
+            if (!NotificationFilterEvaluator.ShouldNotify(follow, version, follow.Guild?.GuildSettings))
                 continue;
 
             notifiedGuilds.Add(follow.GuildId);

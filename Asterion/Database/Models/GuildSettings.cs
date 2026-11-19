@@ -1,11 +1,14 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json;
 
 namespace Asterion.Database.Models;
 
 [Table("GuildSettings")]
 public class GuildSettings
 {
+    public const ReleaseType AllReleaseTypes = ReleaseType.Alpha | ReleaseType.Beta | ReleaseType.Release;
+
     [Key] public ulong GuildSettingsId { get; set; }
 
     [ForeignKey("Guild")] public ulong GuildId { get; set; }
@@ -57,4 +60,25 @@ public class GuildSettings
     ///     Role pinged in milestone messages, null = nobody is pinged
     /// </summary>
     public ulong? MilestonePingRole { get; set; }
+
+    /// <summary>
+    ///     Default release types for subscriptions and follows that don't override it
+    /// </summary>
+    public ReleaseType DefaultReleaseFilter { get; set; } = AllReleaseTypes;
+
+    /// <summary>
+    ///     Default loaders for subscriptions and follows that don't override it, null = all loaders
+    /// </summary>
+    [NotMapped]
+    public string[]? DefaultLoaderFilter
+    {
+        get => SerializedDefaultLoaderFilter == null
+            ? null
+            : JsonSerializer.Deserialize<string[]>(SerializedDefaultLoaderFilter);
+        set => SerializedDefaultLoaderFilter = value is { Length: > 0 }
+            ? JsonSerializer.Serialize(value)
+            : null;
+    }
+
+    public string? SerializedDefaultLoaderFilter { get; private set; }
 }

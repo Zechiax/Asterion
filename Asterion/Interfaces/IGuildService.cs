@@ -34,4 +34,15 @@ public interface IGuildService
     ///     If the server has milestone messages turned on in its settings
     /// </summary>
     public Task<bool> MilestonesEnabledAsync(ulong guildId, CancellationToken ct = default);
+
+    /// <summary>
+    ///     Number of subscriptions and follows of the guild that have custom release or loader filter overrides
+    /// </summary>
+    public Task<int> CountFilterOverridesAsync(ulong guildId, CancellationToken ct = default);
+
+    /// <summary>
+    ///     Clears release and loader filter overrides on all subscriptions and follows of the guild
+    /// </summary>
+    /// <returns>Number of subscriptions and follows that were reset</returns>
+    public Task<int> ResetFilterOverridesAsync(ulong guildId, CancellationToken ct = default);
 }

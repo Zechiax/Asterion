@@ -35,9 +35,10 @@ public static class FollowComponentBuilder
     /// <param name="backButton">Button back to the list</param>
     /// <param name="notice">Short note under the title, e.g. "Following X"</param>
     /// <param name="serverMilestones">If the server has milestones on, the milestone channel is hidden otherwise</param>
+    /// <param name="guildSettings">Server settings for default filter placeholders and all-loaders override option</param>
     public static MessageComponent GetSettingsPanel(ModrinthFollow follow, IEnumerable<string> loaders, ulong ownerId,
         int listPage, ButtonBuilder backButton, ILocalizationService loc, CultureInfo? culture, string? notice = null,
-        bool serverMilestones = false)
+        bool serverMilestones = false, GuildSettings? guildSettings = null)
     {
         string Id(string prefix) => $"{prefix}:{ownerId}:{follow.Id}:{listPage}";
 
@@ -67,10 +68,11 @@ public static class FollowComponentBuilder
             GetEventsMenu(follow, Id(EventsMenuId), loc, culture)));
         fields.Add(new SettingsField(loc.Get("settings-release-filter", culture),
             SettingsPanelBuilder.ReleaseFilterMenu(Id(ReleaseMenuId), follow.ReleaseFilter,
-                loc.Get("settings-release-placeholder", culture))));
+                SettingsPanelBuilder.ReleaseFilterPlaceholder(guildSettings, loc, culture), optional: true)));
 
         var loaderMenu = SettingsPanelBuilder.LoaderFilterMenu(Id(LoaderMenuId), loaders, follow.LoaderFilter,
-            loc.Get("settings-loader-placeholder", culture));
+            SettingsPanelBuilder.LoaderFilterPlaceholder(guildSettings, loc, culture),
+            SettingsPanelBuilder.AllLoadersOverrideLabel(guildSettings, loc, culture));
         if (loaderMenu is not null)
             fields.Add(new SettingsField(loc.Get("settings-loader-filter", culture), loaderMenu));
 

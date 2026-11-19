@@ -286,7 +286,7 @@ public static class SettingsPanelBuilder
 
     private static int LoaderSortRank(string loader)
     {
-        var index = Array.FindIndex(MainLoaders, m => string.Equals(m, loader, StringComparison.OrdinalIgnoreCase));
+        var index = System.Array.FindIndex(MainLoaders, m => string.Equals(m, loader, StringComparison.OrdinalIgnoreCase));
         return index >= 0 ? index : MainLoaders.Length;
     }
 

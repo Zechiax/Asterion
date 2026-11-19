@@ -34,10 +34,10 @@ public static class FollowComponentBuilder
     /// <param name="listPage">List page the panel was opened from, carried in all IDs of the panel</param>
     /// <param name="backButton">Button back to the list</param>
     /// <param name="notice">Short note under the title, e.g. "Following X"</param>
-    /// <param name="serverMilestones">If the server has milestones on, the milestone channel is hidden otherwise</param>
+    /// <param name="guildSettings">Server settings for milestones and default filter placeholders</param>
     public static MessageComponent GetSettingsPanel(ModrinthFollow follow, IEnumerable<string> loaders, ulong ownerId,
-        int listPage, ButtonBuilder backButton, ILocalizationService loc, CultureInfo? culture, string? notice = null,
-        bool serverMilestones = false)
+        int listPage, ButtonBuilder backButton, GuildSettings guildSettings, ILocalizationService loc,
+        CultureInfo? culture, string? notice = null)
     {
         string Id(string prefix) => $"{prefix}:{ownerId}:{follow.Id}:{listPage}";
 
@@ -58,21 +58,18 @@ public static class FollowComponentBuilder
         };
 
         // The channel does nothing while the server has milestones off or the follow lacks the milestone event
-        if (serverMilestones && follow.Events.HasFlag(FollowEvents.DownloadMilestone))
+        if (guildSettings.MilestonesEnabled && follow.Events.HasFlag(FollowEvents.DownloadMilestone))
             fields.Add(new SettingsField(loc.Get("settings-milestone-channel", culture),
                 SettingsPanelBuilder.ChannelPicker(Id(MilestoneChannelMenuId), follow.MilestoneChannel,
                     loc.Get("settings-milestone-channel-placeholder", culture), optional: true)));
 
         fields.Add(new SettingsField(loc.Get("settings-events", culture),
             GetEventsMenu(follow, Id(EventsMenuId), loc, culture)));
-        fields.Add(new SettingsField(loc.Get("settings-release-filter", culture),
-            SettingsPanelBuilder.ReleaseFilterMenu(Id(ReleaseMenuId), follow.ReleaseFilter,
-                loc.Get("settings-release-placeholder", culture))));
-
-        var loaderMenu = SettingsPanelBuilder.LoaderFilterMenu(Id(LoaderMenuId), loaders, follow.LoaderFilter,
-            loc.Get("settings-loader-placeholder", culture));
-        if (loaderMenu is not null)
-            fields.Add(new SettingsField(loc.Get("settings-loader-filter", culture), loaderMenu));
+        fields.Add(SettingsPanelBuilder.ReleaseFilterField(Id(ReleaseMenuId), follow.ReleaseFilter, guildSettings, loc,
+            culture));
+        if (SettingsPanelBuilder.LoaderFilterField(Id(LoaderMenuId), loaders, follow.LoaderFilter, guildSettings, loc,
+                culture) is { } loaderField)
+            fields.Add(loaderField);
 
         var title = loc.Get("settings-follow-title", culture,
             new

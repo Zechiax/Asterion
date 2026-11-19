@@ -41,7 +41,7 @@ public class ManagePanelTests
         {
             GuildId = GuildId,
             ManageRole = 777,
-            GuildSettings = new GuildSettings { GuildId = GuildId }
+            GuildSettings = new GuildSettings { GuildId = GuildId, MilestonesEnabled = true }
         });
         return guildService;
     }

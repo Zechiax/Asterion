@@ -9,7 +9,7 @@ namespace Asterion.Test.Notifications;
 [TestFixture]
 public class NotificationFilterEvaluatorTests
 {
-    private static ModrinthEntry MakeEntry(ReleaseType releaseFilter, string[]? loaderFilter = null)
+    private static ModrinthEntry MakeEntry(ReleaseType? releaseFilter, string[]? loaderFilter = null)
     {
         return new ModrinthEntry
         {
@@ -43,12 +43,42 @@ public class NotificationFilterEvaluatorTests
     [TestCase(AllReleases, ProjectVersionType.Release, null, true)]
     [TestCase(AllReleases, ProjectVersionType.Release, new[] { "forge" }, false)]
     [TestCase(AllReleases, ProjectVersionType.Release, new[] { "forge", "fabric" }, true)]
-    public void ShouldNotify(ReleaseType releaseFilter, ProjectVersionType versionType, string[]? loaderFilter,
+    public void ShouldNotify(ReleaseType? releaseFilter, ProjectVersionType versionType, string[]? loaderFilter,
         bool expected)
     {
         var entry = MakeEntry(releaseFilter, loaderFilter);
         var version = MakeVersion(versionType, "fabric", "quilt");
 
-        Assert.That(NotificationFilterEvaluator.ShouldNotify(entry, version), Is.EqualTo(expected));
+        Assert.That(NotificationFilterEvaluator.ShouldNotify(entry, version, new GuildSettings()), Is.EqualTo(expected));
+    }
+
+    [TestCase(null, ReleaseType.Release, ProjectVersionType.Beta, false)]
+    [TestCase(null, ReleaseType.Release | ReleaseType.Beta, ProjectVersionType.Beta, true)]
+    [TestCase(ReleaseType.Beta, ReleaseType.Release, ProjectVersionType.Beta, true)]
+    [TestCase(ReleaseType.Alpha, ReleaseType.Release, ProjectVersionType.Release, false)]
+    public void ReleaseFilterFallsBackToGuildDefaultAndAllowsOverride(ReleaseType? entryFilter,
+        ReleaseType guildDefault, ProjectVersionType versionType, bool expected)
+    {
+        var entry = MakeEntry(entryFilter);
+        var settings = new GuildSettings { DefaultReleaseFilter = guildDefault };
+        var version = MakeVersion(versionType, "fabric");
+
+        Assert.That(NotificationFilterEvaluator.ShouldNotify(entry, version, settings), Is.EqualTo(expected));
+    }
+
+    [TestCase(null, new[] { "forge" }, false)]
+    [TestCase(null, new[] { "fabric" }, true)]
+    // Empty array explicitly allows all loaders, ignoring the guild default
+    [TestCase(new string[0], new[] { "forge" }, true)]
+    [TestCase(new[] { "fabric" }, new[] { "forge" }, true)]
+    [TestCase(new[] { "neoforge" }, new[] { "fabric" }, false)]
+    public void LoaderFilterFallsBackToGuildDefaultAndSupportsAllLoadersOverride(string[]? entryLoaders,
+        string[]? guildDefaultLoaders, bool expected)
+    {
+        var entry = MakeEntry(null, entryLoaders);
+        var settings = new GuildSettings { DefaultLoaderFilter = guildDefaultLoaders };
+        var version = MakeVersion(ProjectVersionType.Release, "fabric");
+
+        Assert.That(NotificationFilterEvaluator.ShouldNotify(entry, version, settings), Is.EqualTo(expected));
     }
 }

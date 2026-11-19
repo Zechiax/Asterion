@@ -30,8 +30,8 @@ Only versions published after you subscribed are posted.
 | **Channel** | Where the update messages go |
 | **Ping role override** | Role to ping instead of the server's default ping role. Leave it empty to use the default. |
 | **Milestone channel override** | Where this project's milestone messages go. Leave it empty to use the server's **Milestone channel**. Shown only while milestones are on for the server and for this subscription. |
-| **Release types** | Which versions are posted: Alpha, Beta, Release. All three are on by default. Keep at least one. |
-| **Loaders** | Only post versions for these loaders. Leave it empty to post all of them. Shown only if the project lists loaders. |
+| **Release types** | Which versions are posted: Alpha, Beta, Release. Leave it empty to use the server's [Default filters](/guides/manage#default-filters). |
+| **Loaders** | Only post versions for these loaders. Leave it empty to use the server's [Default filters](/guides/manage#default-filters). When the server has default loaders set, pick **All loaders (ignore server default)** to post every loader for this project. Shown only if the project lists loaders or the server has default loaders set. |
 
 The **Milestones: on** button turns download milestones off for this project. While milestones are off for the
 server, it shows **Milestones: off on this server** and can't be clicked.

@@ -4,6 +4,7 @@ using Asterion.ComponentBuilders;
 using Asterion.Database.Models;
 using Asterion.EmbedBuilders;
 using Asterion.Interfaces;
+using Asterion.Services.Modrinth;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
@@ -21,9 +22,12 @@ public class ServerSettingsInteractionModule(
     IGuildCultureProvider cultureProvider,
     IGuildService guildService,
     ISubscriptionService subscriptionService,
-    IFollowService followService)
+    IFollowService followService,
+    ModrinthService modrinthService)
     : AsterionInteractionModuleBase(localizationService, cultureProvider)
 {
+    private const int ProjectBatchSize = 100;
+
     [DoUserCheck]
     [ComponentInteraction(ServerSettingsPanelBuilder.ManageRoleMenuId + ":*")]
     public Task HandleManageRoleAsync(ulong ownerId, string[] selectedValues)
@@ -110,6 +114,66 @@ public class ServerSettingsInteractionModule(
     {
         var roleId = SettingsPanelBuilder.ParseSelectedId(selectedValues);
         return UpdateAsync(ownerId, ManageTab.Notifications, guild => guild.GuildSettings.MilestonePingRole = roleId);
+    }
+
+    [DoUserCheck]
+    [ComponentInteraction(ServerSettingsPanelBuilder.DefaultFiltersButtonId + ":*")]
+    public async Task HandleDefaultFiltersAsync(ulong ownerId)
+    {
+        await DeferAsync();
+        await ShowDefaultFiltersAsync(ownerId);
+    }
+
+    [DoUserCheck]
+    [ComponentInteraction(ServerSettingsPanelBuilder.DefaultReleaseMenuId + ":*")]
+    public Task HandleDefaultReleaseFilterAsync(ulong ownerId, string[] selectedValues)
+    {
+        var filter = SettingsPanelBuilder.ParseReleaseFilter(selectedValues);
+        return UpdateDefaultFiltersAsync(ownerId, filter is null ? null : g => g.GuildSettings.DefaultReleaseFilter = filter.Value);
+    }
+
+    [DoUserCheck]
+    [ComponentInteraction(ServerSettingsPanelBuilder.DefaultLoaderMenuId + ":*")]
+    public Task HandleDefaultLoaderFilterAsync(ulong ownerId, string[] selectedValues)
+    {
+        var loaderFilter = selectedValues.Length > 0 ? selectedValues : null;
+        return UpdateDefaultFiltersAsync(ownerId, g => g.GuildSettings.DefaultLoaderFilter = loaderFilter);
+    }
+
+    [DoUserCheck]
+    [ComponentInteraction(ServerSettingsPanelBuilder.ResetOverridesButtonId + ":*")]
+    public async Task HandleResetOverridesAsync(ulong ownerId)
+    {
+        await DeferAsync();
+
+        var count = await guildService.CountFilterOverridesAsync(Context.Guild.Id);
+        if (count == 0)
+        {
+            await ShowDefaultFiltersAsync(ownerId);
+            return;
+        }
+
+        var confirm = ServerSettingsPanelBuilder.BuildResetOverridesConfirm(count, ownerId, LocalizationService,
+            CommandCultureInfo);
+        await ModifyOriginalResponseAsync(msg => msg.Components = confirm);
+    }
+
+    [DoUserCheck]
+    [ComponentInteraction(ServerSettingsPanelBuilder.ResetOverridesConfirmButtonId + ":*")]
+    public async Task HandleResetOverridesConfirmAsync(ulong ownerId)
+    {
+        await DeferAsync();
+
+        var count = await guildService.ResetFilterOverridesAsync(Context.Guild.Id);
+        await ShowDefaultFiltersAsync(ownerId, Loc("server-reset-overrides-done", new { count }));
+    }
+
+    [DoUserCheck]
+    [ComponentInteraction(ServerSettingsPanelBuilder.ResetOverridesCancelButtonId + ":*")]
+    public async Task HandleResetOverridesCancelAsync(ulong ownerId)
+    {
+        await DeferAsync();
+        await ShowDefaultFiltersAsync(ownerId);
     }
 
     [DoUserCheck]
@@ -263,6 +327,81 @@ public class ServerSettingsInteractionModule(
             followService, Context.Guild.Id, ownerId, tab, 0, true, LocalizationService, CommandCultureInfo, notice);
 
         await ModifyOriginalResponseAsync(msg => msg.Components = components);
+    }
+
+    private async Task UpdateDefaultFiltersAsync(ulong ownerId, Action<Guild>? update)
+    {
+        await DeferAsync();
+
+        if (update is not null && await guildService.UpdateGuildAsync(Context.Guild.Id, update) is null)
+        {
+            await SendStatusAsync(Errors.Internal);
+            return;
+        }
+
+        await ShowDefaultFiltersAsync(ownerId);
+    }
+
+    private async Task ShowDefaultFiltersAsync(ulong ownerId, string? notice = null)
+    {
+        var guild = await guildService.GetGuildAsync(Context.Guild.Id);
+        if (guild is null)
+        {
+            await SendStatusAsync(Errors.Internal);
+            return;
+        }
+
+        var loaders = await GetServerLoaderOptionsAsync(Context.Guild.Id);
+        var overrideCount = await guildService.CountFilterOverridesAsync(Context.Guild.Id);
+        var backButton = ManageInteractionModule.BackButton(ownerId, ManageTab.Notifications, 0, LocalizationService,
+            CommandCultureInfo);
+        var panel = ServerSettingsPanelBuilder.BuildDefaultFilters(guild.GuildSettings, loaders, overrideCount, ownerId,
+            backButton, LocalizationService, CommandCultureInfo, notice);
+
+        await ModifyOriginalResponseAsync(msg => msg.Components = panel);
+    }
+
+    /// <summary>
+    ///     Collects loader options for the guild's default loader menu in priority order:
+    ///     loaders used by the guild's subscriptions and follows first, then all Modrinth loaders.
+    /// </summary>
+    private async Task<IReadOnlyList<string>> GetServerLoaderOptionsAsync(ulong guildId)
+    {
+        var result = new List<string>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        void AddRange(IEnumerable<string>? names)
+        {
+            if (names is null)
+                return;
+
+            foreach (var name in names)
+                if (!string.IsNullOrWhiteSpace(name) && seen.Add(name))
+                    result.Add(name);
+        }
+
+        var entries = await subscriptionService.GetSubscriptionsAsync(guildId);
+        if (entries.Count > 0)
+        {
+            foreach (var batch in entries.Select(e => e.ProjectId).Distinct().Chunk(ProjectBatchSize))
+            {
+                var projects = await modrinthService.GetMultipleProjects(batch);
+                if (projects is not null)
+                    AddRange(projects.SelectMany(p => p.Loaders ?? []));
+            }
+        }
+
+        var follows = await followService.GetFollowsAsync(guildId);
+        foreach (var follow in follows)
+            AddRange(await followService.GetTargetLoadersAsync(follow.TargetType, follow.TargetId));
+
+        AddRange(SettingsPanelBuilder.MainLoaders);
+
+        var allLoaders = await modrinthService.GetLoadersAsync();
+        if (allLoaders is not null)
+            AddRange(allLoaders.Select(l => l.Name));
+
+        return result;
     }
 
     private string Loc(string key)

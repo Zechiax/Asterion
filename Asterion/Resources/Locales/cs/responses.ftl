@@ -65,8 +65,11 @@ settings-events = Události
 settings-events-placeholder = Žádné události
 settings-release-filter = Typy vydání
 settings-release-placeholder = Vyber typy vydání
+settings-release-placeholder-default = Výchozí nastavení serveru ({ $value })
 settings-loader-filter = Loadery
 settings-loader-placeholder = Všechny loadery
+settings-loader-placeholder-default = Výchozí nastavení serveru ({ $value })
+settings-loader-all-override = Všechny loadery (ignorovat výchozí nastavení serveru)
 settings-channel-none = Nenastaven
 
 ## Manage panel
@@ -147,6 +150,21 @@ message-style-compact = Kompaktní
 changelog-style-plaintext = Prostý text
 changelog-style-codeblock = Blok kódu
 changelog-style-nochangelog = Bez seznamu změn
+server-default-filters = Výchozí filtry
+server-default-filters-summary = { $releases } · { $loaders }
+server-default-filters-title = Výchozí filtry
+server-default-filters-description = Platí pro všechny odebírané projekty a sledované tvůrce, pokud si je nepřepíší ve vlastním nastavení
+server-reset-overrides = Obnovit všechna přepsání
+server-reset-overrides-confirm =
+    Obnovit vlastní filtry typů vydání a loaderů u { $count ->
+        [one] { $count } projektu nebo tvůrce
+       *[other] { $count } projektů a tvůrců
+    }? Znovu budou používat výchozí nastavení serveru.
+server-reset-overrides-done =
+    Přepsání filtrů obnoveno u { $count ->
+        [one] { $count } projektu nebo tvůrce
+       *[other] { $count } projektů a tvůrců
+    } :white_check_mark:
 server-milestones-title = Milníky stažení
 server-milestones = Zprávy o milnících
 server-milestones-enabled = Posílají se, když projekt dosáhne milníku stažení

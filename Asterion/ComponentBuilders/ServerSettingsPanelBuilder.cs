@@ -26,6 +26,12 @@ public static class ServerSettingsPanelBuilder
     public const string MilestoneLadderMenuId = "srv_ms_ladder";
     public const string MilestoneChannelMenuId = "srv_ms_channel";
     public const string MilestonePingRoleMenuId = "srv_ms_ping";
+    public const string DefaultFiltersButtonId = "srv_filters";
+    public const string DefaultReleaseMenuId = "srv_relfilter";
+    public const string DefaultLoaderMenuId = "srv_ldrfilter";
+    public const string ResetOverridesButtonId = "srv_reset_filters";
+    public const string ResetOverridesConfirmButtonId = "srv_reset_filters_ok";
+    public const string ResetOverridesCancelButtonId = "srv_reset_filters_no";
     public const string UnsubscribeAllButtonId = "srv_unsuball";
     public const string UnsubscribeAllModalId = "srv_unsuball_modal";
     public const string UnfollowAllButtonId = "srv_unfolall";
@@ -116,9 +122,61 @@ public static class ServerSettingsPanelBuilder
             new ButtonBuilder(loc.Get("button-change", culture), Id(ChangelogLengthButtonId), ButtonStyle.Secondary,
                 isDisabled: settings.ChangelogStyle == ChangelogStyle.NoChangelog));
 
+        var filterSummary = loc.Get("server-default-filters-summary", culture, new
+        {
+            releases = SettingsPanelBuilder.FormatReleaseFilter(settings.DefaultReleaseFilter),
+            loaders = SettingsPanelBuilder.FormatLoaderFilter(settings.DefaultLoaderFilter, loc, culture)
+        });
+        SettingsPanelBuilder.AddButtonSetting(container, loc.Get("server-default-filters", culture), filterSummary,
+            new ButtonBuilder(loc.Get("button-change", culture), Id(DefaultFiltersButtonId), ButtonStyle.Secondary));
+
         AddMilestoneSettings(container, settings, Id, loc, culture);
 
         return container;
+    }
+
+    /// <summary>
+    ///     Sub-panel for the guild's default release-type and loader filters, send with <see cref="MessageFlags.ComponentsV2" />
+    /// </summary>
+    public static MessageComponent BuildDefaultFilters(GuildSettings settings, IEnumerable<string> loaders,
+        int overrideCount, ulong ownerId, ButtonBuilder backButton, ILocalizationService loc, CultureInfo? culture,
+        string? notice = null)
+    {
+        string Id(string prefix) => $"{prefix}:{ownerId}";
+
+        var fields = new List<SettingsField>
+        {
+            new(loc.Get("settings-release-filter", culture),
+                SettingsPanelBuilder.ReleaseFilterMenu(Id(DefaultReleaseMenuId), settings.DefaultReleaseFilter,
+                    loc.Get("settings-release-placeholder", culture)))
+        };
+
+        var loaderMenu = SettingsPanelBuilder.LoaderFilterMenu(Id(DefaultLoaderMenuId), loaders,
+            settings.DefaultLoaderFilter, loc.Get("settings-loader-placeholder", culture), preserveLoaderOrder: true);
+        if (loaderMenu is not null)
+            fields.Add(new SettingsField(loc.Get("settings-loader-filter", culture), loaderMenu));
+
+        var buttons = new[]
+        {
+            backButton,
+            new ButtonBuilder(loc.Get("server-reset-overrides", culture), Id(ResetOverridesButtonId),
+                ButtonStyle.Danger, isDisabled: overrideCount == 0)
+        };
+
+        return SettingsPanelBuilder.Build(loc.Get("server-default-filters-title", culture), Accent, fields, buttons,
+            JoinNotice(loc.Get("server-default-filters-description", culture), notice));
+    }
+
+    public static MessageComponent BuildResetOverridesConfirm(int overrideCount, ulong ownerId,
+        ILocalizationService loc, CultureInfo? culture)
+    {
+        string Id(string prefix) => $"{prefix}:{ownerId}";
+
+        return SettingsPanelBuilder.BuildMessage(
+            loc.Get("server-reset-overrides-confirm", culture, new { count = overrideCount }),
+            Accent,
+            new ButtonBuilder(loc.Get("button-confirm", culture), Id(ResetOverridesConfirmButtonId), ButtonStyle.Danger),
+            new ButtonBuilder(loc.Get("button-cancel", culture), Id(ResetOverridesCancelButtonId), ButtonStyle.Secondary));
     }
 
     /// <summary>

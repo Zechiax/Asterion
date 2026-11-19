@@ -130,6 +130,11 @@ namespace Asterion.Migrations
                         .HasColumnType("INTEGER")
                         .HasDefaultValue(false);
 
+                    b.Property<int>("DefaultReleaseFilter")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(7);
+
                     b.Property<ulong>("GuildId")
                         .HasColumnType("INTEGER");
 
@@ -157,6 +162,9 @@ namespace Asterion.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER")
                         .HasDefaultValue(true);
+
+                    b.Property<string>("SerializedDefaultLoaderFilter")
+                        .HasColumnType("TEXT");
 
                     b.Property<bool?>("ShowChannelSelection")
                         .ValueGeneratedOnAdd()
@@ -228,10 +236,8 @@ namespace Asterion.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("ReleaseFilter")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
-                        .HasDefaultValue(7);
+                    b.Property<int?>("ReleaseFilter")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("SerializedLoaderFilter")
                         .HasColumnType("TEXT");
@@ -287,10 +293,8 @@ namespace Asterion.Migrations
                     b.Property<ulong?>("NewProjectPingRole")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("ReleaseFilter")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
-                        .HasDefaultValue(7);
+                    b.Property<int?>("ReleaseFilter")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("SerializedLoaderFilter")
                         .HasColumnType("TEXT");

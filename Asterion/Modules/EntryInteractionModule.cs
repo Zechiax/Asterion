@@ -62,9 +62,14 @@ namespace Asterion.Modules
                 // Modrinth API unavailable
             }
 
-            var title = Format.Sanitize(project?.Title ?? entry.Project?.Title ?? entry.ProjectId);
+            var guild = await guildService.GetGuildAsync(entry.GuildId);
+            if (guild is null)
+                return SettingsPanelBuilder.BuildMessage(loc.Get("error-internal", culture),
+                    SettingsPanelBuilder.SubscriptionAccent);
 
-            var serverMilestones = await guildService.MilestonesEnabledAsync(entry.GuildId);
+            var title = Format.Sanitize(project?.Title ?? entry.Project?.Title ?? entry.ProjectId);
+            var guildSettings = guild.GuildSettings;
+            var serverMilestones = guildSettings.MilestonesEnabled;
 
             var fields = new List<SettingsField>
             {
@@ -82,14 +87,11 @@ namespace Asterion.Modules
                     SettingsPanelBuilder.ChannelPicker(Id(MilestoneChannelMenuId), entry.MilestoneChannel,
                         loc.Get("settings-milestone-channel-placeholder", culture), optional: true)));
 
-            fields.Add(new SettingsField(loc.Get("settings-release-filter", culture),
-                SettingsPanelBuilder.ReleaseFilterMenu(Id(ReleaseMenuId), entry.ReleaseFilter,
-                    loc.Get("settings-release-placeholder", culture))));
-
-            var loaderMenu = SettingsPanelBuilder.LoaderFilterMenu(Id(LoaderMenuId), project?.Loaders ?? [],
-                entry.LoaderFilter, loc.Get("settings-loader-placeholder", culture));
-            if (loaderMenu is not null)
-                fields.Add(new SettingsField(loc.Get("settings-loader-filter", culture), loaderMenu));
+            fields.Add(SettingsPanelBuilder.ReleaseFilterField(Id(ReleaseMenuId), entry.ReleaseFilter, guildSettings,
+                loc, culture));
+            if (SettingsPanelBuilder.LoaderFilterField(Id(LoaderMenuId), project?.Loaders ?? [], entry.LoaderFilter,
+                    guildSettings, loc, culture) is { } loaderField)
+                fields.Add(loaderField);
 
             var buttons = new[]
             {
@@ -234,12 +236,7 @@ namespace Asterion.Modules
         [ComponentInteraction(ReleaseMenuId + ":*:*:*")]
         public Task HandleReleaseFilterSelectionAsync(ulong ownerId, string projectId, int listPage, string[] selectedValues)
         {
-            // The menu requires at least one release type
-            ReleaseType releaseFilter = 0;
-            foreach (var value in selectedValues)
-                if (int.TryParse(value, out var flag))
-                    releaseFilter |= (ReleaseType)flag;
-
+            var releaseFilter = SettingsPanelBuilder.ParseReleaseFilter(selectedValues);
             return UpdateAsync(ownerId, projectId, listPage, e => e.ReleaseFilter = releaseFilter);
         }
 
@@ -247,7 +244,7 @@ namespace Asterion.Modules
         [ComponentInteraction(LoaderMenuId + ":*:*:*")]
         public Task HandleLoaderFilterSelectionAsync(ulong ownerId, string projectId, int listPage, string[] selectedValues)
         {
-            var loaderFilter = selectedValues.Length > 0 ? selectedValues : null;
+            var loaderFilter = SettingsPanelBuilder.ParseLoaderFilter(selectedValues);
             return UpdateAsync(ownerId, projectId, listPage, e => e.LoaderFilter = loaderFilter);
         }
 

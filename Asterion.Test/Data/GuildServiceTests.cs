@@ -47,4 +47,34 @@ public class GuildServiceTests
             Assert.That(await db.ModrinthProjects.Select(p => p.ProjectId).ToListAsync(), Is.EqualTo(new[] { "a" }));
         }
     }
+
+    [Test]
+    public async Task CountAndResetFilterOverridesOnlyAffectsTargetGuild()
+    {
+        const ulong otherGuildId = 2;
+        await using var provider = InMemoryDb.BuildServiceProvider();
+        await SeedGuildAsync(provider);
+        await SeedGuildAsync(provider, otherGuildId);
+
+        await using (var db = OpenDb(provider))
+        {
+            db.ModrinthEntries.AddRange(
+                new ModrinthEntry { GuildId = GuildId, ProjectId = "a", ReleaseFilter = ReleaseType.Release },
+                new ModrinthEntry { GuildId = GuildId, ProjectId = "b" },
+                new ModrinthEntry { GuildId = otherGuildId, ProjectId = "a", LoaderFilter = ["fabric"] });
+            db.ModrinthFollows.Add(new ModrinthFollow
+                { GuildId = GuildId, TargetId = UserId, TargetName = "u", LoaderFilter = [] });
+            await db.SaveChangesAsync();
+        }
+
+        var guildService = new GuildService(provider, NullLogger<GuildService>.Instance);
+
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(await guildService.CountFilterOverridesAsync(GuildId), Is.EqualTo(2));
+            Assert.That(await guildService.ResetFilterOverridesAsync(GuildId), Is.EqualTo(2));
+            Assert.That(await guildService.CountFilterOverridesAsync(GuildId), Is.EqualTo(0));
+            Assert.That(await guildService.CountFilterOverridesAsync(otherGuildId), Is.EqualTo(1));
+        }
+    }
 }

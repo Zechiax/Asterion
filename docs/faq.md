@@ -5,7 +5,8 @@
 Check these in order:
 
 1. The bot has **View Channels**, **Send Messages** and **Embed Links** in the update channel.
-2. The version matches the **Release types** and **Loaders** of the subscription or follow.
+2. The version matches the **Release types** and **Loaders** of the subscription or follow, or the server's
+   [Default filters](/guides/manage#default-filters) if none are set on it.
 3. For a follow: the project is not ignored, and **Events** includes **Project updates**.
 4. The version was published after you subscribed. Older versions are never posted.
 

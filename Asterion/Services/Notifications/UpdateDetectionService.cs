@@ -150,6 +150,7 @@ public class UpdateDetectionService : BackgroundService
 
         // Left guilds that kept their data get no messages
         var entries = await db.ModrinthEntries
+            .Include(e => e.Guild).ThenInclude(g => g.GuildSettings)
             .Where(e => e.ProjectId == project.Id && e.Guild.Active != false)
             .ToListAsync(ct);
         var guildIdsWithEntry = entries.Select(e => e.GuildId).ToHashSet();
@@ -254,10 +255,10 @@ public class UpdateDetectionService : BackgroundService
     public static Task<List<ModrinthFollow>> GetFollowTargetsAsync(DataContext db, string projectId,
         CancellationToken ct = default)
     {
-        return db.FollowProjects
-            .Where(fp => fp.ProjectId == projectId && !fp.Ignored)
-            .Select(fp => fp.Follow)
-            .Where(f => (f.Events & FollowEvents.ProjectUpdate) != 0 && f.Guild.Active != false)
+        return db.ModrinthFollows
+            .Include(f => f.Guild).ThenInclude(g => g.GuildSettings)
+            .Where(f => (f.Events & FollowEvents.ProjectUpdate) != 0 && f.Guild.Active != false
+                        && f.Projects.Any(fp => fp.ProjectId == projectId && !fp.Ignored))
             .ToListAsync(ct);
     }
 

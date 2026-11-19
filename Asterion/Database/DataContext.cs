@@ -58,10 +58,10 @@ public class DataContext : DbContext
         modelBuilder.Entity<GuildSettings>().Property(p => p.MessageStyle).HasDefaultValue(MessageStyle.Full);
         modelBuilder.Entity<GuildSettings>().Property(p => p.ChangelogStyle).HasDefaultValue(ChangelogStyle.PlainText);
         modelBuilder.Entity<GuildSettings>().Property(p => p.ChangeLogMaxLength).HasDefaultValue(2000);
-
-        modelBuilder.Entity<ModrinthEntry>()
-            .Property(e => e.ReleaseFilter)
-            .HasDefaultValue(ReleaseType.Alpha | ReleaseType.Beta | ReleaseType.Release);
+        modelBuilder.Entity<GuildSettings>().Property(p => p.DefaultReleaseFilter)
+            .HasDefaultValue(Models.GuildSettings.AllReleaseTypes)
+            .HasSentinel((ReleaseType)0);
+        modelBuilder.Entity<GuildSettings>().Ignore(p => p.DefaultLoaderFilter);
 
         // Ignore the LoaderFilter property
         modelBuilder.Entity<ModrinthEntry>()
@@ -71,10 +71,6 @@ public class DataContext : DbContext
         modelBuilder.Entity<ModrinthEntry>()
             .HasIndex(e => new { e.GuildId, e.ProjectId })
             .IsUnique();
-
-        modelBuilder.Entity<ModrinthFollow>()
-            .Property(f => f.ReleaseFilter)
-            .HasDefaultValue(ReleaseType.Alpha | ReleaseType.Beta | ReleaseType.Release);
 
         modelBuilder.Entity<ModrinthFollow>()
             .Ignore(f => f.LoaderFilter);

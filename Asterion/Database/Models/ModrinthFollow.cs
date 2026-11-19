@@ -40,8 +40,13 @@ public class ModrinthFollow : IReleaseFilterable
     /// <summary>Channel for milestone messages, falls back to the server's milestone channel</summary>
     public ulong? MilestoneChannel { get; set; }
 
-    [Required] public ReleaseType ReleaseFilter { get; set; } = ReleaseType.Alpha | ReleaseType.Beta | ReleaseType.Release;
+    /// <summary>Release type filter override, null = inherit the server's default</summary>
+    public ReleaseType? ReleaseFilter { get; set; }
 
+    /// <summary>
+    ///     Loader filter override: null = inherit the server's default, empty array = explicitly allow all loaders,
+    ///     non-empty = only those loaders.
+    /// </summary>
     [NotMapped]
     public string[]? LoaderFilter
     {

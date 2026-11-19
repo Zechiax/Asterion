@@ -46,7 +46,8 @@ server. To confirm, type `unsubscribe` or `unfollow` in the box that opens. This
 
 ## Notifications
 
-These settings change how update messages look. New project messages always look the same.
+These settings change how update messages look, the default version filters and download milestones. New project
+messages always look the same.
 
 ![Notifications tab of /manage](/manage-notifications.png)
 
@@ -63,6 +64,19 @@ An update message in **Compact** style:
 For the **Full** style, see [Update messages](/guides/subscriptions#update-messages).
 
 Click **Preview** to see an example message with the current settings. Only you can see it.
+
+### Default filters
+
+Click **Change** next to **Default filters** to set which versions are posted by default for all subscribed projects
+and followed creators. Each subscription and follow can still override them in its own settings.
+
+| Setting | What it does |
+| --- | --- |
+| **Release types** | Which versions are posted by default: Alpha, Beta, Release. All three are on by default. Keep at least one. |
+| **Loaders** | Only post versions for these loaders by default. Leave it empty to post all of them. |
+
+Click **Reset all overrides**, then **Confirm**, to clear custom release and loader filters on all subscriptions and
+follows so they use the server defaults again.
 
 ### Download milestones
 

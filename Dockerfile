@@ -2,7 +2,7 @@
 
 # The SDK always runs on the build machine's architecture and cross-compiles for the target,
 # so arm64 images are built without emulating the whole .NET build under QEMU
-FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:11.0 AS build
 ARG TARGETARCH
 # Set by CI for releases (e.g. 4.0.0), otherwise the <Version> from the csproj is used
 ARG VERSION=
@@ -17,7 +17,7 @@ COPY Asterion/ Asterion/
 RUN dotnet publish Asterion/Asterion.csproj -c Release -a $TARGETARCH --self-contained false --no-restore \
         -o /app -p:SourceRevisionId=$SOURCE_REVISION ${VERSION:+-p:Version=$VERSION}
 
-FROM mcr.microsoft.com/dotnet/runtime:10.0
+FROM mcr.microsoft.com/dotnet/runtime:11.0
 # SkiaSharp (charts) needs fontconfig and at least one font
 RUN apt-get update \
     && apt-get install -y --no-install-recommends libfontconfig1 fonts-dejavu-core \
